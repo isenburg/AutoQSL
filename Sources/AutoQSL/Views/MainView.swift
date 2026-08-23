@@ -4,6 +4,7 @@ public enum NavigationSection: String, CaseIterable, Identifiable {
     case queue = "QSO Queue"
     case designer = "Card Designer"
     case settings = "Settings"
+    case help = "Help & Docs"
     
     public var id: String { rawValue }
     
@@ -12,6 +13,7 @@ public enum NavigationSection: String, CaseIterable, Identifiable {
         case .queue: return "tray.2.fill"
         case .designer: return "paintbrush.fill"
         case .settings: return "gearshape.fill"
+        case .help: return "questionmark.circle.fill"
         }
     }
 }
@@ -55,6 +57,8 @@ public struct MainView: View {
                         CardDesignerRootView(appState: appState)
                     case .settings:
                         SettingsView(appState: appState)
+                    case .help:
+                        HelpView()
                     }
                 }
             }
