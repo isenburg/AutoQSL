@@ -13,7 +13,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "AutoQSL",
-            path: "Sources/AutoQSL"
+            path: "Sources/AutoQSL",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .executableTarget(
             name: "AutoQSLInstaller",
