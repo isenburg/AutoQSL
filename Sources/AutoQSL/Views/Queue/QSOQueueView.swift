@@ -115,16 +115,22 @@ public struct QSOQueueView: View {
                 Divider()
                 
                 // Bottom Bar with Quick Actions
-                HStack {
+                HStack(spacing: 12) {
                     Button(action: { isAddManualPresented = true }) {
-                        Label("Add QSO", systemImage: "plus")
+                        Label("Add Manual", systemImage: "plus")
                     }
                     .buttonStyle(.borderless)
+                    
+                    Button(action: { appState.grabLastQSOFromRUMlog() }) {
+                        Label("Grab RUMlog", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Fetch the last logged QSO from RUMlogNG via AppleScript and generate QSL card")
                     
                     Spacer()
                     
                     Button(action: simulateTestQSO) {
-                        Label("Simulate QSO", systemImage: "bolt.fill")
+                        Label("Simulate", systemImage: "bolt.fill")
                     }
                     .buttonStyle(.borderless)
                 }

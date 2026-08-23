@@ -306,4 +306,21 @@ public final class AppState: ObservableObject {
         )
         handleIncomingQSO(qso)
     }
+    
+    public func grabLastQSOFromRUMlog() {
+        lastLogMessage = "Querying RUMlogNG for last logged QSO via AppleScript..."
+        Task {
+            do {
+                let qso = try await RUMlogAppleScriptService.shared.fetchLastQSO()
+                await MainActor.run {
+                    self.lastLogMessage = "Grabbed last QSO \(qso.dxCall) from RUMlogNG."
+                    self.handleIncomingQSO(qso)
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastLogMessage = "Error querying RUMlogNG: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
 }
