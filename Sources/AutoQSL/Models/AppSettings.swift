@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 public enum SendingMode: String, Codable, CaseIterable {
     case confirmBeforeSend = "Preview & Confirm (Recommended)"
@@ -68,6 +69,38 @@ public enum DateHeaderStyle: String, Codable, CaseIterable, Identifiable {
     public var id: String { rawValue }
 }
 
+public enum AppAppearance: String, Codable, CaseIterable, Identifiable {
+    case system = "System (Auto)"
+    case light = "Light"
+    case dark = "Dark"
+    
+    public var id: String { rawValue }
+    
+    public var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
+public enum StorageLocation: String, Codable, CaseIterable, Identifiable {
+    case local = "Local Storage (Mac)"
+    case iCloud = "iCloud Drive Sync"
+    
+    public var id: String { rawValue }
+    
+    public var description: String {
+        switch self {
+        case .local:
+            return "Stores all configuration, templates, and QSO history locally on this Mac (~/Library/Application Support/AutoQSL)."
+        case .iCloud:
+            return "Stores and synchronizes all settings, card templates, and QSO queues across your Macs via iCloud Drive (iCloud Drive/AutoQSL)."
+        }
+    }
+}
+
 public enum DateFormatOption: String, Codable, CaseIterable, Identifiable {
     case yyyyMMdd = "YYYY MM DD"
     case ddMMyyyy = "DD MM YYYY"
@@ -76,6 +109,13 @@ public enum DateFormatOption: String, Codable, CaseIterable, Identifiable {
 }
 
 public struct AppSettings: Codable {
+    // Appearance (System, Light, Dark)
+    public var appearance: AppAppearance
+    
+    // Storage & Sync Location
+    public var storageLocation: StorageLocation
+    public var autoSyncICloud: Bool
+    
     // Automation Mode
     public var sendingMode: SendingMode
     
@@ -97,10 +137,12 @@ public struct AppSettings: Codable {
     public var dateSeparator: DateSeparator
     public var dateHeaderStyle: DateHeaderStyle
     
-    // UDP Network Listener
+    // UDP Network Listeners (WSJT-X etc. & RL RUMlog)
     public var wsjtxEnabled: Bool
+    public var wsjtxAddress: String
     public var wsjtxPort: Int
     public var rumlogEnabled: Bool
+    public var rumlogAddress: String
     public var rumlogPort: Int
     
     // QRZ.com XML API
@@ -132,7 +174,19 @@ public struct AppSettings: Codable {
         set { dateOrder = (newValue == .ddMMyyyy ? .ddMMyyyy : .yyyyMMdd) }
     }
     
+    public static func isMulticast(address: String) -> Bool {
+        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let firstOctetStr = trimmed.components(separatedBy: ".").first,
+           let firstOctet = Int(firstOctetStr) {
+            return firstOctet >= 224 && firstOctet <= 239
+        }
+        return false
+    }
+    
     public init(
+        appearance: AppAppearance = .system,
+        storageLocation: StorageLocation = .local,
+        autoSyncICloud: Bool = true,
         sendingMode: SendingMode = .confirmBeforeSend,
         myCallsign: String = "DJ6GI",
         myName: String = "Georg Isenbürger",
@@ -141,17 +195,19 @@ public struct AppSettings: Codable {
         myState: String = "SH",
         myCountry: String = "Germany",
         myGrid: String = "JO43sx",
-        myCQZone: String = "5",
-        myITUZone: String = "8",
+        myCQZone: String = "14",
+        myITUZone: String = "28",
         myCounty: String = "",
         defaultComment: String = "73, Thanks for the QSO.",
         dateOrder: DateOrder = .ddMMyyyy,
         dateSeparator: DateSeparator = .dot,
         dateHeaderStyle: DateHeaderStyle = .singleDate,
         wsjtxEnabled: Bool = true,
+        wsjtxAddress: String = "224.0.0.1",
         wsjtxPort: Int = 2237,
         rumlogEnabled: Bool = true,
-        rumlogPort: Int = 2333,
+        rumlogAddress: String = "127.0.0.1",
+        rumlogPort: Int = 12063,
         qrzEnabled: Bool = true,
         qrzUsername: String = "",
         qrzPassword: String = "",
@@ -178,6 +234,9 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
 """,
         activeTemplateId: UUID? = nil
     ) {
+        self.appearance = appearance
+        self.storageLocation = storageLocation
+        self.autoSyncICloud = autoSyncICloud
         self.sendingMode = sendingMode
         self.myCallsign = myCallsign
         self.myName = myName
@@ -194,8 +253,10 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.dateSeparator = dateSeparator
         self.dateHeaderStyle = dateHeaderStyle
         self.wsjtxEnabled = wsjtxEnabled
+        self.wsjtxAddress = wsjtxAddress
         self.wsjtxPort = wsjtxPort
         self.rumlogEnabled = rumlogEnabled
+        self.rumlogAddress = rumlogAddress
         self.rumlogPort = rumlogPort
         self.qrzEnabled = qrzEnabled
         self.qrzUsername = qrzUsername
@@ -216,10 +277,12 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
     }
     
     enum CodingKeys: String, CodingKey {
+        case appearance
+        case storageLocation, autoSyncICloud
         case sendingMode, myCallsign, myName, myStreet, myCity, myState, myCountry
         case myGrid, myCQZone, myITUZone, myCounty, defaultComment
         case dateOrder, dateSeparator, dateHeaderStyle
-        case wsjtxEnabled, wsjtxPort, rumlogEnabled, rumlogPort
+        case wsjtxEnabled, wsjtxAddress, wsjtxPort, rumlogEnabled, rumlogAddress, rumlogPort
         case qrzEnabled, qrzUsername, qrzPassword
         case emailDeliveryMethod, appleMailSendImmediately
         case smtpHost, smtpPort, smtpUsername, smtpPassword, smtpUseTLS
@@ -229,10 +292,14 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
     
     enum LegacyCodingKeys: String, CodingKey {
         case dateFormat
+        case udpEnabled, udpAddress, udpPort
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.appearance = try container.decodeIfPresent(AppAppearance.self, forKey: .appearance) ?? .system
+        self.storageLocation = try container.decodeIfPresent(StorageLocation.self, forKey: .storageLocation) ?? .local
+        self.autoSyncICloud = try container.decodeIfPresent(Bool.self, forKey: .autoSyncICloud) ?? true
         self.sendingMode = try container.decodeIfPresent(SendingMode.self, forKey: .sendingMode) ?? .confirmBeforeSend
         self.myCallsign = try container.decodeIfPresent(String.self, forKey: .myCallsign) ?? "DJ6GI"
         self.myName = try container.decodeIfPresent(String.self, forKey: .myName) ?? "Georg Isenbürger"
@@ -241,8 +308,8 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.myState = try container.decodeIfPresent(String.self, forKey: .myState) ?? "SH"
         self.myCountry = try container.decodeIfPresent(String.self, forKey: .myCountry) ?? "Germany"
         self.myGrid = try container.decodeIfPresent(String.self, forKey: .myGrid) ?? "JO43sx"
-        self.myCQZone = try container.decodeIfPresent(String.self, forKey: .myCQZone) ?? "5"
-        self.myITUZone = try container.decodeIfPresent(String.self, forKey: .myITUZone) ?? "8"
+        self.myCQZone = try container.decodeIfPresent(String.self, forKey: .myCQZone) ?? "14"
+        self.myITUZone = try container.decodeIfPresent(String.self, forKey: .myITUZone) ?? "28"
         self.myCounty = try container.decodeIfPresent(String.self, forKey: .myCounty) ?? ""
         self.defaultComment = try container.decodeIfPresent(String.self, forKey: .defaultComment) ?? "73, Thanks for the QSO."
         
@@ -253,10 +320,19 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.dateSeparator = try container.decodeIfPresent(DateSeparator.self, forKey: .dateSeparator) ?? .dot
         self.dateHeaderStyle = try container.decodeIfPresent(DateHeaderStyle.self, forKey: .dateHeaderStyle) ?? .singleDate
         
-        self.wsjtxEnabled = try container.decodeIfPresent(Bool.self, forKey: .wsjtxEnabled) ?? true
-        self.wsjtxPort = try container.decodeIfPresent(Int.self, forKey: .wsjtxPort) ?? 2237
+        self.wsjtxEnabled = try container.decodeIfPresent(Bool.self, forKey: .wsjtxEnabled)
+            ?? (try? legacyContainer?.decode(Bool.self, forKey: .udpEnabled))
+            ?? true
+        self.wsjtxAddress = try container.decodeIfPresent(String.self, forKey: .wsjtxAddress)
+            ?? (try? legacyContainer?.decode(String.self, forKey: .udpAddress))
+            ?? "224.0.0.1"
+        self.wsjtxPort = try container.decodeIfPresent(Int.self, forKey: .wsjtxPort)
+            ?? (try? legacyContainer?.decode(Int.self, forKey: .udpPort))
+            ?? 2237
+        
         self.rumlogEnabled = try container.decodeIfPresent(Bool.self, forKey: .rumlogEnabled) ?? true
-        self.rumlogPort = try container.decodeIfPresent(Int.self, forKey: .rumlogPort) ?? 2333
+        self.rumlogAddress = try container.decodeIfPresent(String.self, forKey: .rumlogAddress) ?? "127.0.0.1"
+        self.rumlogPort = try container.decodeIfPresent(Int.self, forKey: .rumlogPort) ?? 12063
         self.qrzEnabled = try container.decodeIfPresent(Bool.self, forKey: .qrzEnabled) ?? true
         self.qrzUsername = try container.decodeIfPresent(String.self, forKey: .qrzUsername) ?? ""
         self.qrzPassword = try container.decodeIfPresent(String.self, forKey: .qrzPassword) ?? ""
@@ -275,15 +351,31 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.activeTemplateId = try container.decodeIfPresent(UUID.self, forKey: .activeTemplateId)
     }
     
+    public mutating func autofillStationZonesAndCountry(for call: String? = nil, overwriteNonEmpty: Bool = false) {
+        let callToLookup = (call ?? myCallsign).uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !callToLookup.isEmpty, let info = PrefixMatcher.shared.info(for: callToLookup) else { return }
+        
+        if (overwriteNonEmpty || myCountry.isEmpty || myCountry == "OTHER") && !info.country.isEmpty && info.country != "OTHER" {
+            myCountry = info.country
+        }
+        if let cq = info.cqZone, (overwriteNonEmpty || myCQZone.isEmpty) {
+            myCQZone = "\(cq)"
+        }
+        if let itu = info.ituZone, (overwriteNonEmpty || myITUZone.isEmpty) {
+            myITUZone = "\(itu)"
+        }
+    }
+    
     public var fullMyAddress: String {
         var parts: [String] = []
-        if !myName.isEmpty { parts.append(myName) }
-        if !myStreet.isEmpty { parts.append(myStreet) }
+        if !myName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { parts.append(myName) }
+        if !myStreet.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { parts.append(myStreet) }
         var loc = ""
-        if !myCity.isEmpty { loc += myCity }
-        if !myState.isEmpty { loc += (loc.isEmpty ? "" : ", ") + myState }
+        if !myCity.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { loc += myCity }
+        if !myState.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { loc += (loc.isEmpty ? "" : ", ") + myState }
         if !loc.isEmpty { parts.append(loc) }
-        if !myCountry.isEmpty { parts.append(myCountry) }
-        return parts.joined(separator: "\n")
+        if !myCountry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { parts.append(myCountry) }
+        let res = parts.joined(separator: "\n")
+        return res.isEmpty ? "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany" : res
     }
 }

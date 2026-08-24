@@ -26,15 +26,21 @@ public struct ElementInspectorView: View {
     
     private var tableBackgroundColorBinding: Binding<Color> {
         Binding(
-            get: { Color(hex: element.tableBackgroundColorHex) },
-            set: { element.tableBackgroundColorHex = $0.toHex() }
+            get: { Color(hex: element.tableBackgroundColorHex).opacity(element.tableBackgroundOpacity) },
+            set: { newColor in
+                element.tableBackgroundOpacity = newColor.opacityValue
+                element.tableBackgroundColorHex = newColor.toHex()
+            }
         )
     }
     
     private var tableHeaderBackgroundColorBinding: Binding<Color> {
         Binding(
-            get: { Color(hex: element.tableHeaderBackgroundHex) },
-            set: { element.tableHeaderBackgroundHex = $0.toHex() }
+            get: { Color(hex: element.tableHeaderBackgroundHex).opacity(element.tableHeaderBackgroundOpacity) },
+            set: { newColor in
+                element.tableHeaderBackgroundOpacity = newColor.opacityValue
+                element.tableHeaderBackgroundHex = newColor.toHex()
+            }
         )
     }
     
@@ -53,11 +59,12 @@ public struct ElementInspectorView: View {
                     Text(element.name)
                         .font(.headline)
                     Spacer()
-                    Toggle("Visible", isOn: $element.isVisible)
-                        .labelsHidden()
-                    Toggle("Lock", isOn: $element.isLocked)
-                        .labelsHidden()
-                        .help("Lock position")
+                    Button(action: { element.isLocked.toggle() }) {
+                        Image(systemName: element.isLocked ? "lock.fill" : "lock.open")
+                            .foregroundColor(element.isLocked ? .orange : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(element.isLocked ? "Locked - Position is fixed" : "Unlocked - Can drag on canvas")
                 }
                 
                 Divider()
@@ -153,7 +160,20 @@ public struct ElementInspectorView: View {
             HStack(spacing: 16) {
                 Toggle("Bold", isOn: $element.isBold)
                 Toggle("Italic", isOn: $element.isItalic)
+                Spacer()
             }
+        }
+    }
+    
+    // MARK: - Reusable Aligned Color Row
+    private func colorRow(title: String, selection: Binding<Color>) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.primary)
+            Spacer()
+            ColorPicker("", selection: selection, supportsOpacity: true)
+                .labelsHidden()
         }
     }
     
@@ -171,7 +191,7 @@ public struct ElementInspectorView: View {
             }
             
             if element.isShadowEnabled {
-                ColorPicker("Shadow Color", selection: shadowColorBinding)
+                colorRow(title: "Shadow Color", selection: shadowColorBinding)
                 
                 HStack {
                     Text("Blur: \(Int(element.shadowRadius)) pt")
@@ -233,8 +253,8 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                ColorPicker("Face / Text Color", selection: textColorBinding)
-                ColorPicker("Secondary / Accent Color", selection: secondaryColorBinding)
+                colorRow(title: "Face / Text Color", selection: textColorBinding)
+                colorRow(title: "Secondary / Accent Color", selection: secondaryColorBinding)
             }
             
             Divider()
@@ -273,7 +293,7 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                ColorPicker("Text Color", selection: textColorBinding)
+                colorRow(title: "Text Color", selection: textColorBinding)
             }
             
             Divider()
@@ -374,10 +394,10 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                ColorPicker("Font / Text Color", selection: textColorBinding)
-                ColorPicker("Table Background Color", selection: tableBackgroundColorBinding)
-                ColorPicker("Header Background Color", selection: tableHeaderBackgroundColorBinding)
-                ColorPicker("Grid Border Color", selection: tableBorderColorBinding)
+                colorRow(title: "Font / Text Color", selection: textColorBinding)
+                colorRow(title: "Table Background Color", selection: tableBackgroundColorBinding)
+                colorRow(title: "Header Background Color", selection: tableHeaderBackgroundColorBinding)
+                colorRow(title: "Grid Border Color", selection: tableBorderColorBinding)
             }
             
             Divider()
@@ -427,7 +447,7 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                ColorPicker("Text Color", selection: textColorBinding)
+                colorRow(title: "Text Color", selection: textColorBinding)
             }
             
             Divider()
@@ -475,7 +495,7 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                ColorPicker("Text Color", selection: textColorBinding)
+                colorRow(title: "Text Color", selection: textColorBinding)
             }
             
             Divider()

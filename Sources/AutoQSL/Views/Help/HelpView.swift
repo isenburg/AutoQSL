@@ -12,9 +12,11 @@ public struct HelpView: View {
         case designer = "2. QSL Card Designer"
         case udpNetwork = "3. UDP & Logging Integration"
         case emailDelivery = "4. Email Dispatching"
-        case templates = "5. Placeholders & Templates"
-        case disclaimer = "6. Disclaimer & Privacy"
-        case copyright = "7. Copyright & Credits"
+        case automationModes = "5. Automation & Modes"
+        case templates = "6. Placeholders & Templates"
+        case storageSync = "7. iCloud Storage & Sync"
+        case disclaimer = "8. Disclaimer & Privacy"
+        case copyright = "9. Copyright & Credits"
 
         public var id: String { rawValue }
         
@@ -24,7 +26,9 @@ public struct HelpView: View {
             case .designer: return "paintpalette.fill"
             case .udpNetwork: return "antenna.radiowaves.left.and.right"
             case .emailDelivery: return "paperplane.fill"
+            case .automationModes: return "gearshape.2"
             case .templates: return "text.badge.checkmark"
+            case .storageSync: return "icloud.circle.fill"
             case .disclaimer: return "exclamationmark.shield.fill"
             case .copyright: return "c.circle.fill"
             }
@@ -32,43 +36,46 @@ public struct HelpView: View {
     }
 
     public var body: some View {
-        NavigationSplitView {
-            List(HelpTopic.allCases, selection: $selectedTopic) { topic in
-                NavigationLink(value: topic) {
-                    Label(isGerman ? topicTitleDe(topic) : topic.rawValue, systemImage: topic.icon)
-                }
-            }
-            .navigationTitle(isGerman ? "Hilfe & Doku" : "Help & Documentation")
-            .frame(minWidth: 240)
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Picker("Language", selection: $isGerman) {
+        HStack(spacing: 0) {
+            // Help Topics Sidebar
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text(isGerman ? "Hilfe & Doku" : "Help & Docs")
+                        .font(.headline)
+                    Spacer()
+                    Picker("", selection: $isGerman) {
                         Text("EN").tag(false)
                         Text("DE").tag(true)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 80)
+                    .frame(width: 75)
                 }
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+                
+                List(HelpTopic.allCases, selection: $selectedTopic) { topic in
+                    Label(isGerman ? topicTitleDe(topic) : topic.rawValue, systemImage: topic.icon)
+                        .tag(topic)
+                }
+                .listStyle(.sidebar)
             }
-        } detail: {
+            .frame(width: 220)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            // Detail Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     detailContent(for: selectedTopic)
                 }
                 .padding(28)
-                .frame(maxWidth: 780, alignment: .leading)
+                .frame(maxWidth: 800, alignment: .leading)
             }
-            .background(Color(NSColor.textBackgroundColor))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(isGerman ? "Schließen" : "Close") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.cancelAction)
-                }
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(minWidth: 840, minHeight: 560)
     }
 
     private func topicTitleDe(_ topic: HelpTopic) -> String {
@@ -77,9 +84,11 @@ public struct HelpView: View {
         case .designer: return "2. QSL-Karten Designer"
         case .udpNetwork: return "3. UDP & Logger-Anbindung"
         case .emailDelivery: return "4. E-Mail Versand"
-        case .templates: return "5. Platzhalter & Vorlagen"
-        case .disclaimer: return "6. Haftungsausschluss & Datenschutz"
-        case .copyright: return "7. Urheberrecht & Credits"
+        case .automationModes: return "5. Automatisierung & Modi"
+        case .templates: return "6. Platzhalter & Vorlagen"
+        case .storageSync: return "7. iCloud-Speicher & Sync"
+        case .disclaimer: return "8. Haftungsausschluss & Datenschutz"
+        case .copyright: return "9. Urheberrecht & Credits"
         }
     }
 
@@ -94,8 +103,12 @@ public struct HelpView: View {
             udpNetworkSection
         case .emailDelivery:
             emailDeliverySection
+        case .automationModes:
+            automationModesSection
         case .templates:
             templatesSection
+        case .storageSync:
+            storageSyncSection
         case .disclaimer:
             disclaimerSection
         case .copyright:
@@ -137,6 +150,9 @@ public struct HelpView: View {
                     featureRow(icon: "paintpalette.fill", text: isGerman ?
                         "Visueller WYSIWYG Drag & Drop Designer: Individuelle Hintergründe, 3D-Präge-Effekte, Abzeichen und anpassbare QSO-Bestätigungstabellen." :
                         "Visual WYSIWYG Drag & Drop Designer: Custom backgrounds, 3D embossed text effects, club badges, and customizable QSO tables.")
+                    featureRow(icon: "square.stack.3d.up.fill", text: isGerman ?
+                        "Massenverarbeitung: Wähle mehrere QSOs mit Shift + Pfeiltasten aus, um sie alle auf einmal zu versenden oder zu löschen." :
+                        "Batch Processing: Select multiple QSOs using Shift + Arrow Keys to dispatch or delete them all at once.")
                     featureRow(icon: "paperplane.fill", text: isGerman ?
                         "Flexible Versandwege: Nahtlose Apple Mail Integration (kein SMTP-Server nötig), Standard-Mail-Client oder direkter SMTP-Server." :
                         "Versatile Delivery: Seamless Apple Mail automation (no SMTP password required), default mail client, or direct SMTP dispatch.")
@@ -158,6 +174,9 @@ public struct HelpView: View {
 
             GroupBox(label: Label(isGerman ? "Bedienung & Gestaltungs-Optionen" : "Controls & Formatting Features", systemImage: "hand.draw.fill")) {
                 VStack(alignment: .leading, spacing: 8) {
+                    featureRow(icon: "arrow.uturn.backward.circle.fill", text: isGerman ?
+                        "Rückgängig-Funktion (Undo ⌘Z): Alle Änderungen an Elementen, Positionen, Farben und Schriftarten lassen sich jederzeit mit ⌘Z oder der Undo-Schaltfläche schrittweise zurücknehmen." :
+                        "Undo Support (⌘Z): Revert design changes, movements, font edits, and color adjustments step-by-step using ⌘Z or the toolbar Undo button.")
                     featureRow(icon: "cursorarrow.motionlines", text: isGerman ?
                         "Direktes Maus-Dragging: Klicke und ziehe beliebige Elemente direkt auf der Leinwand an ihre Wunschposition." :
                         "Direct Mouse Dragging: Click and drag any element directly on the canvas to reposition it smoothly.")
@@ -165,14 +184,17 @@ public struct HelpView: View {
                         "Standard macOS Schriftarten-Auswahl (NSFontPanel): Zugriff auf alle installierten Schriftarten, Schriftschnitte und Größen." :
                         "Native macOS Font Panel (NSFontPanel): Access all system fonts, weights, styles, and sizes via 'Choose Font…'.")
                     featureRow(icon: "paintpalette", text: isGerman ?
-                        "Standard macOS Farbwähler: Individuelle Farbauswahl für Texte, Tabellen-Hintergründe, Kopfzeilen und Gitterrahmen." :
-                        "macOS Color Pickers: Precise color choices for text, table backgrounds, headers, and border lines.")
+                        "macOS Farbwähler mit Transparenz/Deckkraft (Alpha-Kanal): Alle Texte, Hintergründe, Tabellen und Rahmen unterstützen stufenlose Deckkraft." :
+                        "macOS Color Pickers with Opacity (Alpha Channel): Full support for opacity and transparency across all fonts, backgrounds, tables, and borders.")
                     featureRow(icon: "shadow", text: isGerman ?
                         "Schatten-Schalter (Drop Shadow on/off): Schattenwurf für alle Textelemente separat aktivierbar mit Weichzeichnungs- und Abstandsreglern." :
                         "Shadow Toggles (on/off): Dedicated drop shadow switches with customizable blur radius, offsets, and opacity.")
                     featureRow(icon: "tablecells", text: isGerman ?
                         "QSO-Bestätigungstabelle: Konfigurierbare Spalten (QSO With, Date, UTC Time, Frequency, Report, Mode, Remarks) mit wählbarem Datumsformat." :
                         "QSO Confirmation Table: Configurable columns (QSO With, Date, UTC Time, Frequency, Report, Mode, Remarks) with custom date formats.")
+                    featureRow(icon: "square.on.square", text: isGerman ?
+                        "Ebenen-Verwaltung & Duplizieren: Rechtsklick auf Ebenen in der linken Seitenleiste zum Duplizieren oder Löschen von Elementen." :
+                        "Layer Management & Duplication: Right-click layers in the sidebar to duplicate or delete elements.")
                 }
                 .padding(.vertical, 4)
             }
@@ -193,19 +215,64 @@ public struct HelpView: View {
                 GroupBox(label: Text("WSJT-X / JTDX Setup")) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(isGerman ?
-                            "1. Öffne in WSJT-X: Einstellungen > Reporting > UDP Server\n2. Aktiviere 'Accept UDP requests'\n3. Setze 'UDP Server' auf 127.0.0.1 und 'UDP Server Port' auf 2237" :
-                            "1. Open WSJT-X Settings > Reporting > UDP Server\n2. Enable 'Accept UDP requests'\n3. Set 'UDP Server' to 127.0.0.1 and 'UDP Server Port' to 2237")
+                            "1. Öffne in WSJT-X: Einstellungen > Reporting > UDP Server\n2. Aktiviere 'Accept UDP requests'\n3. Setze 'UDP Server' auf 224.0.0.1 und 'UDP Server Port' auf 2237" :
+                            "1. Open WSJT-X Settings > Reporting > UDP Server\n2. Enable 'Accept UDP requests'\n3. Set 'UDP Server' to 224.0.0.1 and 'UDP Server Port' to 2237")
                             .font(.caption.monospaced())
                     }
                 }
 
                 GroupBox(label: Text("RUMlogNG Setup")) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text(isGerman ?
-                            "1. Öffne in RUMlogNG: Einstellungen > UDP\n2. Aktiviere 'Broadcast ADIF Data'\n3. Port: 2333 (Standard)" :
-                            "1. Open RUMlogNG Preferences > UDP\n2. Enable 'Broadcast ADIF Data'\n3. Port: 2333 (Default)")
+                            "RUMlogNG nutzt den 'Contact info N1MM' Broadcast. So konfigurierst du zwei separate Broadcasts (z. B. für QSO Upload Utility auf Port 12063 und AutoQSL auf Port 12064 parallel):" :
+                            "RUMlogNG uses the 'Contact info N1MM' broadcast. Here is how to configure two separate broadcasts (e.g., for QSO Upload Utility on port 12063 and AutoQSL on port 12064 simultaneously):")
+                            .font(.subheadline)
+                            
+                        Text(isGerman ?
+                            "1. Öffne RUMlogNG > Einstellungen > UDP\n2. 'App Info' und 'DX Spot' Haken setzen (falls benötigt)\n3. Ersten 'Contact info N1MM' Broadcast auf Port 12063 setzen (z.B. für QSO Upload Utility)\n4. Zweiten 'Contact info N1MM' Broadcast auf Port 12064 (oder 2333) setzen (für AutoQSL)" :
+                            "1. Open RUMlogNG > Preferences > UDP\n2. Enable 'App Info' and 'DX Spot' (if needed)\n3. Set first 'Contact info N1MM' broadcast to Port 12063 (e.g. for QSO Upload Utility)\n4. Set second 'Contact info N1MM' broadcast to Port 12064 or 2333 (for AutoQSL)")
                             .font(.caption.monospaced())
+                            
+                        #if SWIFT_PACKAGE
+                        if let path = Bundle.module.path(forResource: "rumlog_settings", ofType: "png"),
+                           let nsImage = NSImage(contentsOfFile: path) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: 600)
+                                .cornerRadius(8)
+                                .shadow(radius: 3)
+                        } else {
+                            Image("rumlog_settings")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: 600)
+                                .cornerRadius(8)
+                                .shadow(radius: 3)
+                        }
+                        #else
+                        Image("rumlog_settings")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 600)
+                            .cornerRadius(8)
+                            .shadow(radius: 3)
+                        #endif
                     }
+                }
+                
+                GroupBox(label: Label(isGerman ? "Direkter RUMlogNG-Import (AppleScript)" : "Direct RUMlogNG Import (AppleScript)", systemImage: "arrow.down.doc.fill")) {
+                    Text(isGerman ?
+                        "Über die Schaltfläche 'Grab RUMlog' in der Queue-Ansicht kann jederzeit das zuletzt geloggte QSO direkt über AppleScript aus RUMlogNG ausgelesen und als QSL-Karte generiert werden – ganz ohne UDP-Broadcast." :
+                        "The 'Grab RUMlog' button in the Queue view allows you to instantly pull the most recent QSO from RUMlogNG via native AppleScript and generate a QSL card without requiring UDP broadcasts.")
+                        .font(.caption)
+                }
+                
+                GroupBox(label: Label(isGerman ? "Wichtiger Hinweis zu Duplikaten" : "Important Note on Duplicates", systemImage: "exclamationmark.triangle.fill").foregroundColor(.orange)) {
+                    Text(isGerman ?
+                        "Wenn du in AutoQSL UDP für WSJTX und RumLog eingeschaltet hast, erhältst du abhängig von der RumLog-Konfiguration doppelte QSLs. Es wird empfohlen, entweder das eine oder das andere zu verwenden." :
+                        "If you have switched on UDP for WSJTX and RumLog in AutoQSL you will get duplicate QSLs depending on RumLog's configuration. It is recommended to use either or.")
+                        .font(.caption)
                 }
             }
         }
@@ -240,7 +307,41 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 5. Templates
+    // MARK: - 5. Automation Modes
+    private var automationModesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(isGerman ? "Automatisierung & Versand-Modi" : "Automation & Dispatch Modes")
+                .font(.title2.bold())
+            
+            Text(isGerman ?
+                "AutoQSL bietet drei Automatisierungs-Modi, passend zu deinem Betriebsablauf. Konfigurierbar in den Einstellungen unter 'Automation & Modes':" :
+                "AutoQSL offers three automation modes to suit your operating style. These can be configured in the Settings under 'Automation & Modes':")
+                .font(.body)
+
+            GroupBox(label: Label(isGerman ? "Preview & Confirm (Empfohlen)" : "Preview & Confirm (Recommended)", systemImage: "eye.fill")) {
+                Text(isGerman ?
+                    "Sobald ein QSO empfangen wird, erscheint eine hochauflösende Vorschau der QSL-Karte. Du kannst alle Daten überprüfen, die E-Mail anpassen und den Versand bestätigen." :
+                    "Whenever a QSO is received, a high-resolution preview of the QSL card is presented. You can verify all details, edit the email message, and click to dispatch.")
+                    .font(.caption)
+            }
+
+            GroupBox(label: Label("Fully Automatic", systemImage: "bolt.fill")) {
+                Text(isGerman ?
+                    "AutoQSL rendert und versendet die QSL-Karte völlig lautlos im Hintergrund, sobald ein QSO geloggt wird. Ideal für FT8 oder Contests." :
+                    "AutoQSL will silently render and email the QSL card in the background immediately upon logging a QSO. This mode is ideal for hands-free FT8 or contesting.")
+                    .font(.caption)
+            }
+
+            GroupBox(label: Label("Manual Queue", systemImage: "tray.full.fill")) {
+                Text(isGerman ?
+                    "Eingehende QSOs werden ohne Nachfrage in deine Warteschlange gelegt. Du kannst sie später überprüfen und mit der Massenverarbeitung (Shift + Pfeiltasten) mehrere Karten auf einmal senden." :
+                    "Incoming QSOs are added to your queue without prompting you. You can review the queue later and use Batch Processing (Shift + Arrow Keys) to send multiple cards at once.")
+                    .font(.caption)
+            }
+        }
+    }
+
+    // MARK: - 6. Templates
     private var templatesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(isGerman ? "Platzhalter für E-Mail-Vorlagen & Texte" : "Email Template & Text Placeholders")
@@ -268,7 +369,67 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 6. Disclaimer & Privacy
+    // MARK: - 7. iCloud Storage & Multi-Mac Sync
+    private var storageSyncSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                Image(systemName: "icloud.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.accentColor)
+                Text(isGerman ? "iCloud-Speicher & Multi-Mac Synchronisation" : "iCloud Storage & Multi-Mac Synchronization")
+                    .font(.title2.bold())
+            }
+            
+            Text(isGerman ?
+                "AutoQSL bietet Ihnen die Wahl, alle Daten lokal auf Ihrem Mac zu halten oder über iCloud Drive automatisch mit weiteren Macs (z. B. Shack-Desktop und Mobil-MacBook) abzugleichen." :
+                "AutoQSL provides the flexibility to store all data locally on this Mac or synchronize seamlessly across multiple Macs (e.g. Shack desktop and laptop) via iCloud Drive.")
+                .font(.body)
+            
+            GroupBox(label: Text(isGerman ? "Speicherorte & Datenbank im Überblick" : "Storage Locations & Database Overview")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    featureRow(
+                        icon: "cylinder.split.1x2.fill",
+                        text: isGerman ?
+                            "High-Speed SQLite-Datenbank: Alle QSOs werden in 'autoqsl.sqlite' gespeichert und indiziert – für blitzschnelle Suchen und minimale Ladezeiten selbst bei 100.000+ Kontakten." :
+                            "High-Speed SQLite Database: All QSOs are stored and indexed in 'autoqsl.sqlite' for instant searches and low memory usage even with 100,000+ contacts."
+                    )
+                    
+                    featureRow(
+                        icon: "laptopcomputer",
+                        text: isGerman ?
+                            "Lokaler Speicher: ~/Library/Application Support/AutoQSL – Ideal für Einzelplatz-Installationen ohne Cloud-Abhängigkeit." :
+                            "Local Storage: ~/Library/Application Support/AutoQSL – Ideal for single-Mac setups without cloud dependence."
+                    )
+                    
+                    featureRow(
+                        icon: "icloud.fill",
+                        text: isGerman ?
+                            "iCloud Drive: iCloud Drive/AutoQSL – Synchronisiert Einstellungen, gestaltete Kartenvorlagen, QSO-Warteschlangen und gerenderte QSL-Karten automatisch." :
+                            "iCloud Drive: iCloud Drive/AutoQSL – Automatically synchronizes settings, card templates, QSO queues, and rendered card images."
+                    )
+                }
+                .padding(4)
+            }
+            
+            GroupBox(label: Text(isGerman ? "1-Klick-Datenmigration & Finder" : "1-Click Migration & Finder Access")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(isGerman ?
+                        "In den Einstellungen unter 'Storage & iCloud' können Sie mit einem Klick bestehende lokale Einstellungen und Vorlagen in die iCloud kopieren ('Copy Local Data to iCloud') oder aus der iCloud auf Ihren lokalen Mac wiederherstellen." :
+                        "In Settings under 'Storage & iCloud', you can migrate your existing data to iCloud with a single click ('Copy Local Data to iCloud') or restore from iCloud to local disk.")
+                        .font(.caption)
+                    
+                    Text(isGerman ?
+                        "Über 'Reveal in Finder' öffnet sich der aktive Datenordner direkt in macOS Finder für Backups oder manuelle Bilddateien." :
+                        "Use 'Reveal in Finder' to instantly open your active storage folder in macOS Finder for manual backups or asset management.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(4)
+            }
+        }
+    }
+
+    // MARK: - 8. Disclaimer & Privacy
     private var disclaimerSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
@@ -289,15 +450,15 @@ public struct HelpView: View {
 
             GroupBox(label: Text(isGerman ? "Datenschutz & Lokale Speicherung" : "Privacy & Data Storage")) {
                 Text(isGerman ?
-                    "AutoQSL speichert alle Einstellungen, Vorlagen, Adressdaten und Logbücher ausschließlich lokal auf deinem Mac (~/Library/Application Support/AutoQSL/). Es werden keine Telemetriedaten, Zugangsdaten oder persönliche Informationen an externe Server übermittelt, mit Ausnahme der von dir konfigurierten QRZ.com-Abfragen und E-Mail-Empfänger." :
-                    "AutoQSL operates entirely locally on your Mac. All credentials, settings, templates, and logs are stored locally (~/Library/Application Support/AutoQSL/). No telemetry or tracking data is collected or transmitted to external servers, except your direct queries to QRZ.com and outgoing email dispatches.")
+                    "AutoQSL speichert alle Einstellungen, Vorlagen, Adressdaten und Logbücher ausschließlich lokal auf Ihrem Mac bzw. in Ihrem persönlichen, verschlüsselten iCloud Drive. Es werden keine Telemetriedaten, Zugangsdaten oder persönliche Informationen an Server Dritter übermittelt, mit Ausnahme der von Ihnen konfigurierten QRZ.com-Abfragen und E-Mail-Empfänger." :
+                    "AutoQSL stores all credentials, settings, templates, and logs exclusively locally on your Mac or inside your private encrypted iCloud Drive. No telemetry or tracking data is collected or transmitted to third-party servers, except your direct queries to QRZ.com and outgoing email dispatches.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
     }
 
-    // MARK: - 7. Copyright & Credits
+    // MARK: - 9. Copyright & Credits
     private var copyrightSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
@@ -325,11 +486,7 @@ public struct HelpView: View {
                     .font(.caption.bold())
                 Text("Georg Isenbürger (DJ6GI)")
                     .font(.subheadline)
-                Text("DOK: M15 (Hohenlockstedt, Germany)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Link("GitHub Repository: isenburg/AutoQSL", destination: URL(string: "https://github.com/isenburg/AutoQSL")!)
-                    .font(.caption.bold())
+                
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))

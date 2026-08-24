@@ -1,143 +1,225 @@
 import Foundation
-import Network
 import Combine
 
 public final class UDPListenerService: ObservableObject {
-    public struct ListenerState {
+    public struct ListenerState: Identifiable {
+        public var id: String { "\(address):\(port)" }
         public var port: Int
+        public var address: String
         public var name: String
+        public var isMulticast: Bool
         public var isRunning: Bool = false
         public var packetsReceived: Int = 0
         public var lastPacketDate: Date? = nil
         public var errorMessage: String? = nil
     }
     
-    @Published public private(set) var listeners: [Int: ListenerState] = [:]
+    @Published public private(set) var listeners: [String: ListenerState] = [:]
     @Published public private(set) var isAnyListening: Bool = false
     
-    private var nwListeners: [Int: NWListener] = [:]
-    private let queue = DispatchQueue(label: "org.autoqsl.udp.listener", qos: .userInitiated)
+    private var sockets: [String: (fd: Int32, source: DispatchSourceRead)] = [:]
+    private let queue = DispatchQueue(label: "org.autoqsl.udp.listener", qos: .userInitiated, attributes: .concurrent)
+    private let lock = NSLock()
     
     public var onQSORecordReceived: ((QSO) -> Void)?
     
     public init() {}
     
-    public func startListening(ports: [(port: Int, name: String)]) {
+    public func startListening(listeners: [(port: Int, address: String, name: String)]) {
         stopAll()
-        for p in ports {
-            startListener(port: p.port, name: p.name)
+        
+        // Group by port so multiple targets on the same port share a single socket
+        var byPort: [Int: [(address: String, name: String)]] = [:]
+        for item in listeners {
+            guard item.port > 0 && item.port <= 65535 else { continue }
+            byPort[item.port, default: []].append((address: item.address, name: item.name))
+        }
+        
+        for (port, targets) in byPort {
+            startPortListener(port: port, targets: targets)
         }
     }
     
-    public func startListener(port: Int, name: String) {
-        guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
-            DispatchQueue.main.async {
-                self.listeners[port] = ListenerState(port: port, name: name, isRunning: false, errorMessage: "Invalid port number")
-            }
-            return
-        }
+    private func startPortListener(port: Int, targets: [(address: String, name: String)]) {
+        let combinedNames = targets.map { $0.name }.joined(separator: " / ")
+        let primaryAddr = targets.first?.address ?? "0.0.0.0"
+        let isAnyMC = targets.contains { AppSettings.isMulticast(address: $0.address) }
+        let key = "\(primaryAddr):\(port)"
         
-        do {
-            let params = NWParameters.udp
-            params.allowLocalEndpointReuse = true
-            let listener = try NWListener(using: params, on: nwPort)
+        queue.async { [weak self] in
+            guard let self = self else { return }
             
-            listener.stateUpdateHandler = { [weak self] state in
+            let fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+            guard fd >= 0 else {
+                let err = String(cString: strerror(errno))
                 DispatchQueue.main.async {
-                    guard let self = self else { return }
-                    switch state {
-                    case .ready:
-                        var cur = self.listeners[port] ?? ListenerState(port: port, name: name)
-                        cur.isRunning = true
-                        cur.errorMessage = nil
-                        self.listeners[port] = cur
-                        self.isAnyListening = self.listeners.values.contains { $0.isRunning }
-                    case .failed(let err):
-                        var cur = self.listeners[port] ?? ListenerState(port: port, name: name)
-                        cur.isRunning = false
-                        cur.errorMessage = err.localizedDescription
-                        self.listeners[port] = cur
-                        self.isAnyListening = self.listeners.values.contains { $0.isRunning }
-                    case .cancelled:
-                        var cur = self.listeners[port] ?? ListenerState(port: port, name: name)
-                        cur.isRunning = false
-                        self.listeners[port] = cur
-                        self.isAnyListening = self.listeners.values.contains { $0.isRunning }
-                    default:
-                        break
+                    self.listeners[key] = ListenerState(
+                        port: port,
+                        address: primaryAddr,
+                        name: combinedNames,
+                        isMulticast: isAnyMC,
+                        isRunning: false,
+                        errorMessage: "Socket error: \(err)"
+                    )
+                }
+                return
+            }
+            
+            var yes: Int32 = 1
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
+            setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yes, socklen_t(MemoryLayout<Int32>.size))
+            
+            var broadcastOn: Int32 = 1
+            setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &broadcastOn, socklen_t(MemoryLayout<Int32>.size))
+            
+            let flags = fcntl(fd, F_GETFL)
+            _ = fcntl(fd, F_SETFL, flags | O_NONBLOCK)
+            
+            var bindAddr = sockaddr_in()
+            bindAddr.sin_family = sa_family_t(AF_INET)
+            bindAddr.sin_port = UInt16(port).bigEndian
+            bindAddr.sin_addr.s_addr = in_addr_t(0) // INADDR_ANY (0.0.0.0)
+            
+            var bindResult: Int32 = -1
+            for _ in 1...5 {
+                bindResult = withUnsafePointer(to: &bindAddr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                    }
+                }
+                if bindResult == 0 { break }
+                usleep(100_000)
+            }
+            
+            guard bindResult == 0 else {
+                let err = String(cString: strerror(errno))
+                close(fd)
+                DispatchQueue.main.async {
+                    self.listeners[key] = ListenerState(
+                        port: port,
+                        address: primaryAddr,
+                        name: combinedNames,
+                        isMulticast: isAnyMC,
+                        isRunning: false,
+                        errorMessage: "Port \(port) bind failed: \(err)"
+                    )
+                }
+                return
+            }
+            
+            var ttl: UInt8 = 4
+            setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, socklen_t(MemoryLayout<UInt8>.size))
+            var loop: UInt8 = 1
+            setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, socklen_t(MemoryLayout<UInt8>.size))
+            
+            var joinError: String? = nil
+            for target in targets {
+                let trimmed = target.address.trimmingCharacters(in: .whitespacesAndNewlines)
+                if AppSettings.isMulticast(address: trimmed) {
+                    var mreq = ip_mreq()
+                    mreq.imr_multiaddr.s_addr = inet_addr(trimmed)
+                    mreq.imr_interface.s_addr = in_addr_t(0)
+                    let res = setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, socklen_t(MemoryLayout<ip_mreq>.size))
+                    if res != 0 {
+                        joinError = "MC join \(trimmed): \(String(cString: strerror(errno)))"
                     }
                 }
             }
             
-            listener.newConnectionHandler = { [weak self] connection in
-                self?.handleNewConnection(connection, port: port)
+            let readSource = DispatchSource.makeReadSource(fileDescriptor: fd, queue: self.queue)
+            readSource.setEventHandler { [weak self] in
+                self?.readSocket(fd: fd, key: key, port: port)
             }
+            readSource.setCancelHandler {
+                close(fd)
+            }
+            readSource.resume()
             
-            self.nwListeners[port] = listener
-            self.listeners[port] = ListenerState(port: port, name: name, isRunning: false)
-            listener.start(queue: self.queue)
-        } catch {
+            self.lock.lock()
+            self.sockets[key] = (fd: fd, source: readSource)
+            self.lock.unlock()
+            
             DispatchQueue.main.async {
-                self.listeners[port] = ListenerState(port: port, name: name, isRunning: false, errorMessage: error.localizedDescription)
+                self.listeners[key] = ListenerState(
+                    port: port,
+                    address: primaryAddr,
+                    name: combinedNames,
+                    isMulticast: isAnyMC,
+                    isRunning: true,
+                    errorMessage: joinError
+                )
+                self.isAnyListening = self.listeners.values.contains { $0.isRunning }
             }
         }
     }
     
-    private func handleNewConnection(_ connection: NWConnection, port: Int) {
-        connection.start(queue: self.queue)
-        self.receiveNextPacket(from: connection, port: port)
-    }
-    
-    private func receiveNextPacket(from connection: NWConnection, port: Int) {
-        connection.receiveMessage { [weak self] (content, context, isComplete, error) in
-            guard let self = self else { return }
+    private func readSocket(fd: Int32, key: String, port: Int) {
+        while true {
+            var buffer = [UInt8](repeating: 0, count: 65536)
+            var clientAddr = sockaddr_in()
+            var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
             
-            if let data = content, !data.isEmpty {
-                DispatchQueue.main.async {
-                    var cur = self.listeners[port] ?? ListenerState(port: port, name: "Port \(port)")
+            let bytesRead = withUnsafeMutablePointer(to: &clientAddr) {
+                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                    recvfrom(fd, &buffer, buffer.count, 0, $0, &addrLen)
+                }
+            }
+            
+            if bytesRead <= 0 {
+                break
+            }
+            
+            let data = Data(buffer[0..<bytesRead])
+            
+            DispatchQueue.main.async {
+                if var cur = self.listeners[key] {
                     cur.packetsReceived += 1
                     cur.lastPacketDate = Date()
-                    self.listeners[port] = cur
+                    self.listeners[key] = cur
                 }
-                
-                self.processPacketData(data, port: port)
             }
             
-            if error == nil {
-                self.receiveNextPacket(from: connection, port: port)
-            }
+            processPacketData(data, port: port)
         }
     }
     
     public func processPacketData(_ data: Data, port: Int = 2237) {
-        // 1. Try WSJT-X Binary Parser
-        if let wsjtx = WSJTXParser.parse(data: data) {
-            let qso = QSO(
-                source: .wsjtx,
-                dxCall: wsjtx.dxCall,
-                band: formatFrequencyToBand(wsjtx.frequencyHz),
-                mode: wsjtx.mode,
-                frequencyHz: wsjtx.frequencyHz,
-                qsoDate: wsjtx.dateOff,
-                rstSent: wsjtx.reportSent,
-                rstRcvd: wsjtx.reportRcvd,
-                comment: wsjtx.comments.isEmpty ? "73, Thanks for the QSO. I hope to meet you further down the log." : wsjtx.comments,
-                txPowerWatts: Double(wsjtx.txPower) ?? nil,
-                myCall: wsjtx.myCall ?? "",
-                myGrid: wsjtx.myGrid ?? "",
-                dxName: wsjtx.name,
-                dxGrid: wsjtx.dxGrid
-            )
-            DispatchQueue.main.async {
-                self.onQSORecordReceived?(qso)
+        // 1. Check for WSJT-X Binary Protocol
+        if WSJTXParser.isWSJTXPacket(data: data) {
+            if let wsjtx = WSJTXParser.parse(data: data) {
+                let qso = QSO(
+                    source: .wsjtx,
+                    dxCall: wsjtx.dxCall,
+                    band: formatFrequencyToBand(wsjtx.frequencyHz),
+                    mode: wsjtx.mode,
+                    frequencyHz: wsjtx.frequencyHz,
+                    qsoDate: wsjtx.dateOff,
+                    rstSent: wsjtx.reportSent,
+                    rstRcvd: wsjtx.reportRcvd,
+                    comment: wsjtx.comments.isEmpty ? "73, Thanks for the QSO. I hope to meet you further down the log." : wsjtx.comments,
+                    txPowerWatts: Double(wsjtx.txPower) ?? nil,
+                    myCall: wsjtx.myCall ?? "",
+                    myGrid: wsjtx.myGrid ?? "",
+                    dxName: wsjtx.name,
+                    dxGrid: wsjtx.dxGrid
+                )
+                DispatchQueue.main.async {
+                    self.onQSORecordReceived?(qso)
+                }
             }
+            // Always return for WSJT-X packets to avoid ADIFParser picking up embedded ADIF strings (e.g. Type 12 Logged ADIF)
             return
         }
         
-        // 2. Try ADIF Parser (RUMlog / plain text broadcast)
-        if let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) {
+        // 2. Try ADIF / XML Parser (RUMlog / plain text / N1MM broadcast)
+        let text = String(decoding: data, as: UTF8.self)
+        if !text.isEmpty {
             let records = ADIFParser.parse(text: text)
             for rec in records {
+                if rec.isDelete {
+                    continue // Ignore delete actions
+                }
+                
                 if let call = rec.dxCall, !call.isEmpty {
                     let freqHz = rec.freqMHz != nil ? rec.freqMHz! * 1_000_000 : nil
                     let bandStr = rec.band ?? (freqHz != nil ? formatFrequencyToBand(freqHz!) : "20m")
@@ -148,14 +230,14 @@ public final class UDPListenerService: ObservableObject {
                         mode: rec.mode ?? "SSB",
                         frequencyHz: freqHz,
                         qsoDate: rec.qsoDate ?? Date(),
-                        rstSent: rec.rstSent ?? "59",
-                        rstRcvd: rec.rstRcvd ?? "59",
+                        rstSent: rec.rstSent ?? "599",
+                        rstRcvd: rec.rstRcvd ?? "599",
                         comment: rec.comment ?? "",
                         txPowerWatts: rec.txPower,
                         myCall: rec.myCall ?? "",
                         myGrid: rec.myGrid ?? "",
                         dxName: rec.dxName ?? "",
-                        dxAddress: "",
+                        dxAddress: rec.dxQTH ?? "",
                         dxGrid: rec.dxGrid ?? "",
                         dxCountry: rec.dxCountry ?? "",
                         dxEmail: rec.dxEmail ?? ""
@@ -169,14 +251,19 @@ public final class UDPListenerService: ObservableObject {
     }
     
     public func stopAll() {
-        for (_, listener) in nwListeners {
-            listener.cancel()
+        lock.lock()
+        for (_, entry) in sockets {
+            entry.source.cancel()
         }
-        nwListeners.removeAll()
-        for port in listeners.keys {
-            listeners[port]?.isRunning = false
+        sockets.removeAll()
+        lock.unlock()
+        
+        DispatchQueue.main.async {
+            for key in self.listeners.keys {
+                self.listeners[key]?.isRunning = false
+            }
+            self.isAnyListening = false
         }
-        isAnyListening = false
     }
     
     deinit {

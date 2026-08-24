@@ -10,8 +10,15 @@ public struct AddressElementView: View {
     }
     
     private var displayText: String {
-        let text = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? myAddress : text
+        let addr = myAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !addr.isEmpty && !addr.contains("Pete Norloff") {
+            return addr
+        }
+        let elText = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !elText.isEmpty && !elText.contains("Pete Norloff") && !elText.contains("Miller Road") {
+            return elText
+        }
+        return "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany"
     }
     
     public var body: some View {

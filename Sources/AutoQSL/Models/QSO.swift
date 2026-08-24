@@ -63,6 +63,10 @@ public struct QSO: Identifiable, Codable, Hashable {
     public var dxEmail: String
     public var qrzFound: Bool
     
+    // Custom Card Template & Overrides
+    public var templateId: UUID?
+    public var customTemplate: QSLCardTemplate?
+    
     // Status & Output
     public var status: QSOStatus
     public var statusMessage: String?
@@ -94,6 +98,8 @@ public struct QSO: Identifiable, Codable, Hashable {
         dxCountry: String = "",
         dxEmail: String = "",
         qrzFound: Bool = false,
+        templateId: UUID? = nil,
+        customTemplate: QSLCardTemplate? = nil,
         status: QSOStatus = .pending,
         statusMessage: String? = nil,
         generatedCardPath: String? = nil,
@@ -123,6 +129,8 @@ public struct QSO: Identifiable, Codable, Hashable {
         self.dxCountry = dxCountry
         self.dxEmail = dxEmail
         self.qrzFound = qrzFound
+        self.templateId = templateId
+        self.customTemplate = customTemplate
         self.status = status
         self.statusMessage = statusMessage
         self.generatedCardPath = generatedCardPath

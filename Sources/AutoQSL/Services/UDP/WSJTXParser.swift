@@ -51,6 +51,12 @@ public final class WSJTXParser {
         return parser.parsePacket()
     }
     
+    public static func isWSJTXPacket(data: Data) -> Bool {
+        guard data.count >= 4 else { return false }
+        let magic = data.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        return magic == WSJTXParser.wsjtxMagic
+    }
+    
     public func parsePacket() -> WSJTXQSORecord? {
         guard data.count >= 8 else { return nil }
         

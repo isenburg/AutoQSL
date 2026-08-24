@@ -3,6 +3,7 @@ import SwiftUI
 public struct QSOQueueView: View {
     @ObservedObject var appState: AppState
     
+    @AppStorage("AutoQSL_QueueSidebarWidth") private var queueSidebarWidth: Double = 420.0
     @State private var filterMode: QueueFilter = .all
     @State private var searchText: String = ""
     @State private var isAddManualPresented: Bool = false
@@ -35,7 +36,7 @@ public struct QSOQueueView: View {
     
     public var body: some View {
         HSplitView {
-            // Left: List of QSOs
+            // Left: List of QSOs (Resizable, Min 340)
             VStack(spacing: 0) {
                 // Search & Filter Header
                 VStack(spacing: 8) {
@@ -57,12 +58,13 @@ public struct QSOQueueView: View {
                     .cornerRadius(6)
                     
                     // Filter Picker
-                    Picker("Filter", selection: $filterMode) {
+                    Picker("", selection: $filterMode) {
                         ForEach(QueueFilter.allCases, id: \.self) { filter in
                             Text(filter.rawValue).tag(filter)
                         }
                     }
                     .pickerStyle(.segmented)
+                    .labelsHidden()
                 }
                 .padding(10)
                 .background(Color(NSColor.windowBackgroundColor))
@@ -79,7 +81,7 @@ public struct QSOQueueView: View {
                         Text("No QSOs in Queue")
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        Text("AutoQSL is listening for WSJT-X & RUMlog UDP packets on ports \(appState.settings.wsjtxPort) / \(appState.settings.rumlogPort)")
+                        Text(verbatim: "AutoQSL is listening for WSJT-X & RUMlog UDP packets on ports \(appState.settings.wsjtxPort) / \(appState.settings.rumlogPort)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -94,22 +96,34 @@ public struct QSOQueueView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(selection: $appState.selectedQSOId) {
+                    List(selection: $appState.selectedQSOIds) {
                         ForEach(filteredQSOs) { qso in
                             qsoRowItem(qso)
                                 .tag(qso.id)
                                 .contextMenu {
-                                    Button("Confirm & Send Card") {
-                                        appState.qsoAwaitingConfirmation = qso
-                                        appState.isConfirmationSheetPresented = true
-                                    }
-                                    Button("Delete Record", role: .destructive) {
-                                        appState.deleteQSO(qsoId: qso.id)
+                                    if appState.selectedQSOIds.contains(qso.id) && appState.selectedQSOIds.count > 1 {
+                                        Button("Send \(appState.selectedQSOIds.count) Selected") {
+                                            sendSelectedQSOs()
+                                        }
+                                        Button("Delete \(appState.selectedQSOIds.count) Selected", role: .destructive) {
+                                            appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
+                                        }
+                                    } else {
+                                        Button("Confirm & Send Card") {
+                                            appState.qsoAwaitingConfirmation = qso
+                                            appState.isConfirmationSheetPresented = true
+                                        }
+                                        Button("Delete Record", role: .destructive) {
+                                            appState.deleteQSO(qsoId: qso.id)
+                                        }
                                     }
                                 }
                         }
                     }
                     .listStyle(.inset)
+                    .onDeleteCommand {
+                        appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
+                    }
                 }
                 
                 Divider()
@@ -135,24 +149,60 @@ public struct QSOQueueView: View {
                     .buttonStyle(.borderless)
                 }
                 .padding(8)
-                .background(Color(NSColor.windowBackgroundColor))
             }
-            .frame(minWidth: 320, maxWidth: 450)
+            .frame(minWidth: 340, idealWidth: CGFloat(queueSidebarWidth), maxWidth: 650)
+            .layoutPriority(0)
+            .background(SplitViewAutosaver(name: "AutoQSL_Queue_SplitView"))
             
-            // Right: Selected QSO Detail View
-            if let selectedId = appState.selectedQSOId,
-               let qso = appState.qsoQueue.first(where: { $0.id == selectedId }) {
-                QSODetailView(appState: appState, qso: qso)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "envelope.badge")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    Text("Select a QSO from the queue to view details and card preview")
-                        .foregroundColor(.secondary)
+            // Right: Selected QSO Detail View (Single stable root view to prevent NSSplitView collapse)
+            ZStack {
+                Color(NSColor.windowBackgroundColor)
+                
+                if appState.selectedQSOIds.count > 1 {
+                    VStack(spacing: 14) {
+                        Image(systemName: "square.stack.3d.up")
+                            .font(.system(size: 48))
+                            .foregroundColor(.secondary)
+                        Text("\(appState.selectedQSOIds.count) QSOs selected")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 16) {
+                            Button(action: {
+                                appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
+                            }) {
+                                Label("Delete Selected", systemImage: "trash")
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
+                            
+                            Button(action: {
+                                sendSelectedQSOs()
+                            }) {
+                                Label("Send Selected", systemImage: "paperplane.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding(.top, 16)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let selectedId = appState.selectedQSOIds.first,
+                   let qso = appState.qsoQueue.first(where: { $0.id == selectedId }) {
+                    QSODetailView(appState: appState, qso: qso)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "envelope.badge")
+                            .font(.system(size: 48))
+                            .foregroundColor(.secondary)
+                        Text("Select a QSO from the queue to view details and card preview")
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+            .layoutPriority(1)
         }
         .sheet(isPresented: $isAddManualPresented) {
             AddManualQSOView(appState: appState, isPresented: $isAddManualPresented)
@@ -160,42 +210,80 @@ public struct QSOQueueView: View {
     }
     
     private func qsoRowItem(_ qso: QSO) -> some View {
-        HStack(spacing: 10) {
-            // Status Icon
-            Image(systemName: qso.status.iconName)
-                .foregroundColor(statusColor(qso.status))
-                .font(.title3)
-                .frame(width: 24)
+        let isSelected = appState.selectedQSOIds.contains(qso.id)
+        
+        return HStack(alignment: .center, spacing: 10) {
+            // Status Icon with Circle Background
+            ZStack {
+                Circle()
+                    .fill(isSelected ? Color.white.opacity(0.2) : statusColor(qso.status).opacity(0.12))
+                    .frame(width: 32, height: 32)
+                Image(systemName: qso.status.iconName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : statusColor(qso.status))
+            }
             
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                // Top Row: Callsign & Band/Mode
+                HStack(alignment: .firstTextBaseline) {
                     Text(qso.dxCall)
                         .font(.headline)
+                        .fontWeight(.bold)
+                    
                     Spacer()
+                    
                     Text("\(qso.band) • \(qso.mode)")
-                        .font(.caption.bold())
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(isSelected ? Color.white.opacity(0.25) : Color.primary.opacity(0.08))
+                        )
+                        .foregroundColor(isSelected ? .white : .secondary)
                 }
                 
-                HStack {
+                // Middle Row: Name or UTC Time & Status Text
+                HStack(alignment: .center) {
                     if !qso.dxName.isEmpty {
                         Text(qso.dxName)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.subheadline)
+                            .foregroundColor(isSelected ? .white.opacity(0.9) : .primary.opacity(0.85))
                             .lineLimit(1)
                     } else {
                         Text(qso.formattedUTCTime + " UTC")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.subheadline)
+                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
                     }
+                    
                     Spacer()
+                    
                     Text(qso.status.rawValue)
                         .font(.caption2.bold())
-                        .foregroundColor(statusColor(qso.status))
+                        .foregroundColor(isSelected ? .white : statusColor(qso.status))
+                }
+                
+                // Bottom Row: Timestamp & Failure badge if any
+                HStack(alignment: .center) {
+                    Text(timestampString(for: qso))
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundColor(isSelected ? .white.opacity(0.75) : .secondary.opacity(0.8))
+                    
+                    Spacer()
+                    
+                    if qso.status == .failed, let msg = qso.statusMessage {
+                        Text(msg)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.red.opacity(isSelected ? 0.9 : 1.0))
+                            .cornerRadius(4)
+                    }
                 }
             }
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
     
     private func statusColor(_ status: QSOStatus) -> Color {
@@ -208,6 +296,24 @@ public struct QSOQueueView: View {
         case .failed: return .red
         case .skipped: return .gray
         }
+    }
+    
+    private func timestampString(for qso: QSO) -> String {
+        let order = appState.settings.dateOrder
+        let sep = appState.settings.dateSeparator.symbol
+        
+        let df = DateFormatter()
+        if order == .ddMMyyyy {
+            df.dateFormat = "dd'\(sep)'MM'\(sep)'yyyy HH:mm"
+        } else {
+            df.dateFormat = "yyyy'\(sep)'MM'\(sep)'dd HH:mm"
+        }
+        
+        var timeStr = "Queued: \(df.string(from: qso.timestamp))"
+        if let sent = qso.sentAt {
+            timeStr += " • Sent: \(df.string(from: sent))"
+        }
+        return timeStr
     }
     
     private func simulateTestQSO() {
@@ -231,6 +337,14 @@ public struct QSOQueueView: View {
             qrzFound: true
         )
         appState.handleIncomingQSO(qso)
+    }
+    
+    private func sendSelectedQSOs() {
+        let ids = Array(appState.selectedQSOIds)
+        appState.selectedQSOIds.removeAll()
+        Task {
+            await appState.executeBatchSendQSOs(qsoIds: ids)
+        }
     }
 }
 
@@ -259,37 +373,80 @@ public struct AddManualQSOView: View {
             
             Divider()
             
-            Form {
-                Section("Contact Info") {
-                    TextField("DX Callsign (e.g. DJ6GI)", text: $dxCall)
-                    TextField("Recipient Email (optional, or looked up via QRZ)", text: $dxEmail)
-                }
-                
-                Section("QSO Parameters") {
-                    Picker("Band", selection: $band) {
-                        ForEach(["160m", "80m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"], id: \.self) {
-                            Text($0).tag($0)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    GroupBox(label: Text("Contact Info").font(.headline)) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            FormRow(label: "Callsign:", labelWidth: 90) {
+                                TextField("e.g. DJ6GI", text: $dxCall)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 140)
+                            }
+                            
+                            FormRow(label: "Email:", labelWidth: 90) {
+                                TextField("Optional, or looked up via QRZ", text: $dxEmail)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                            }
                         }
+                        .padding(8)
                     }
-                    Picker("Mode", selection: $mode) {
-                        ForEach(["FT8", "FT4", "CW", "SSB", "RTTY", "PSK31", "FM", "MSK144"], id: \.self) {
-                            Text($0).tag($0)
+                    
+                    GroupBox(label: Text("QSO Parameters").font(.headline)) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            FormRow(label: "Band:", labelWidth: 90) {
+                                Picker("", selection: $band) {
+                                    ForEach(["160m", "80m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"], id: \.self) {
+                                        Text($0).tag($0)
+                                    }
+                                }
+                                .labelsHidden()
+                                .frame(width: 110)
+                            }
+                            
+                            FormRow(label: "Mode:", labelWidth: 90) {
+                                Picker("", selection: $mode) {
+                                    ForEach(["FT8", "FT4", "CW", "SSB", "RTTY", "PSK31", "FM", "MSK144"], id: \.self) {
+                                        Text($0).tag($0)
+                                    }
+                                }
+                                .labelsHidden()
+                                .frame(width: 110)
+                            }
+                            
+                            FormRow(label: "RST:", labelWidth: 90) {
+                                HStack(spacing: 8) {
+                                    TextField("Sent", text: $rstSent)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 60)
+                                    Text("/")
+                                        .foregroundColor(.secondary)
+                                    TextField("Rcvd", text: $rstRcvd)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 60)
+                                }
+                            }
+                            
+                            FormRow(label: "Comment:", labelWidth: 90) {
+                                TextField("Greeting / Comment", text: $comment)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 260)
+                            }
                         }
+                        .padding(8)
                     }
-                    HStack {
-                        TextField("RST Sent", text: $rstSent)
-                        TextField("RST Rcvd", text: $rstRcvd)
-                    }
-                    TextField("Comment", text: $comment)
                 }
+                .padding()
             }
-            .formStyle(.grouped)
-            .padding()
             
             Divider()
             
             HStack {
+                Button("Cancel") { isPresented = false }
+                    .buttonStyle(.bordered)
+                
                 Spacer()
+                
                 Button("Add & Process QSL") {
                     appState.addManualQSO(
                         dxCall: dxCall,
@@ -308,6 +465,6 @@ public struct AddManualQSOView: View {
             .padding()
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 440, height: 460)
+        .frame(width: 460, height: 480)
     }
 }

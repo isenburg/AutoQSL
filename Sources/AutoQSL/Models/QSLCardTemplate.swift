@@ -54,7 +54,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
         aspectRatio: CardAspectRatio = .standardQSL,
         backgroundImagePath: String? = nil,
         backgroundFit: BackgroundFit = .fill,
-        backgroundColorHex: String = "#1E3D59",
+        backgroundColorHex: String = "#E8E8E8",
         backgroundDarkenOpacity: Double = 0.0,
         elements: [CardElement] = []
     ) {
@@ -69,9 +69,10 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
         self.elements = elements
     }
     
-    public static func createDefaultTemplate(myCall: String = "KG4OJT") -> QSLCardTemplate {
+    public static func createDefaultTemplate(myCall: String = "DJ6GI", myAddress: String? = nil) -> QSLCardTemplate {
         var template = QSLCardTemplate(name: "Standard Landscape QSL", isDefault: true)
-        template.backgroundColorHex = "#2E4057"
+        template.backgroundColorHex = "#E8E8E8"
+        template.backgroundImagePath = nil
         
         // 1. Callsign (Gold 3D Extruded)
         let callsignElement = CardElement(
@@ -82,7 +83,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
             normalizedWidth: 0.40,
             normalizedHeight: 0.14,
             zIndex: 10,
-            textContent: myCall.isEmpty ? "KG4OJT" : myCall,
+            textContent: myCall.isEmpty ? "DJ6GI" : myCall,
             fontName: "Impact",
             fontSize: 68,
             isBold: true,
@@ -109,6 +110,10 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
         )
         
         // 3. Address Block
+        let addressText = (myAddress != nil && !myAddress!.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            ? myAddress!
+            : "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany"
+            
         let addressElement = CardElement(
             type: .address,
             name: "Address Block",
@@ -117,7 +122,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
             normalizedWidth: 0.36,
             normalizedHeight: 0.20,
             zIndex: 9,
-            textContent: "Pete Norloff\n10820 Miller Road\nOakton, Virginia 22124\nUnited States",
+            textContent: addressText,
             fontName: "Helvetica",
             fontSize: 20,
             isBold: false,

@@ -10,9 +10,9 @@ public extension Color {
         case 3: // RGB (12-bit)
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
         case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+            (a, r, g, b) = (255, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // RGBA (32-bit)
+            (r, g, b, a) = (int >> 24 & 0xFF, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
             (a, r, g, b) = (255, 0, 0, 0)
         }
@@ -26,13 +26,25 @@ public extension Color {
         )
     }
     
-    func toHex() -> String {
+    func toHex(includeAlpha: Bool = true) -> String {
         guard let components = NSColor(self).usingColorSpace(.sRGB) else {
             return "#000000"
         }
         let r = Float(components.redComponent)
         let g = Float(components.greenComponent)
         let b = Float(components.blueComponent)
-        return String(format: "#%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
+        let a = Float(components.alphaComponent)
+        if includeAlpha && a < 0.999 {
+            return String(format: "#%02lX%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255), lroundf(a * 255))
+        } else {
+            return String(format: "#%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
+        }
+    }
+    
+    var opacityValue: Double {
+        guard let components = NSColor(self).usingColorSpace(.sRGB) else {
+            return 1.0
+        }
+        return Double(components.alphaComponent)
     }
 }

@@ -20,6 +20,8 @@ public struct CallsignElementView: View {
             case .metallicGold:
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(element.isShadowEnabled ? Color(hex: element.shadowColorHex).opacity(element.shadowOpacity) : .clear)
                     .offset(x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0, y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0)
                     .blur(radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) / 2 : 0)
@@ -27,33 +29,45 @@ public struct CallsignElementView: View {
                 ForEach(1...3, id: \.self) { i in
                     Text(displayText)
                         .font(resolveFont())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                         .foregroundColor(Color(hex: element.secondaryColorHex))
                         .offset(x: CGFloat(i) * 0.8, y: CGFloat(i) * 1.0)
                 }
                 
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.textColorHex))
                 
             case .bevel3D:
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.shadowColorHex).opacity(element.shadowOpacity))
                     .offset(x: CGFloat(element.shadowX), y: CGFloat(element.shadowY))
                 
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.textColorHex))
                 
             case .outline:
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.textColorHex))
                     .shadow(color: element.isShadowEnabled ? Color(hex: element.shadowColorHex).opacity(element.shadowOpacity) : .clear, radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) : 0, x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0, y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0)
                 
             case .glow:
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.textColorHex))
                     .shadow(color: element.isShadowEnabled ? Color(hex: element.secondaryColorHex) : .clear, radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) * 2 : 0, x: 0, y: 0)
                     .shadow(color: Color(hex: element.textColorHex), radius: CGFloat(element.shadowRadius), x: 0, y: 0)
@@ -61,6 +75,8 @@ public struct CallsignElementView: View {
             case .standard:
                 Text(displayText)
                     .font(resolveFont())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(Color(hex: element.textColorHex))
                     .shadow(color: element.isShadowEnabled ? Color(hex: element.shadowColorHex).opacity(element.shadowOpacity) : .clear, radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) : 0, x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0, y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0)
             }

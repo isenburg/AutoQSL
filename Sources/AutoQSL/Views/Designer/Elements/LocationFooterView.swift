@@ -20,6 +20,8 @@ public struct LocationFooterView: View {
     public var body: some View {
         Text(renderedText)
             .font(resolveFont())
+            .lineLimit(1)
+            .minimumScaleFactor(0.70)
             .foregroundColor(Color(hex: element.textColorHex))
             .shadow(
                 color: element.isShadowEnabled ? Color(hex: element.shadowColorHex).opacity(element.shadowOpacity) : .clear,

@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
 
+public let canvasBackgroundSelectionId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+
 public struct CardCanvasView: View {
     public let template: QSLCardTemplate
     public let settings: AppSettings
@@ -26,13 +28,17 @@ public struct CardCanvasView: View {
     }
     
     public var body: some View {
+        let baseWidth = CGFloat(template.aspectRatio.widthPoints)
+        let baseHeight = CGFloat(template.aspectRatio.heightPoints)
+        
         GeometryReader { geo in
-            let cardWidth = geo.size.width
-            let cardHeight = geo.size.height
+            let targetWidth = geo.size.width
+            let targetHeight = geo.size.height
+            let scale = min(targetWidth / baseWidth, targetHeight / baseHeight)
             
             ZStack {
                 // 1. Background Layer
-                backgroundLayer(width: cardWidth, height: cardHeight)
+                backgroundLayer(width: baseWidth, height: baseHeight)
                 
                 // 2. Elements Layers ordered by zIndex
                 ForEach(template.elements.sorted(by: { $0.zIndex < $1.zIndex })) { element in
@@ -41,8 +47,8 @@ public struct CardCanvasView: View {
                             element: element,
                             settings: settings,
                             qso: qso,
-                            cardWidth: cardWidth,
-                            cardHeight: cardHeight,
+                            cardWidth: baseWidth,
+                            cardHeight: baseHeight,
                             isInteractive: isInteractive,
                             isSelected: isInteractive && (selectedElementId == element.id),
                             onSelect: {
@@ -55,13 +61,15 @@ public struct CardCanvasView: View {
                     }
                 }
             }
-            .frame(width: cardWidth, height: cardHeight)
+            .frame(width: baseWidth, height: baseHeight)
+            .scaleEffect(scale)
+            .frame(width: targetWidth, height: targetHeight)
             .coordinateSpace(name: "CardCanvas")
             .clipped()
             .contentShape(Rectangle())
             .onTapGesture {
                 if isInteractive {
-                    selectedElementId = nil
+                    selectedElementId = canvasBackgroundSelectionId
                 }
             }
         }
@@ -74,17 +82,10 @@ public struct CardCanvasView: View {
             Color(hex: template.backgroundColorHex)
             
             // Custom Background Image if present
-            if let bgPath = template.backgroundImagePath, let nsImage = NSImage(contentsOfFile: bgPath) {
+            if let bgPath = template.backgroundImagePath, !bgPath.isEmpty, let nsImage = NSImage(contentsOfFile: bgPath) {
                 Image(nsImage: nsImage)
                     .resizable()
                     .aspectRatio(contentMode: template.backgroundFit == .fill ? .fill : (template.backgroundFit == .fit ? .fit : .fill))
-                    .frame(width: width, height: height)
-                    .clipped()
-            } else if let bundledBg = Bundle.module.url(forResource: "default_background", withExtension: "jpg"),
-                      let nsImage = NSImage(contentsOf: bundledBg) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
                     .frame(width: width, height: height)
                     .clipped()
             }
@@ -92,6 +93,13 @@ public struct CardCanvasView: View {
             // Darken / Tint Overlay
             if template.backgroundDarkenOpacity > 0 {
                 Color.black.opacity(template.backgroundDarkenOpacity)
+            }
+        }
+        .frame(width: width, height: height)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isInteractive {
+                selectedElementId = canvasBackgroundSelectionId
             }
         }
     }

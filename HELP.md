@@ -14,6 +14,7 @@ AutoQSL is a dedicated native macOS desktop application designed for radio amate
 - **QRZ.com XML API Integration:** Automatically fetches recipient name, email address, QTH, and Maidenhead grid locator.
 - **WYSIWYG Drag & Drop Card Designer:** Interactive canvas with direct mouse drag repositioning, standard macOS color pickers, and native `NSFontPanel` font selection.
 - **Customizable Confirmation Table:** Flexible column layouts (`QSO With`, `Date`, `UTC Time`, `Frequency / Band`, `Report`, `Mode`, and custom `Remarks` greeting).
+- **Batch Processing:** Select multiple QSOs using `Shift + Arrow Keys` or `Cmd + Click` to easily dispatch or delete them all at once.
 - **Multi-Channel Email Delivery:**
   1. **Apple Mail Automation:** Dispatches through native macOS Apple Mail without requiring SMTP server setup or app passwords.
   2. **Default Client:** Opens your default mail client with pre-filled message and attached card.
@@ -45,6 +46,9 @@ The Card Designer lets you compose high-resolution QSL cards matching standard 3
 1. Open RUMlogNG **Preferences > UDP**.
 2. Enable **Broadcast ADIF Data** on Port `2333`.
 
+### ⚠️ Important Note on Duplicates
+If you have switched on UDP for WSJTX and RumLog in AutoQSL you will get duplicate QSLs depending on RumLog's configuration. It is recommended to use either or.
+
 ---
 
 ## 4. Email Template Placeholders
@@ -61,7 +65,17 @@ The Card Designer lets you compose high-resolution QSL cards matching standard 3
 
 ---
 
-## 5. Disclaimer & Privacy Notice
+## 5. Automation & Dispatch Modes
+
+AutoQSL offers three automation modes to suit your operating style. These can be configured in the Settings under "Automation & Modes":
+
+- **Preview & Confirm (Recommended):** Whenever a QSO is received, a high-resolution preview of the QSL card is presented. You can verify all details, edit the email message, and click to dispatch.
+- **Fully Automatic:** AutoQSL will silently render and email the QSL card in the background immediately upon logging a QSO. This mode is ideal for hands-free FT8 or contesting.
+- **Manual Queue:** Incoming QSOs are added to your queue without prompting you. You can review the queue later and use Batch Processing (Shift + Arrow Keys) to send multiple cards at once.
+
+---
+
+## 6. Disclaimer & Privacy Notice
 
 ### Disclaimer
 AutoQSL is provided **"AS IS"**, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
@@ -71,6 +85,6 @@ AutoQSL operates entirely locally on your Mac. All credentials, settings, templa
 
 ---
 
-## 6. Copyright & License
+## 7. Copyright & License
 **Copyright © 2024–2026 Georg Isenbürger · DJ6GI**  
 All rights reserved. Released for the global amateur radio community.

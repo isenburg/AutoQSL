@@ -1,77 +1,114 @@
 import SwiftUI
 
+public enum ConfirmationTab: String, CaseIterable, Identifiable {
+    case email = "Email Delivery"
+    case editCard = "Edit Card Data"
+    
+    public var id: String { rawValue }
+}
+
 public struct QSLConfirmationSheet: View {
     @ObservedObject var appState: AppState
     let qso: QSO
     
-    @State private var recipientEmail: String
-    @State private var emailSubject: String
-    @State private var emailBody: String
+    @State private var selectedTab: ConfirmationTab = .email
+    
+    // Email fields
+    @State private var recipientEmail: String = ""
+    @State private var emailSubject: String = ""
+    @State private var emailBody: String = ""
+    
+    // Live Editable QSO parameters
+    @State private var dxCall: String = ""
+    @State private var band: String = "20m"
+    @State private var mode: String = "FT8"
+    @State private var rstSent: String = "59"
+    @State private var rstRcvd: String = "59"
+    @State private var comment: String = ""
+    @State private var dxName: String = ""
+    @State private var dxGrid: String = ""
+    @State private var dxCountry: String = ""
+    
     @State private var isSending: Bool = false
     @State private var errorMessage: String? = nil
+    @State private var isCardEditorPresented: Bool = false
     
-    public init(appState: AppState, qso: QSO) {
-        self.appState = appState
-        self.qso = qso
-        _recipientEmail = State(initialValue: qso.dxEmail)
-        _emailSubject = State(initialValue: EmailTemplateEngine.render(template: appState.settings.emailSubjectTemplate, qso: qso, settings: appState.settings))
-        _emailBody = State(initialValue: EmailTemplateEngine.render(template: appState.settings.emailBodyTemplate, qso: qso, settings: appState.settings))
+    private var activeCardTemplate: QSLCardTemplate {
+        appState.template(for: currentWorkingQSO)
+    }
+    
+    private var currentWorkingQSO: QSO {
+        var q = qso
+        q.dxCall = dxCall.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        q.band = band
+        q.mode = mode
+        q.rstSent = rstSent
+        q.rstRcvd = rstRcvd
+        q.comment = comment
+        q.dxName = dxName
+        q.dxGrid = dxGrid
+        q.dxCountry = dxCountry
+        q.dxEmail = recipientEmail
+        return q
     }
     
     public var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Image(systemName: "envelope.badge.shield.half.filled")
-                    .font(.title2)
+            HStack(spacing: 12) {
+                Image(systemName: "paperplane.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
                     .foregroundColor(.accentColor)
+                
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Confirm QSL Card Delivery")
-                        .font(.title3.bold())
-                    Text("Review the generated card and contact details for \(qso.dxCall) before emailing.")
+                    Text("Confirm & Send QSL Card")
+                        .font(.headline)
+                    Text("Review the generated QSL card and email message before dispatching to \(currentWorkingQSO.dxCall).")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                
                 Spacer()
                 
-                Button(action: {
-                    appState.skipQSO(qsoId: qso.id)
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
+                Button(action: { isCardEditorPresented = true }) {
+                    Label("Customize Card Layout...", systemImage: "paintbrush")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
             .background(Color(NSColor.windowBackgroundColor))
             
             Divider()
             
-            // Content
-            HSplitView {
-                // Left: Live Card Preview
+            // Content Body: Left Card, Right Controls
+            HStack(alignment: .top, spacing: 24) {
+                // Left: Card Preview
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Card Preview")
+                        Text("Live Card Preview")
                             .font(.headline)
                         Spacer()
-                        Text("\(qso.band) • \(qso.mode) • \(qso.formattedUTCTime) UTC")
-                            .font(.caption.monospaced())
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.secondary.opacity(0.15))
-                            .cornerRadius(6)
+                        if currentWorkingQSO.customTemplate != nil {
+                            Text("Custom Layout")
+                                .font(.caption2.bold())
+                                .foregroundColor(.purple)
+                        }
                     }
                     
                     // Card Visual Container
+                    let previewWidth: CGFloat = 460
+                    let previewHeight: CGFloat = previewWidth / CGFloat(activeCardTemplate.aspectRatio.aspectRatio)
+                    
                     CardCanvasView(
-                        template: appState.activeTemplate,
+                        template: activeCardTemplate,
                         settings: appState.settings,
-                        qso: qso,
+                        qso: currentWorkingQSO,
                         isInteractive: false
                     )
-                    .frame(width: 440, height: 280)
+                    .frame(width: previewWidth, height: previewHeight)
                     .cornerRadius(8)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -80,117 +117,49 @@ public struct QSLConfirmationSheet: View {
                     .shadow(radius: 6)
                     
                     HStack {
-                        Label("Template: \(appState.activeTemplate.name)", systemImage: "paintbrush")
+                        Label("Template: \(activeCardTemplate.name)", systemImage: "paintbrush")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
+                        Text("All edits reflect live")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
                 }
-                .padding()
-                .frame(minWidth: 460)
+                .frame(width: 460)
                 
-                // Right: Recipient & Email Details
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Contact Info Card
-                        GroupBox(label: Label("Contact Details", systemImage: "person.crop.circle")) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(qso.dxCall)
-                                        .font(.title2.bold())
-                                        .foregroundColor(.accentColor)
-                                    if !qso.dxName.isEmpty {
-                                        Text("(\(qso.dxName))")
-                                            .font(.headline)
-                                    }
-                                    Spacer()
-                                    if qso.qrzFound {
-                                        Label("QRZ Verified", systemImage: "checkmark.seal.fill")
-                                            .font(.caption.bold())
-                                            .foregroundColor(.green)
-                                    }
-                                }
-                                
-                                if !qso.dxGrid.isEmpty || !qso.dxCountry.isEmpty {
-                                    HStack {
-                                        if !qso.dxGrid.isEmpty {
-                                            Label("Grid: \(qso.dxGrid)", systemImage: "square.grid.3x3.fill")
-                                                .font(.caption)
-                                        }
-                                        if !qso.dxCountry.isEmpty {
-                                            Label(qso.dxCountry, systemImage: "globe")
-                                                .font(.caption)
-                                        }
-                                    }
-                                    .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(4)
-                        }
-                        
-                        // Email Recipient Field
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Recipient Email Address")
-                                .font(.caption.bold())
-                            HStack {
-                                TextField("e.g. operator@example.com", text: $recipientEmail)
-                                    .textFieldStyle(.roundedBorder)
-                                
-                                if recipientEmail.isEmpty {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.orange)
-                                        .help("Email address is required")
-                                } else {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                }
-                            }
-                        }
-                        
-                        // Subject
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Email Subject")
-                                .font(.caption.bold())
-                            TextField("Subject", text: $emailSubject)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                        
-                        // Message Body
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Message Body")
-                                .font(.caption.bold())
-                            TextEditor(text: $emailBody)
-                                .font(.system(size: 12, design: .monospaced))
-                                .frame(height: 110)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                )
-                        }
-                        
-                        if let err = errorMessage {
-                            HStack {
-                                Image(systemName: "xmark.octagon.fill")
-                                    .foregroundColor(.red)
-                                Text(err)
-                                    .font(.caption)
-                                    .foregroundColor(.red)
-                            }
+                // Right: Tabs for Email Delivery & Live QSO Editing
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("", selection: $selectedTab) {
+                        ForEach(ConfirmationTab.allCases) { tab in
+                            Text(tab.rawValue).tag(tab)
                         }
                     }
-                    .padding()
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+                    
+                    ScrollView {
+                        if selectedTab == .email {
+                            emailDeliverySection
+                        } else {
+                            editCardDataSection
+                        }
+                    }
                 }
-                .frame(minWidth: 360)
+                .frame(maxWidth: .infinity)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
             
             Divider()
             
-            // Footer Action Bar
+            // Bottom Actions Bar
             HStack {
                 Button("Skip / Discard") {
                     appState.skipQSO(qsoId: qso.id)
                 }
-                .keyboardShortcut(.escape, modifiers: [])
+                .keyboardShortcut(.cancelAction)
                 
                 Spacer()
                 
@@ -221,10 +190,207 @@ public struct QSLConfirmationSheet: View {
                 .disabled(recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
                 .keyboardShortcut(.return, modifiers: [.command])
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 860, height: 560)
+        .frame(width: 960, height: 600)
+        .onAppear {
+            loadInitialData()
+        }
+        .sheet(isPresented: $isCardEditorPresented) {
+            QSLCardEditorModalView(
+                appState: appState,
+                qso: currentWorkingQSO,
+                isPresented: $isCardEditorPresented
+            )
+        }
+    }
+    
+    private var emailDeliverySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Contact Info Card
+            GroupBox(label: Label("Contact Details", systemImage: "person.crop.circle")) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(currentWorkingQSO.dxCall)
+                            .font(.title3.bold())
+                            .foregroundColor(.accentColor)
+                        if !currentWorkingQSO.dxName.isEmpty {
+                            Text("(\(currentWorkingQSO.dxName))")
+                                .font(.subheadline)
+                        }
+                        Spacer()
+                        if currentWorkingQSO.qrzFound {
+                            Label("QRZ Verified", systemImage: "checkmark.seal.fill")
+                                .font(.caption.bold())
+                                .foregroundColor(.green)
+                        }
+                    }
+                    
+                    if !currentWorkingQSO.dxGrid.isEmpty || !currentWorkingQSO.dxCountry.isEmpty {
+                        HStack {
+                            if !currentWorkingQSO.dxGrid.isEmpty {
+                                Label("Grid: \(currentWorkingQSO.dxGrid)", systemImage: "square.grid.3x3.fill")
+                                    .font(.caption)
+                            }
+                            if !currentWorkingQSO.dxCountry.isEmpty {
+                                Label(currentWorkingQSO.dxCountry, systemImage: "globe")
+                                    .font(.caption)
+                            }
+                        }
+                        .foregroundColor(.secondary)
+                    }
+                }
+                .padding(4)
+            }
+            
+            // Email Recipient Field
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Recipient Email Address")
+                    .font(.caption.bold())
+                HStack {
+                    TextField("e.g. operator@example.com", text: $recipientEmail)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    if recipientEmail.isEmpty {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .help("Email address is required")
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            
+            // Subject
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Email Subject")
+                    .font(.caption.bold())
+                TextField("Subject", text: $emailSubject)
+                    .textFieldStyle(.roundedBorder)
+            }
+            
+            // Message Body
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Message Body")
+                    .font(.caption.bold())
+                TextEditor(text: $emailBody)
+                    .font(.system(size: 12, design: .monospaced))
+                    .frame(height: 95)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
+            }
+            
+            if let err = errorMessage {
+                HStack {
+                    Image(systemName: "xmark.octagon.fill")
+                        .foregroundColor(.red)
+                    Text(err)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding()
+    }
+    
+    private var editCardDataSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            GroupBox(label: Label("QSO Table Data", systemImage: "tablecells")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Callsign").font(.caption2.bold())
+                            TextField("Call", text: $dxCall)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Band").font(.caption2.bold())
+                            TextField("Band", text: $band)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Mode").font(.caption2.bold())
+                            TextField("Mode", text: $mode)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("RST Sent").font(.caption2.bold())
+                            TextField("RST Sent", text: $rstSent)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("RST Rcvd").font(.caption2.bold())
+                            TextField("RST Rcvd", text: $rstRcvd)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Card Remarks / Comment").font(.caption2.bold())
+                        TextField("Comment", text: $comment)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                }
+                .padding(4)
+            }
+            
+            GroupBox(label: Label("Recipient Details", systemImage: "person.text.rectangle")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Operator Name").font(.caption2.bold())
+                            TextField("Name", text: $dxName)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Grid Square").font(.caption2.bold())
+                            TextField("Grid", text: $dxGrid)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Country").font(.caption2.bold())
+                        TextField("Country", text: $dxCountry)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                }
+                .padding(4)
+            }
+        }
+        .padding()
+    }
+    
+    private func loadInitialData() {
+        recipientEmail = qso.dxEmail
+        dxCall = qso.dxCall
+        band = qso.band
+        mode = qso.mode
+        rstSent = qso.rstSent
+        rstRcvd = qso.rstRcvd
+        comment = qso.comment
+        dxName = qso.dxName
+        dxGrid = qso.dxGrid
+        dxCountry = qso.dxCountry
+        
+        emailSubject = EmailTemplateEngine.render(
+            template: appState.settings.emailSubjectTemplate,
+            qso: qso,
+            settings: appState.settings
+        )
+        emailBody = EmailTemplateEngine.render(
+            template: appState.settings.emailBodyTemplate,
+            qso: qso,
+            settings: appState.settings
+        )
     }
     
     private func sendConfirmed() {
@@ -232,6 +398,10 @@ public struct QSLConfirmationSheet: View {
             errorMessage = "Please provide a valid recipient email address."
             return
         }
+        
+        // Save any edited QSO fields first
+        let updatedQSO = currentWorkingQSO
+        appState.updateQSO(updatedQSO, reRenderCard: true)
         
         isSending = true
         errorMessage = nil

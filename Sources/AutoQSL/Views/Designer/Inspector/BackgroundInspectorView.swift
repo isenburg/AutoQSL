@@ -17,25 +17,37 @@ public struct BackgroundInspectorView: View {
                     }
                 }
                 
+                // Solid Background Color
+                HStack {
+                    Text("Canvas Background Color")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    ColorPicker("", selection: Binding(
+                        get: { Color(hex: template.backgroundColorHex) },
+                        set: { template.backgroundColorHex = $0.toHex() }
+                    ), supportsOpacity: true)
+                    .labelsHidden()
+                }
+                
                 Divider()
                 
                 // Background Image
-                Text("Background Picture")
+                Text("Background Picture (Optional)")
                     .font(.subheadline.bold())
                 
-                if let path = template.backgroundImagePath {
+                if let path = template.backgroundImagePath, !path.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(URL(fileURLWithPath: path).lastPathComponent)
                             .font(.caption)
                             .lineLimit(1)
                         
-                        Button("Remove Custom Picture", role: .destructive) {
+                        Button("Remove Picture", role: .destructive) {
                             template.backgroundImagePath = nil
                         }
                         .buttonStyle(.bordered)
                     }
                 } else {
-                    Text("Using default scenic photo")
+                    Text("No picture selected (using solid canvas color)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -46,10 +58,12 @@ public struct BackgroundInspectorView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 
-                // Image Fit
-                Picker("Image Scaling", selection: $template.backgroundFit) {
-                    ForEach(BackgroundFit.allCases, id: \.self) { fit in
-                        Text(fit.rawValue).tag(fit)
+                if let path = template.backgroundImagePath, !path.isEmpty {
+                    // Image Fit
+                    Picker("Image Scaling", selection: $template.backgroundFit) {
+                        ForEach(BackgroundFit.allCases, id: \.self) { fit in
+                            Text(fit.rawValue).tag(fit)
+                        }
                     }
                 }
                 

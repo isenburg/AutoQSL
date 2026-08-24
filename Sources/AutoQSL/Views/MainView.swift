@@ -4,7 +4,6 @@ public enum NavigationSection: String, CaseIterable, Identifiable {
     case queue = "QSO Queue"
     case designer = "Card Designer"
     case settings = "Settings"
-    case help = "Help & Docs"
     
     public var id: String { rawValue }
     
@@ -13,14 +12,13 @@ public enum NavigationSection: String, CaseIterable, Identifiable {
         case .queue: return "tray.2.fill"
         case .designer: return "paintbrush.fill"
         case .settings: return "gearshape.fill"
-        case .help: return "questionmark.circle.fill"
         }
     }
 }
 
 public struct MainView: View {
     @ObservedObject var appState: AppState
-    @State private var selectedSection: NavigationSection = .queue
+    @Environment(\.openWindow) private var openWindow
     
     private var awaitingCount: Int {
         appState.qsoQueue.filter { $0.status == .awaitingConfirmation || $0.status == .readyToSend }.count
@@ -29,7 +27,7 @@ public struct MainView: View {
     public var body: some View {
         VStack(spacing: 0) {
             NavigationSplitView {
-                List(NavigationSection.allCases, selection: $selectedSection) { section in
+                List(NavigationSection.allCases, selection: $appState.navigationSection) { section in
                     NavigationLink(value: section) {
                         HStack {
                             Label(section.rawValue, systemImage: section.iconName)
@@ -47,18 +45,36 @@ public struct MainView: View {
                     }
                 }
                 .navigationTitle("AutoQSL")
-                .frame(minWidth: 180)
+                .navigationSplitViewColumnWidth(min: 190, ideal: 190, max: 190)
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: 0) {
+                        Divider()
+                        Button(action: {
+                            openWindow(id: "help")
+                        }) {
+                            HStack {
+                                Label("Help & Docs", systemImage: "questionmark.circle.fill")
+                                Spacer()
+                                Image(systemName: "macwindow.on.rectangle")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                }
             } detail: {
                 Group {
-                    switch selectedSection {
+                    switch appState.navigationSection {
                     case .queue:
                         QSOQueueView(appState: appState)
                     case .designer:
                         CardDesignerRootView(appState: appState)
                     case .settings:
                         SettingsView(appState: appState)
-                    case .help:
-                        HelpView()
                     }
                 }
             }
@@ -72,7 +88,7 @@ public struct MainView: View {
                     Circle()
                         .fill(appState.udpListener.isAnyListening ? Color.green : Color.red)
                         .frame(width: 8, height: 8)
-                    Text(appState.udpListener.isAnyListening ? "UDP Active (2237 / 2333)" : "UDP Inactive")
+                    Text(verbatim: udpStatusText)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -108,10 +124,31 @@ public struct MainView: View {
             .padding(.vertical, 6)
             .background(Color(NSColor.windowBackgroundColor))
         }
+        .background(SectionWindowResizer(section: appState.navigationSection))
+        .preferredColorScheme(appState.settings.appearance.colorScheme)
         .sheet(isPresented: $appState.isConfirmationSheetPresented) {
             if let qso = appState.qsoAwaitingConfirmation {
                 QSLConfirmationSheet(appState: appState, qso: qso)
             }
+        }
+    }
+    
+    private var udpStatusText: String {
+        let running = appState.udpListener.listeners.values.filter { $0.isRunning }
+        if !running.isEmpty {
+            let portStrings = running.map { String(format: "%d", $0.port) }
+            return "UDP Active (\(portStrings.joined(separator: " / ")))"
+        } else if appState.udpListener.isAnyListening {
+            var activePorts: [String] = []
+            if appState.settings.wsjtxEnabled {
+                activePorts.append(String(format: "%d", appState.settings.wsjtxPort))
+            }
+            if appState.settings.rumlogEnabled {
+                activePorts.append(String(format: "%d", appState.settings.rumlogPort))
+            }
+            return activePorts.isEmpty ? "UDP Inactive" : "UDP Active (\(activePorts.joined(separator: " / ")))"
+        } else {
+            return "UDP Inactive"
         }
     }
 }

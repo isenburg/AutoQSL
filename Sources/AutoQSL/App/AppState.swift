@@ -7,6 +7,7 @@ public final class AppState: ObservableObject {
     @Published public var settings: AppSettings {
         didSet {
             PersistenceService.shared.saveSettings(settings)
+            startUDPListening()
         }
     }
     
@@ -28,7 +29,8 @@ public final class AppState: ObservableObject {
         }
     }
     
-    @Published public var selectedQSOId: UUID? = nil
+    @Published public var selectedQSOIds: Set<UUID> = []
+    @Published public var navigationSection: NavigationSection = .queue
     
     // Confirmation Dialog / Modal State
     @Published public var qsoAwaitingConfirmation: QSO? = nil
@@ -46,7 +48,7 @@ public final class AppState: ObservableObject {
         let loadedSettings = PersistenceService.shared.loadSettings()
         self.settings = loadedSettings
         
-        let loadedTemplates = PersistenceService.shared.loadTemplates(myCall: loadedSettings.myCallsign)
+        let loadedTemplates = PersistenceService.shared.loadTemplates(myCall: loadedSettings.myCallsign, myAddress: loadedSettings.fullMyAddress)
         self.templates = loadedTemplates
         
         let initialTemplateId = loadedSettings.activeTemplateId ?? loadedTemplates.first?.id ?? UUID()
@@ -54,7 +56,40 @@ public final class AppState: ObservableObject {
         
         self.qsoQueue = PersistenceService.shared.loadQSOQueue()
         
+        PrefixMatcher.shared.loadCtyDatabase()
+        if settings.myCQZone.isEmpty || settings.myITUZone.isEmpty || settings.myCountry.isEmpty {
+            settings.autofillStationZonesAndCountry(for: settings.myCallsign, overwriteNonEmpty: false)
+        }
+        
         setupUDPListener()
+    }
+    
+    public func switchStorageLocation(to newLocation: StorageLocation, migrateCurrentData: Bool = true) {
+        let oldLocation = settings.storageLocation
+        guard oldLocation != newLocation else { return }
+        
+        if migrateCurrentData {
+            do {
+                try PersistenceService.shared.migrateData(from: oldLocation, to: newLocation)
+                lastLogMessage = "Successfully migrated all data to \(newLocation.rawValue)."
+            } catch {
+                lastLogMessage = "Migration warning: \(error.localizedDescription)"
+            }
+        }
+        
+        settings.storageLocation = newLocation
+        PersistenceService.shared.saveSettings(settings, to: newLocation)
+        
+        // Reload from new storage location
+        let loadedTemplates = PersistenceService.shared.loadTemplates(from: newLocation, myCall: settings.myCallsign, myAddress: settings.fullMyAddress)
+        self.templates = loadedTemplates
+        self.qsoQueue = PersistenceService.shared.loadQSOQueue(from: newLocation)
+        
+        if let activeId = settings.activeTemplateId, templates.contains(where: { $0.id == activeId }) {
+            self.selectedTemplateId = activeId
+        } else {
+            self.selectedTemplateId = templates.first?.id ?? UUID()
+        }
     }
     
     public var activeTemplate: QSLCardTemplate {
@@ -68,15 +103,86 @@ public final class AppState: ObservableObject {
         }
     }
     
+    public func template(for qso: QSO) -> QSLCardTemplate {
+        if let custom = qso.customTemplate {
+            return custom
+        }
+        if let tid = qso.templateId, let t = templates.first(where: { $0.id == tid }) {
+            return t
+        }
+        return activeTemplate
+    }
+    
+    public func updateQSO(_ updatedQSO: QSO, reRenderCard: Bool = true) {
+        guard let index = qsoQueue.firstIndex(where: { $0.id == updatedQSO.id }) else { return }
+        var qso = updatedQSO
+        
+        if reRenderCard {
+            let cardTmpl = template(for: qso)
+            if let cardURL = CardRenderer.shared.saveCardToFile(
+                template: cardTmpl,
+                settings: settings,
+                qso: qso,
+                targetDirectory: PersistenceService.shared.renderedCardsDirectory
+            ) {
+                qso.generatedCardPath = cardURL.path
+            }
+        }
+        
+        qsoQueue[index] = qso
+        if qsoAwaitingConfirmation?.id == qso.id {
+            qsoAwaitingConfirmation = qso
+        }
+        lastLogMessage = "Updated QSL card for \(qso.dxCall)."
+    }
+    
+    public func setCustomTemplate(for qsoId: UUID, template: QSLCardTemplate?) {
+        guard let index = qsoQueue.firstIndex(where: { $0.id == qsoId }) else { return }
+        var qso = qsoQueue[index]
+        qso.customTemplate = template
+        updateQSO(qso, reRenderCard: true)
+    }
+    
+    public func setTemplateId(for qsoId: UUID, templateId: UUID) {
+        guard let index = qsoQueue.firstIndex(where: { $0.id == qsoId }) else { return }
+        var qso = qsoQueue[index]
+        qso.templateId = templateId
+        qso.customTemplate = nil
+        updateQSO(qso, reRenderCard: true)
+    }
+    
+    public func deleteTemplate(id: UUID) {
+        guard templates.count > 1 else { return }
+        guard let templateToDelete = templates.first(where: { $0.id == id }) else { return }
+        
+        // Preserve a snapshot of this template on any QSOs that currently reference it,
+        // so deleting the template NEVER destroys or changes previously sent or queued cards!
+        for i in 0..<qsoQueue.count {
+            if qsoQueue[i].templateId == id && qsoQueue[i].customTemplate == nil {
+                qsoQueue[i].customTemplate = templateToDelete
+            }
+        }
+        
+        templates.removeAll(where: { $0.id == id })
+        if selectedTemplateId == id {
+            selectedTemplateId = templates.first?.id ?? UUID()
+        }
+        lastLogMessage = "Deleted template '\(templateToDelete.name)'. Existing sent and queued cards are safely preserved."
+    }
+    
     public func startUDPListening() {
-        var ports: [(port: Int, name: String)] = []
+        var listeners: [(port: Int, address: String, name: String)] = []
         if settings.wsjtxEnabled {
-            ports.append((port: settings.wsjtxPort, name: "WSJT-X"))
+            let isMC = AppSettings.isMulticast(address: settings.wsjtxAddress)
+            let mode = isMC ? "MC" : "UC"
+            listeners.append((port: settings.wsjtxPort, address: settings.wsjtxAddress, name: "WSJT-X etc. (\(mode))"))
         }
         if settings.rumlogEnabled {
-            ports.append((port: settings.rumlogPort, name: "RUMlogNG"))
+            let isMC = AppSettings.isMulticast(address: settings.rumlogAddress)
+            let mode = isMC ? "MC" : "UC"
+            listeners.append((port: settings.rumlogPort, address: settings.rumlogAddress, name: "RL (RUMlog) (\(mode))"))
         }
-        udpListener.startListening(ports: ports)
+        udpListener.startListening(listeners: listeners)
     }
     
     private func setupUDPListener() {
@@ -94,13 +200,30 @@ public final class AppState: ObservableObject {
         if qso.myGrid.isEmpty { qso.myGrid = settings.myGrid }
         if qso.myName.isEmpty { qso.myName = settings.myName }
         if qso.myAddress.isEmpty { qso.myAddress = settings.fullMyAddress }
-        if qso.myCQZone.isEmpty { qso.myCQZone = settings.myCQZone }
-        if qso.myITUZone.isEmpty { qso.myITUZone = settings.myITUZone }
+        if qso.myCQZone.isEmpty {
+            if let cq = PrefixMatcher.shared.cqZone(for: qso.myCall) {
+                qso.myCQZone = "\(cq)"
+            } else {
+                qso.myCQZone = settings.myCQZone
+            }
+        }
+        if qso.myITUZone.isEmpty {
+            if let itu = PrefixMatcher.shared.ituZone(for: qso.myCall) {
+                qso.myITUZone = "\(itu)"
+            } else {
+                qso.myITUZone = settings.myITUZone
+            }
+        }
+        if qso.dxCountry.isEmpty || qso.dxCountry == "OTHER" {
+            let matched = PrefixMatcher.shared.country(for: qso.dxCall)
+            if matched != "OTHER" && !matched.isEmpty {
+                qso.dxCountry = matched
+            }
+        }
         if qso.comment.isEmpty { qso.comment = settings.defaultComment }
         
-        // Add to queue at the top
         qsoQueue.insert(qso, at: 0)
-        selectedQSOId = qso.id
+        selectedQSOIds = [qso.id]
         
         Task {
             await processQSO(qsoId: qso.id)
@@ -133,15 +256,23 @@ public final class AppState: ObservableObject {
         }
         
         let currentQSO = qsoQueue[index]
+        let cardTemplate = template(for: currentQSO)
         
         // 2. Render Card
         if let cardURL = CardRenderer.shared.saveCardToFile(
-            template: activeTemplate,
+            template: cardTemplate,
             settings: settings,
             qso: currentQSO,
             targetDirectory: PersistenceService.shared.renderedCardsDirectory
         ) {
             qsoQueue[index].generatedCardPath = cardURL.path
+        }
+        
+        if qsoQueue[index].dxEmail.isEmpty {
+            qsoQueue[index].status = .failed
+            qsoQueue[index].statusMessage = "Email missing"
+            lastLogMessage = "QSO with \(currentQSO.dxCall) failed: Email missing"
+            return
         }
         
         // 3. Routing based on SendingMode
@@ -151,16 +282,10 @@ public final class AppState: ObservableObject {
             qsoAwaitingConfirmation = qsoQueue[index]
             isConfirmationSheetPresented = true
             lastLogMessage = "Awaiting confirmation to send QSL card to \(currentQSO.dxCall)"
+            NSApp.activate(ignoringOtherApps: true)
             
         case .autoSend:
-            if !currentQSO.dxEmail.isEmpty {
-                await executeSendQSO(qsoId: currentQSO.id)
-            } else {
-                qsoQueue[index].status = .awaitingConfirmation
-                qsoQueue[index].statusMessage = "No email address found on QRZ. Please enter email manually."
-                qsoAwaitingConfirmation = qsoQueue[index]
-                isConfirmationSheetPresented = true
-            }
+            await executeSendQSO(qsoId: currentQSO.id)
             
         case .manualQueue:
             qsoQueue[index].status = .readyToSend
@@ -190,8 +315,10 @@ public final class AppState: ObservableObject {
         qsoQueue[index].status = .sending
         lastLogMessage = "Sending QSL card to \(qso.dxCall) (\(qso.dxEmail))..."
         
+        let cardTemplate = template(for: qso)
+        
         guard let cardData = CardRenderer.shared.renderCardToJPEGData(
-            template: activeTemplate,
+            template: cardTemplate,
             settings: settings,
             qso: qso
         ) else {
@@ -203,7 +330,8 @@ public final class AppState: ObservableObject {
         let subject = customSubject ?? EmailTemplateEngine.render(template: settings.emailSubjectTemplate, qso: qso, settings: settings)
         let body = customBody ?? EmailTemplateEngine.render(template: settings.emailBodyTemplate, qso: qso, settings: settings)
         let cleanCall = qso.dxCall.replacingOccurrences(of: "/", with: "_")
-        let filename = "QSL_\(cleanCall)_\(qso.formattedDateYear)\(qso.formattedDateMonth)\(qso.formattedDateDay).jpg"
+        let timeStr = qso.formattedUTCTime.replacingOccurrences(of: ":", with: "")
+        let filename = "QSL_\(cleanCall)_\(qso.formattedDateYear)\(qso.formattedDateMonth)\(qso.formattedDateDay)_\(timeStr)_\(qso.id.uuidString.prefix(6)).jpg"
         
         // Always write fresh rendered card image to disk
         let cardDir = PersistenceService.shared.renderedCardsDirectory
@@ -267,6 +395,16 @@ public final class AppState: ObservableObject {
         }
     }
     
+    /// Sequentially dispatches multiple queued QSOs with safe pacing to avoid Apple Mail / SMTP concurrency lockups
+    public func executeBatchSendQSOs(qsoIds: [UUID]) async {
+        for (index, id) in qsoIds.enumerated() {
+            await executeSendQSO(qsoId: id)
+            if index < qsoIds.count - 1 {
+                try? await Task.sleep(nanoseconds: 200_000_000) // 200ms spacing between batch emails
+            }
+        }
+    }
+    
     public func skipQSO(qsoId: UUID) {
         if let index = qsoQueue.firstIndex(where: { $0.id == qsoId }) {
             qsoQueue[index].status = .skipped
@@ -280,9 +418,12 @@ public final class AppState: ObservableObject {
     
     public func deleteQSO(qsoId: UUID) {
         qsoQueue.removeAll(where: { $0.id == qsoId })
-        if selectedQSOId == qsoId {
-            selectedQSOId = qsoQueue.first?.id
-        }
+        selectedQSOIds.remove(qsoId)
+    }
+    
+    public func deleteQSOs(qsoIds: Set<UUID>) {
+        qsoQueue.removeAll(where: { qsoIds.contains($0.id) })
+        selectedQSOIds.subtract(qsoIds)
     }
     
     public func addManualQSO(

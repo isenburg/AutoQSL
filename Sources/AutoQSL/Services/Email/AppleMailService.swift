@@ -18,6 +18,9 @@ public enum AppleMailError: LocalizedError {
 public final class AppleMailService: Sendable {
     public static let shared = AppleMailService()
     
+    // Dedicated serial queue to prevent concurrency collisions in Apple Mail's AppleScript engine
+    private let serialQueue = DispatchQueue(label: "com.autoqsl.applemail.serial", qos: .userInitiated)
+    
     public init() {}
     
     /// Tests accessibility of Apple Mail via AppleScript
@@ -54,12 +57,14 @@ public final class AppleMailService: Sendable {
         
         let scriptSource = """
         tell application "Mail"
+            set theAttachmentFile to (POSIX file "\(escapedAttachmentPath)") as alias
             set newMessage to make new outgoing message with properties {subject:"\(escapedSubject)", content:"\(escapedBody)" & return & return, visible:\(visibleStr)}
             tell newMessage
                 make new to recipient at end of to recipients with properties {address:"\(escapedRecipientEmail)", name:"\(escapedRecipientName)"}
                 tell content
-                    make new attachment with properties {file name:(POSIX file "\(escapedAttachmentPath)") as alias} at after the last paragraph
+                    make new attachment with properties {file name:theAttachmentFile} at after the last paragraph
                 end tell
+                delay 0.15
                 \(sendCommand)
             end tell
         end tell
@@ -92,7 +97,7 @@ public final class AppleMailService: Sendable {
     
     private func executeAppleScript(_ source: String) async throws {
         return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            serialQueue.async {
                 var errorDict: NSDictionary?
                 guard let script = NSAppleScript(source: source) else {
                     continuation.resume(throwing: AppleMailError.scriptExecutionFailed("Failed to initialize AppleScript"))

@@ -67,20 +67,24 @@ public struct TableElementView: View {
     public var body: some View {
         let totalW = max(tableWidth, 400.0)
         let isSplit = (dateHeaderStyle == .splitSubheaders)
-        let wCall = totalW * (isSplit ? 0.24 : 0.25)
-        let wDate = totalW * (isSplit ? 0.26 : 0.23)
+        let divW = CGFloat(max(element.tableBorderWidth, 1.0))
+        let totalDivW = 5.0 * divW
+        let availableW = max(totalW - totalDivW, 300.0)
+        
+        let wCall = floor(availableW * (isSplit ? 0.24 : 0.25))
+        let wDate = floor(availableW * (isSplit ? 0.26 : 0.23))
         let wDateSub = wDate / 3.0
-        let wTime = totalW * 0.13
-        let wFreq = totalW * (isSplit ? 0.13 : 0.15)
-        let wRST  = totalW * 0.12
-        let wMode = totalW * 0.12
+        let wTime = floor(availableW * 0.13)
+        let wFreq = floor(availableW * (isSplit ? 0.13 : 0.15))
+        let wRST  = floor(availableW * 0.12)
+        let wMode = availableW - (wCall + wDate + wTime + wFreq + wRST)
         
         VStack(spacing: 0) {
             // Header Row
             HStack(spacing: 0) {
                 headerCell("Confirming QSO With", width: wCall)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 if dateHeaderStyle == .splitSubheaders {
                     if dateOrder == .ddMMyyyy {
@@ -102,32 +106,32 @@ public struct TableElementView: View {
                     headerCell("Date", width: wDate)
                 }
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 headerCell("UTC Time", width: wTime)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 headerCell("Frequency", width: wFreq)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 headerCell("Report", width: wRST)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 headerCell("Mode", width: wMode)
             }
             .frame(width: totalW)
             .background(Color(hex: element.tableHeaderBackgroundHex).opacity(element.tableHeaderBackgroundOpacity))
             
-            dividerHorizontal()
+            dividerHorizontal(height: divW)
             
             // Data Row
             HStack(spacing: 0) {
                 dataCell(activeQSO.dxCall.isEmpty ? "DJ6GI" : activeQSO.dxCall, width: wCall, isBold: true)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 if dateHeaderStyle == .splitSubheaders {
                     if dateOrder == .ddMMyyyy {
@@ -149,25 +153,25 @@ public struct TableElementView: View {
                     dataCell(formattedDateString, width: wDate)
                 }
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 dataCell(activeQSO.formattedUTCTime.isEmpty ? "11:15" : activeQSO.formattedUTCTime, width: wTime)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 dataCell(freqString, width: wFreq)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 dataCell(activeQSO.rstSent.isEmpty ? "-12" : activeQSO.rstSent, width: wRST)
                 
-                dividerVertical()
+                dividerVertical(width: divW)
                 
                 dataCell(activeQSO.mode.isEmpty ? "FT8" : activeQSO.mode, width: wMode)
             }
             .frame(width: totalW)
             
-            dividerHorizontal()
+            dividerHorizontal(height: divW)
             
             // Remarks Row
             HStack(spacing: 0) {
@@ -186,7 +190,7 @@ public struct TableElementView: View {
         .background(Color(hex: element.tableBackgroundColorHex).opacity(element.tableBackgroundOpacity))
         .overlay(
             Rectangle()
-                .stroke(Color(hex: element.tableBorderColorHex), lineWidth: CGFloat(element.tableBorderWidth))
+                .strokeBorder(Color(hex: element.tableBorderColorHex), lineWidth: divW)
         )
         .shadow(color: element.isShadowEnabled ? .black.opacity(element.shadowOpacity) : .clear, radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) : 0, x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0, y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0)
     }
@@ -275,15 +279,15 @@ public struct TableElementView: View {
         return f
     }
     
-    private func dividerVertical() -> some View {
+    private func dividerVertical(width: CGFloat) -> some View {
         Rectangle()
             .fill(Color(hex: element.tableBorderColorHex))
-            .frame(width: CGFloat(element.tableBorderWidth))
+            .frame(width: width)
     }
     
-    private func dividerHorizontal() -> some View {
+    private func dividerHorizontal(height: CGFloat) -> some View {
         Rectangle()
             .fill(Color(hex: element.tableBorderColorHex))
-            .frame(height: CGFloat(element.tableBorderWidth))
+            .frame(height: height)
     }
 }
