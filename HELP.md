@@ -318,13 +318,17 @@ Released for the global amateur radio community.
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com XML Callbook Integration**: Native support for free HamQTH callbook lookups with fallback and dual-lookup priority modes.
+- 🖱️ **Double-Click Callbook Lookup**: Double-clicking any queue entry opens the callsign in your configured callbook (QRZ.com or HamQTH) in the default browser.
+- ✅ **Native Queue Selection**: Single-click selects entries with standard macOS highlight; `⌘A` selects all; `⌘+click` / `Shift+click` for multi-select.
+- 📡 **Improved RUMlogNG UDP Parsing**: Full N1MM XML contact format support (CDATA, 10 Hz frequency units, UTF-8/Latin-1 encoding).
+- 🔒 **Port Isolation**: AutoQSL only binds explicitly configured ports and never auto-binds fallback ports that could conflict with other apps.
 - ⌨️ **Native Settings Shortcut**: Standard macOS `⌘,` shortcut to open Settings from any window or menu.
 - ✏️ **Direct On-Canvas Editing**: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas in addition to the inspector sidebar.
 - 📻 **Band & Frequency Selection**: Dynamic two-way synchronization between Band and Frequency fields in both "Log QSO Manually" and "Edit QSO" dialogs.
 - ⚡ **Auto Band Detection**: Typing frequency in MHz automatically selects the matching amateur band; selecting a band auto-populates the default frequency.
 - 🎛️ **Custom Modes & Bands**: Added custom mode text input when selecting "Other..." or using non-standard modes (`VARAC`, `JT65`, `DMR`, `C4FM`, `D-STAR`, `WSPR`, etc.), and custom band support.
 - 💾 **SQLite Queue Synchronization**: Permanent deletion synchronization and prevention of duplicate legacy re-imports across restarts.
-- 🧪 **Radio Engine & Tests**: Centralized `RadioUtils` helper and unit tests for frequency calculations and custom QSO logging.
+- 🧪 **Radio Engine & Tests**: Centralized `RadioUtils` helper and 10/10 passing unit tests for frequency calculations, ADIF/RUMlog/WSJT-X parsing, and custom QSO logging.
 
 ### Version 1.0.0 (2026-08)
 - Initial public release of AutoQSL for macOS.

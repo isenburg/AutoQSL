@@ -212,7 +212,11 @@ public final class UDPListenerService: ObservableObject {
         }
         
         // 2. Try ADIF / XML Parser (RUMlog / plain text / N1MM broadcast)
-        let text = String(decoding: data, as: UTF8.self)
+        let text = String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .isoLatin1)
+            ?? String(data: data, encoding: .windowsCP1252)
+            ?? String(decoding: data, as: UTF8.self)
+            
         if !text.isEmpty {
             let records = ADIFParser.parse(text: text)
             for rec in records {
@@ -221,11 +225,19 @@ public final class UDPListenerService: ObservableObject {
                 }
                 
                 if let call = rec.dxCall, !call.isEmpty {
-                    let freqHz = rec.freqMHz != nil ? rec.freqMHz! * 1_000_000 : nil
-                    let bandStr = rec.band ?? (freqHz != nil ? formatFrequencyToBand(freqHz!) : "20m")
+                    let freqHz: Double?
+                    if let f = rec.freqMHz {
+                        freqHz = f * 1_000_000.0
+                    } else if let b = rec.band, let defMHz = RadioUtils.defaultFrequencyMHz(for: b) {
+                        freqHz = defMHz * 1_000_000.0
+                    } else {
+                        freqHz = nil
+                    }
+                    
+                    let bandStr = rec.band ?? (freqHz != nil ? RadioUtils.frequencyToBand(freqHz!) : "20m")
                     let qso = QSO(
                         source: .rumlog,
-                        dxCall: call,
+                        dxCall: call.uppercased().trimmingCharacters(in: .whitespacesAndNewlines),
                         band: bandStr,
                         mode: rec.mode ?? "SSB",
                         frequencyHz: freqHz,
@@ -242,6 +254,7 @@ public final class UDPListenerService: ObservableObject {
                         dxCountry: rec.dxCountry ?? "",
                         dxEmail: rec.dxEmail ?? ""
                     )
+                    print("[AutoQSL UDP] Received QSO from RUMlog on port \(port): \(qso.dxCall) on \(qso.band) (\(qso.mode))")
                     DispatchQueue.main.async {
                         self.onQSORecordReceived?(qso)
                     }

@@ -21,6 +21,20 @@ public struct QSODetailView: View {
                             Text(qso.dxCall)
                                 .font(.system(size: 30, weight: .bold))
                                 .foregroundColor(.primary)
+                                .help("Double-click to open in Callbook")
+                                .onTapGesture(count: 2) {
+                                    openCallbook(for: qso.dxCall)
+                                }
+                            
+                            Button(action: {
+                                openCallbook(for: qso.dxCall)
+                            }) {
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Open \(callbookProviderName) profile in browser")
                             
                             StatusBadgeView(status: qso.status)
                             
@@ -87,7 +101,7 @@ public struct QSODetailView: View {
                 Divider()
                 
                 // Generated Card Preview Box
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         Text("Rendered QSL Card Preview")
                             .font(.headline)
@@ -193,6 +207,30 @@ public struct QSODetailView: View {
         }
     }
     
+    private var callbookProviderName: String {
+        switch appState.settings.callbookProvider {
+        case .hamqthOnly, .hamqthPrimary: return "HamQTH"
+        case .qrzOnly, .qrzPrimary: return "QRZ.com"
+        }
+    }
+    
+    private func openCallbook(for callsign: String) {
+        let cleanCall = callsign.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanCall.isEmpty, let encodedCall = cleanCall.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        
+        let urlString: String
+        switch appState.settings.callbookProvider {
+        case .hamqthOnly, .hamqthPrimary:
+            urlString = "https://www.hamqth.com/\(encodedCall)"
+        case .qrzOnly, .qrzPrimary:
+            urlString = "https://www.qrz.com/db/\(encodedCall)"
+        }
+        
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     private func qsoRow(label: String, value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)

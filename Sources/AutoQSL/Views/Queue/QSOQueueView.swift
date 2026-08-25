@@ -100,6 +100,7 @@ public struct QSOQueueView: View {
                         ForEach(filteredQSOs) { qso in
                             qsoRowItem(qso)
                                 .tag(qso.id)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                                 .contextMenu {
                                     if appState.selectedQSOIds.contains(qso.id) && appState.selectedQSOIds.count > 1 {
                                         Button("Send \(appState.selectedQSOIds.count) Selected") {
@@ -112,6 +113,9 @@ public struct QSOQueueView: View {
                                         Button("Confirm & Send Card") {
                                             appState.qsoAwaitingConfirmation = qso
                                             appState.isConfirmationSheetPresented = true
+                                        }
+                                        Button("Lookup in Callbook (\(callbookProviderName))") {
+                                            openCallbook(for: qso.dxCall)
                                         }
                                         Button("Delete Record", role: .destructive) {
                                             appState.deleteQSO(qsoId: qso.id)
@@ -210,17 +214,15 @@ public struct QSOQueueView: View {
     }
     
     private func qsoRowItem(_ qso: QSO) -> some View {
-        let isSelected = appState.selectedQSOIds.contains(qso.id)
-        
-        return HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             // Status Icon with Circle Background
             ZStack {
                 Circle()
-                    .fill(isSelected ? Color.white.opacity(0.2) : statusColor(qso.status).opacity(0.12))
+                    .fill(statusColor(qso.status).opacity(0.12))
                     .frame(width: 32, height: 32)
                 Image(systemName: qso.status.iconName)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : statusColor(qso.status))
+                    .foregroundColor(statusColor(qso.status))
             }
             
             VStack(alignment: .leading, spacing: 3) {
@@ -238,9 +240,9 @@ public struct QSOQueueView: View {
                         .padding(.vertical, 2)
                         .background(
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(isSelected ? Color.white.opacity(0.25) : Color.primary.opacity(0.08))
+                                .fill(Color.primary.opacity(0.08))
                         )
-                        .foregroundColor(isSelected ? .white : .secondary)
+                        .foregroundColor(.secondary)
                 }
                 
                 // Middle Row: Name or UTC Time & Status Text
@@ -248,26 +250,26 @@ public struct QSOQueueView: View {
                     if !qso.dxName.isEmpty {
                         Text(qso.dxName)
                             .font(.subheadline)
-                            .foregroundColor(isSelected ? .white.opacity(0.9) : .primary.opacity(0.85))
+                            .foregroundColor(.primary.opacity(0.85))
                             .lineLimit(1)
                     } else {
                         Text(qso.formattedUTCTime + " UTC")
                             .font(.subheadline)
-                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                            .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
                     Text(qso.status.rawValue)
                         .font(.caption2.bold())
-                        .foregroundColor(isSelected ? .white : statusColor(qso.status))
+                        .foregroundColor(statusColor(qso.status))
                 }
                 
                 // Bottom Row: Timestamp & Failure badge if any
                 HStack(alignment: .center) {
                     Text(timestampString(for: qso))
                         .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundColor(isSelected ? .white.opacity(0.75) : .secondary.opacity(0.8))
+                        .foregroundColor(.secondary.opacity(0.8))
                     
                     Spacer()
                     
@@ -277,12 +279,39 @@ public struct QSOQueueView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1)
-                            .background(Color.red.opacity(isSelected ? 0.9 : 1.0))
+                            .background(Color.red)
                             .cornerRadius(4)
                     }
                 }
             }
-            .padding(.vertical, 4)
+        }
+        .padding(.vertical, 6)
+        .onDoubleClick {
+            openCallbook(for: qso.dxCall)
+        }
+    }
+    
+    private var callbookProviderName: String {
+        switch appState.settings.callbookProvider {
+        case .hamqthOnly, .hamqthPrimary: return "HamQTH"
+        case .qrzOnly, .qrzPrimary: return "QRZ.com"
+        }
+    }
+    
+    private func openCallbook(for callsign: String) {
+        let cleanCall = callsign.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanCall.isEmpty, let encodedCall = cleanCall.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        
+        let urlString: String
+        switch appState.settings.callbookProvider {
+        case .hamqthOnly, .hamqthPrimary:
+            urlString = "https://www.hamqth.com/\(encodedCall)"
+        case .qrzOnly, .qrzPrimary:
+            urlString = "https://www.qrz.com/db/\(encodedCall)"
+        }
+        
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
         }
     }
     
@@ -539,5 +568,55 @@ public struct AddManualQSOView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 480, height: 500)
+    }
+}
+
+// MARK: - Native Double Click Handler
+struct DoubleClickHandler: NSViewRepresentable {
+    var onDoubleClick: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.autoresizingMask = [.width, .height]
+        let recognizer = NSClickGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleClick(_:)))
+        recognizer.numberOfClicksRequired = 2
+        recognizer.delaysPrimaryMouseButtonEvents = false
+        recognizer.delegate = context.coordinator
+        view.addGestureRecognizer(recognizer)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onDoubleClick = onDoubleClick
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onDoubleClick: onDoubleClick)
+    }
+
+    class Coordinator: NSObject, NSGestureRecognizerDelegate {
+        var onDoubleClick: () -> Void
+        
+        init(onDoubleClick: @escaping () -> Void) {
+            self.onDoubleClick = onDoubleClick
+        }
+        
+        @objc func handleClick(_ sender: NSClickGestureRecognizer) {
+            if sender.state == .ended {
+                onDoubleClick()
+            }
+        }
+        
+        func gestureRecognizer(_ gestureRecognizer: NSGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: NSGestureRecognizer) -> Bool {
+            return true
+        }
+    }
+}
+
+extension View {
+    func onDoubleClick(perform action: @escaping () -> Void) -> some View {
+        self.background(
+            DoubleClickHandler(onDoubleClick: action)
+        )
     }
 }

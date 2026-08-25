@@ -173,16 +173,19 @@ public final class AppState: ObservableObject {
     
     public func startUDPListening() {
         var listeners: [(port: Int, address: String, name: String)] = []
+        
         if settings.wsjtxEnabled {
             let isMC = AppSettings.isMulticast(address: settings.wsjtxAddress)
             let mode = isMC ? "MC" : "UC"
             listeners.append((port: settings.wsjtxPort, address: settings.wsjtxAddress, name: "WSJT-X etc. (\(mode))"))
         }
+        
         if settings.rumlogEnabled {
             let isMC = AppSettings.isMulticast(address: settings.rumlogAddress)
             let mode = isMC ? "MC" : "UC"
             listeners.append((port: settings.rumlogPort, address: settings.rumlogAddress, name: "RL (RUMlog) (\(mode))"))
         }
+        
         udpListener.startListening(listeners: listeners)
     }
     
@@ -197,6 +200,7 @@ public final class AppState: ObservableObject {
     
     public func handleIncomingQSO(_ incoming: QSO) {
         var qso = incoming
+        lastLogMessage = "Received QSO from \(qso.source.rawValue.uppercased()): \(qso.dxCall) on \(qso.band) (\(qso.mode))" 
         if qso.myCall.isEmpty { qso.myCall = settings.myCallsign }
         if qso.myGrid.isEmpty { qso.myGrid = settings.myGrid }
         if qso.myName.isEmpty { qso.myName = settings.myName }

@@ -250,6 +250,18 @@ public struct RadioUtils {
         }
     }
     
+    public static func band(forFrequencyHz hz: Double) -> String? {
+        return band(forFrequencyMHz: hz / 1_000_000.0)
+    }
+    
+    public static func frequencyToBand(_ freqHz: Double) -> String {
+        if let b = band(forFrequencyHz: freqHz) {
+            return b
+        }
+        let mhz = freqHz / 1_000_000.0
+        return String(format: "%.3f MHz", mhz)
+    }
+    
     public static func parseFrequencyMHz(from string: String) -> Double? {
         let cleaned = string.replacingOccurrences(of: "MHz", with: "", options: .caseInsensitive)
             .replacingOccurrences(of: "kHz", with: "", options: .caseInsensitive)

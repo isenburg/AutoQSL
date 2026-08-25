@@ -89,14 +89,18 @@ open -a Xcode .
 ## Changelog
 
 ### Version 1.1.0 (2026-08)
-- 🔍 **HamQTH.com Callbook Lookup**: Added full integration for HamQTH XML callbook lookups with customizable provider priorities (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).
-- ⌨️ **Native Settings Shortcut**: Bound Settings to standard macOS `⌘,` (Command-Comma) shortcut across all app menus and active views.
-- ✏️ **Direct On-Canvas Editing**: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas in addition to the inspector sidebar.
-- 📻 **Band & Frequency Selection**: Dynamic two-way synchronization between Band and Frequency fields in both "Log QSO Manually" and "Edit QSO" dialogs.
-- ⚡ **Auto Band Detection**: Typing frequency in MHz automatically selects the matching amateur band; selecting a band auto-populates the default frequency.
-- 🎛️ **Custom Modes & Bands**: Added custom mode text input when selecting "Other..." or using non-standard modes (`VARAC`, `JT65`, `DMR`, `C4FM`, `D-STAR`, `WSPR`, etc.), and custom band support.
-- 💾 **SQLite Queue Synchronization**: Permanent deletion synchronization and prevention of duplicate legacy re-imports across restarts.
-- 🧪 **Radio Engine & Tests**: Centralized `RadioUtils` helper and unit tests for frequency calculations and custom QSO logging.
+- 🔍 **HamQTH.com Callbook Lookup**: Full integration for free HamQTH XML callbook lookups with customizable priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).
+- 🖱️ **Double-Click Callbook Lookup**: Double-click any queue entry to open the callsign in QRZ.com or HamQTH (whichever is configured) directly in the browser.
+- ✅ **Native Queue Selection**: Single-click highlight with standard macOS selection colours; `⌘A` to select all; `⌘+click` / `Shift+click` for multi-select.
+- 📡 **Improved RUMlogNG UDP Parsing**: N1MM XML contact format support (CDATA, 10 Hz frequency units, UTF-8/Latin-1 multi-encoding).
+- 🔒 **Port Isolation**: Binds only explicitly configured UDP ports — no background fallback ports that could conflict with other apps.
+- ⌨️ **Native Settings Shortcut**: Standard macOS `⌘,` shortcut across all app menus and active views.
+- ✏️ **Direct On-Canvas Editing**: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas.
+- 📻 **Band & Frequency Selection**: Dynamic two-way synchronization between Band and Frequency fields in Manual Log and Edit QSO dialogs.
+- ⚡ **Auto Band Detection**: Frequency → band and band → frequency auto-populate.
+- 🎛️ **Custom Modes & Bands**: Free-text mode entry for `VARAC`, `JT65`, `DMR`, `C4FM`, `D-STAR`, `WSPR`, etc.
+- 💾 **SQLite Queue Synchronization**: Permanent deletion sync and protection against duplicate legacy re-imports.
+- 🧪 **10/10 Unit Tests**: ADIF, RUMlog N1MM XML, WSJT-X binary, QRZ/HamQTH XML parsers, email template engine, and RadioUtils.
 
 ### Version 1.0.0 (2026-08)
 - 🚀 Initial public release of AutoQSL for macOS.

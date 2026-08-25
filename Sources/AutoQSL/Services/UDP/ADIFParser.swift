@@ -8,61 +8,82 @@ public final class ADIFParser {
             return fields[key.uppercased()]
         }
         
-        public var dxCall: String? { self["CALL"] ?? self["DXCALL"] ?? self["CALLSIGN"] ?? self["DX_CALL"] }
-        public var band: String? {
-            guard let raw = self["BAND"] ?? self["DX_BAND"] else { return nil }
-            let lower = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            if lower.hasSuffix("m") || lower.hasSuffix("cm") {
-                return lower
-            }
-            // Map numeric MHz to standard ham bands (e.g. 14 -> 20m, 7 -> 40m, 28 -> 10m)
-            switch lower {
-            case "1.8", "160", "160m": return "160m"
-            case "3.5", "3", "80", "80m": return "80m"
-            case "5", "60", "60m": return "60m"
-            case "7", "40", "40m": return "40m"
-            case "10", "30m": return "30m"
-            case "14", "20", "20m": return "20m"
-            case "18", "17", "17m": return "17m"
-            case "21", "15", "15m": return "15m"
-            case "24", "12", "12m": return "12m"
-            case "28", "10m": return "10m"
-            case "50", "6", "6m": return "6m"
-            case "70", "4m": return "4m"
-            case "144", "2", "2m": return "2m"
-            case "430", "432", "70cm": return "70cm"
-            case "1296", "23", "23cm": return "23cm"
-            default: return lower.contains("m") ? lower : "\(lower)m"
-            }
+        public var dxCall: String? {
+            self["CALL"] ?? self["DXCALL"] ?? self["CALLSIGN"] ?? self["DX_CALL"] ?? self["HIS_CALL"]
         }
+        
+        public var band: String? {
+            if let raw = self["BAND"] ?? self["DX_BAND"] {
+                let clean = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                if clean.hasSuffix("m") || clean.hasSuffix("cm") {
+                    return clean
+                }
+                switch clean {
+                case "1.8", "160", "160m": return "160m"
+                case "3.5", "3", "80", "80m": return "80m"
+                case "5", "5.3", "60", "60m": return "60m"
+                case "7", "40", "40m": return "40m"
+                case "10", "30", "30m": return "30m"
+                case "14", "20", "20m": return "20m"
+                case "18", "17", "17m": return "17m"
+                case "21", "15", "15m": return "15m"
+                case "24", "12", "12m": return "12m"
+                case "28", "10m": return "10m"
+                case "50", "6", "6m": return "6m"
+                case "70", "4", "4m": return "4m"
+                case "144", "2", "2m": return "2m"
+                case "430", "432", "70cm": return "70cm"
+                case "1296", "23", "23cm": return "23cm"
+                default:
+                    if let num = Double(clean) {
+                        if num >= 1_000_000 {
+                            return RadioUtils.frequencyToBand(num)
+                        } else if num >= 1_000 {
+                            return RadioUtils.frequencyToBand(num * 1_000.0)
+                        } else if num > 1.0 {
+                            return RadioUtils.frequencyToBand(num * 1_000_000.0)
+                        }
+                    }
+                    return clean.contains("m") ? clean : "\(clean)m"
+                }
+            }
+            if let freq = freqMHz {
+                return RadioUtils.frequencyToBand(freq * 1_000_000.0)
+            }
+            return nil
+        }
+        
         public var mode: String? {
             if let sub = self["SUBMODE"], !sub.isEmpty {
                 return sub.uppercased()
             }
             return self["MODE"]?.uppercased()
         }
+        
         public var freqMHz: Double? {
-            if let f = self["TXFREQ"] ?? self["RXFREQ"] ?? self["FREQ"] ?? self["FREQUENCY"],
-                let val = Double(f.replacingOccurrences(of: ",", with: ".")) {
-                // If frequency is 7-digits (e.g. 1408000 in 10Hz units = 14.080 MHz)
+            if let f = self["TXFREQ"] ?? self["RXFREQ"] ?? self["FREQ"] ?? self["FREQUENCY"] ?? self["TX_FREQ"] ?? self["RX_FREQ"],
+               let val = Double(f.replacingOccurrences(of: ",", with: ".")) {
+                // In RUMlogNG / N1MM XML: 10Hz units (e.g. 1407400 -> 14.074 MHz)
                 if val >= 100_000 && val < 10_000_000 {
                     return val / 100_000.0
                 }
-                // If frequency is in Hz (e.g. 14080000)
+                // In Hz (e.g. 14074000 -> 14.074 MHz)
                 if val >= 10_000_000 {
                     return val / 1_000_000.0
                 }
-                // If frequency is in kHz (e.g. 14080.0)
+                // In kHz (e.g. 14074.0 -> 14.074 MHz)
                 if val > 1000 && val < 100_000 {
                     return val / 1000.0
                 }
+                // In MHz (e.g. 14.074)
                 return val
             }
             return nil
         }
-        public var rstSent: String? { self["RST_SENT"] ?? self["SNT"] ?? self["RSTSNT"] }
-        public var rstRcvd: String? { self["RST_RCVD"] ?? self["RCV"] ?? self["RSTRCVD"] }
-        public var comment: String? { self["COMMENT"] ?? self["NOTES"] ?? self["QSLMSG"] ?? self["REMARKS"] }
+        
+        public var rstSent: String? { self["RST_SENT"] ?? self["SNT"] ?? self["RSTSNT"] ?? self["SENT"] }
+        public var rstRcvd: String? { self["RST_RCVD"] ?? self["RCV"] ?? self["RSTRCVD"] ?? self["RCVD"] }
+        public var comment: String? { self["COMMENT"] ?? self["NOTES"] ?? self["QSLMSG"] ?? self["REMARKS"] ?? self["MEMO"] }
         public var dxCountry: String? { self["COUNTRY"] ?? self["DXCC_COUNTRY"] ?? self["COUNTRYPREFIX"] }
         public var txPower: Double? {
             if let p = self["TX_PWR"] ?? self["POWER"] ?? self["TXPOWER"], let val = Double(p) { return val }
@@ -70,7 +91,7 @@ public final class ADIFParser {
         }
         public var dxGrid: String? { self["GRIDSQUARE"] ?? self["GRID"] ?? self["MYGRID"] }
         public var dxName: String? { self["NAME"] ?? self["OPNAME"] ?? self["FNAME"] }
-        public var dxQTH: String? { self["QTH"] ?? self["CITY"] }
+        public var dxQTH: String? { self["QTH"] ?? self["CITY"] ?? self["STATE"] }
         public var dxZone: String? { self["ZONE"] ?? self["CQZ"] }
         public var dxEmail: String? { self["EMAIL"] }
         public var myCall: String? { self["STATION_CALLSIGN"] ?? self["OPERATOR"] ?? self["MY_CALL"] ?? self["MYCALL"] }
@@ -141,13 +162,11 @@ public final class ADIFParser {
         var records: [ADIFRecord] = []
         var currentRecord = ADIFRecord()
         
-        // Find header end if present
         var content = text
         if let eohRange = content.range(of: "<EOH>", options: .caseInsensitive) {
             content = String(content[eohRange.upperBound...])
         }
         
-        // Regex pattern to match <TAG:LENGTH>VALUE or <TAG:LENGTH:TYPE>VALUE or <EOR>
         let tagPattern = #"<([a-zA-Z0-9_]+):?([0-9]*):?([a-zA-Z0-9]*)>"#
         guard let regex = try? NSRegularExpression(pattern: tagPattern, options: []) else {
             return []
@@ -206,7 +225,18 @@ public final class ADIFParser {
         
         for match in matches {
             let tag = nsString.substring(with: match.range(at: 1)).uppercased()
-            let val = nsString.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespacesAndNewlines)
+            var val = nsString.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Strip CDATA if present
+            if val.hasPrefix("<![CDATA[") && val.hasSuffix("]]>") {
+                val = String(val.dropFirst(9).dropLast(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            
+            // Skip top-level container tags
+            if tag == "CONTACTINFO" || tag == "QSO" || tag == "RECORD" || tag == "RADIOINFO" {
+                continue
+            }
+            
             record.fields[tag] = val
         }
         

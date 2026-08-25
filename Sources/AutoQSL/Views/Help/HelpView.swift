@@ -669,6 +669,30 @@ public struct HelpView: View {
                             "HamQTH.com Callbook Integration: Full support for free HamQTH XML lookups with configurable fallback priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only)."
                     )
                     featureRow(
+                        icon: "cursorarrow.click.2",
+                        text: isGerman ?
+                            "Doppelklick-Callbook: Doppelklick auf einen Warteschlangen-Eintrag öffnet das Rufzeichen direkt im konfigurierten Callbook (QRZ.com oder HamQTH) im Browser." :
+                            "Double-Click Callbook Lookup: Double-click any queue entry to open the callsign in your configured callbook (QRZ.com or HamQTH) in the default browser."
+                    )
+                    featureRow(
+                        icon: "checkmark.circle",
+                        text: isGerman ?
+                            "Native Listenauswahl: Einfachklick selektiert mit Standard-macOS-Hervorhebung; ⌘A wählt alle; ⌘+Klick / Umschalt+Klick für Mehrfachauswahl." :
+                            "Native Queue Selection: Single-click selects with standard macOS highlight; ⌘A selects all; ⌘+click / Shift+click for multi-select."
+                    )
+                    featureRow(
+                        icon: "wave.3.right",
+                        text: isGerman ?
+                            "Verbessertes RUMlogNG UDP-Parsing: Vollständige Unterstützung für N1MM XML-Kontaktformat (CDATA, 10-Hz-Frequenzeinheiten, UTF-8/Latin-1-Encoding)." :
+                            "Improved RUMlogNG UDP Parsing: Full N1MM XML contact format support (CDATA, 10 Hz frequency units, UTF-8/Latin-1 multi-encoding)."
+                    )
+                    featureRow(
+                        icon: "lock.shield",
+                        text: isGerman ?
+                            "Port-Isolation: AutoQSL bindet nur explizit konfigurierte UDP-Ports – keine automatischen Fallback-Ports, die andere Apps stören könnten." :
+                            "Port Isolation: AutoQSL only binds explicitly configured UDP ports — no background fallback ports that could conflict with other apps."
+                    )
+                    featureRow(
                         icon: "command",
                         text: isGerman ?
                             "Natives Einstellungen-Tastaturkürzel (⌘,): Öffnet die Einstellungen direkt aus jedem Fenster und über das macOS-Anwendungsmenü." :
@@ -693,16 +717,10 @@ public struct HelpView: View {
                             "Custom Modes: Text entry for any custom digital or voice mode (e.g. VARAC, JT65, DMR, C4FM, WSPR) when selecting 'Other...'."
                     )
                     featureRow(
-                        icon: "antenna.radiowaves.left.and.right",
-                        text: isGerman ?
-                            "Erweiterte Band-Erkennung: Zentralisiertes RadioUtils-Modul mit automatischer Zuordnung und Einheitenumrechnung." :
-                            "Enhanced Band Detection: Centralized RadioUtils engine with automatic band matching and unit parsing."
-                    )
-                    featureRow(
                         icon: "cylinder.split.1x2.fill",
                         text: isGerman ?
-                            "SQLite Queue-Synchronisation: Dauerhafte Lösch-Synchronisation und Schutz vor doppelten Legacy-Reimporten bei Neustarts." :
-                            "SQLite Queue Synchronization: Permanent deletion synchronization and prevention of duplicate legacy re-imports across restarts."
+                            "SQLite Queue-Synchronisation & 10/10 Unit Tests: Dauerhafte Lösch-Synchronisation, Schutz vor doppelten Legacy-Reimporten und vollständige Test-Suite." :
+                            "SQLite Queue Synchronization & 10/10 Unit Tests: Permanent deletion sync, duplicate import protection, and full parser test suite (ADIF, RUMlog, WSJT-X, QRZ, HamQTH)."
                     )
                 }
                 .padding(8)
