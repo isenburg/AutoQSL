@@ -95,12 +95,50 @@ if [ -f "$PROJECT_DIR/README.md" ]; then
     sed -i '' -E "s/### Version $VERSION \(Build [0-9]+\)/### Version $VERSION (Build $BUILD)/g" "$PROJECT_DIR/README.md" 2>/dev/null || true
 fi
 
-# ── 3. Changelog aus Git-Commits oder Parameter ────────────────
+# ── 3. Changelog aus README.md, Git-Commits oder Parameter ─────
 MANUAL_CHANGES="${1:-}"
+CHANGELOG=""
 
 if [ -n "$MANUAL_CHANGES" ]; then
     info "Verwende manuell übergebene Release-Notes..."
     CHANGELOG="$MANUAL_CHANGES"
+elif [ -f "$PROJECT_DIR/README.md" ]; then
+    CHANGELOG=$(python3 - "$VERSION" "$PROJECT_DIR/README.md" << 'PYEOF' 2>/dev/null || true
+import sys, os
+
+version = sys.argv[1]
+readme_path = sys.argv[2]
+
+if not os.path.exists(readme_path):
+    sys.exit(1)
+
+with open(readme_path, "r", encoding="utf-8") as f:
+    lines = f.readlines()
+
+capturing = False
+notes = []
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("### Version " + version):
+        capturing = True
+        continue
+    if capturing:
+        if stripped.startswith("### Version ") or stripped.startswith("## ") or stripped == "---":
+            break
+        if stripped:
+            notes.append(line.rstrip())
+
+if notes:
+    for n in notes:
+        print(n)
+else:
+    sys.exit(1)
+PYEOF
+)
+fi
+
+if [ -n "$CHANGELOG" ]; then
+    success "Release-Notes für v$VERSION aus README.md geladen."
 else
     info "Erzeuge Changelog aus Git-Commits..."
     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -308,6 +346,7 @@ git add \
     "$PROJECT_DIR/.build_number" \
     "$PROJECT_DIR/Sources/AutoQSL/BuildNumber.swift" \
     "$PROJECT_DIR/Sources/" \
+    "$PROJECT_DIR/README.md" \
     "$PROJECT_DIR/HELP.md" 2>/dev/null || true
 
 git commit -m "Release v$VERSION Build $BUILD" 2>/dev/null || warn "Nichts zu committen"
@@ -325,7 +364,7 @@ fi
 # ── 8. GitHub Release ─────────────────────────────────────────
 RELEASE_NOTES="## $TITLE
 
-### Änderungen seit letztem Release
+### Release Notes / Änderungen
 $CHANGELOG
 
 ---
