@@ -11,13 +11,14 @@ public struct HelpView: View {
         case overview = "1. Introduction & Overview"
         case designer = "2. QSL Card Designer"
         case udpNetwork = "3. UDP & Logging Integration"
-        case emailDelivery = "4. Email Dispatching"
-        case automationModes = "5. Automation & Modes"
-        case templates = "6. Placeholders & Templates"
-        case storageSync = "7. iCloud Storage & Sync"
-        case disclaimer = "8. Disclaimer & Privacy"
-        case copyright = "9. Copyright & Credits"
-        case changelog = "10. Changelog & Versions"
+        case callbooks = "4. Callbook Lookups (QRZ & HamQTH)"
+        case emailDelivery = "5. Email Dispatching"
+        case automationModes = "6. Automation & Modes"
+        case templates = "7. Placeholders & Templates"
+        case storageSync = "8. iCloud Storage & Sync"
+        case disclaimer = "9. Disclaimer & Privacy"
+        case copyright = "10. Copyright & Credits"
+        case changelog = "11. Changelog & Versions"
 
         public var id: String { rawValue }
         
@@ -26,6 +27,7 @@ public struct HelpView: View {
             case .overview: return "info.circle.fill"
             case .designer: return "paintpalette.fill"
             case .udpNetwork: return "antenna.radiowaves.left.and.right"
+            case .callbooks: return "person.text.rectangle.fill"
             case .emailDelivery: return "paperplane.fill"
             case .automationModes: return "gearshape.2"
             case .templates: return "text.badge.checkmark"
@@ -85,13 +87,14 @@ public struct HelpView: View {
         case .overview: return "1. Einführung & Übersicht"
         case .designer: return "2. QSL-Karten Designer"
         case .udpNetwork: return "3. UDP & Logger-Anbindung"
-        case .emailDelivery: return "4. E-Mail Versand"
-        case .automationModes: return "5. Automatisierung & Modi"
-        case .templates: return "6. Platzhalter & Vorlagen"
-        case .storageSync: return "7. iCloud-Speicher & Sync"
-        case .disclaimer: return "8. Haftungsausschluss & Datenschutz"
-        case .copyright: return "9. Urheberrecht & Credits"
-        case .changelog: return "10. Versionsgeschichte & Changelog"
+        case .callbooks: return "4. Callbook-Abfragen (QRZ & HamQTH)"
+        case .emailDelivery: return "5. E-Mail Versand"
+        case .automationModes: return "6. Automatisierung & Modi"
+        case .templates: return "7. Platzhalter & Vorlagen"
+        case .storageSync: return "8. iCloud-Speicher & Sync"
+        case .disclaimer: return "9. Haftungsausschluss & Datenschutz"
+        case .copyright: return "10. Urheberrecht & Credits"
+        case .changelog: return "11. Versionsgeschichte & Changelog"
         }
     }
 
@@ -104,6 +107,8 @@ public struct HelpView: View {
             designerSection
         case .udpNetwork:
             udpNetworkSection
+        case .callbooks:
+            callbooksSection
         case .emailDelivery:
             emailDeliverySection
         case .automationModes:
@@ -121,7 +126,7 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 1. Overview
+    // MARK: - 1. Overview & Quick Start
     private var overviewSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
@@ -129,7 +134,7 @@ public struct HelpView: View {
                     .font(.system(size: 32))
                     .foregroundColor(.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isGerman ? "AutoQSL – Elektronische QSL-Karten Automatisierung" : "AutoQSL – Automated Electronic QSL Card Dispatcher")
+                    Text(isGerman ? "AutoQSL – Schritt-für-Schritt Anleitung" : "AutoQSL – Operating Guide & Manual")
                         .font(.title2.bold())
                     Text("Version \(APP_VERSION) (Build \(APP_BUILD_NUMBER))")
                         .font(.subheadline)
@@ -140,27 +145,34 @@ public struct HelpView: View {
             Divider()
             
             Text(isGerman ?
-                "AutoQSL ist eine spezialisierte native macOS-Applikation für Funkamateure zur vollautomatischen oder interaktiv bestätigten Generierung und Versendung personalisierter elektronischer QSL-Karten (eQSL)." :
-                "AutoQSL is a dedicated native macOS application designed for amateur radio operators to automatically generate, render, and dispatch high-resolution electronic QSL cards (eQSL) via email in real time.")
+                "AutoQSL verbindet deine Logprogramme (WSJT-X, JTDX, RUMlogNG) mit einer automatischen eQSL-Generierung, QRZ.com-E-Mail-Abfrage und Versand via Apple Mail oder SMTP." :
+                "AutoQSL connects your logging software (WSJT-X, JTDX, RUMlogNG) with automated eQSL generation, QRZ.com email lookup, and email dispatch.")
                 .font(.body)
 
-            GroupBox(label: Label(isGerman ? "Hauptfunktionen auf einen Blick" : "Key Features at a Glance", systemImage: "sparkles")) {
+            GroupBox(label: Label(isGerman ? "Ersteinrichtung in 4 einfachen Schritten" : "Quick Start Setup (4 Steps)", systemImage: "flag.checkered")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    featureRow(icon: "1.circle.fill", text: isGerman ?
+                        "1. Stationsprofil ausfüllen: Öffne Settings (⌘,) und trage dein Rufzeichen, Namen, QTH-Adresse und Locator ein." :
+                        "1. Fill in Station Profile: Open Settings (⌘,) and enter your callsign, name, postal address, and grid square.")
+                    featureRow(icon: "2.circle.fill", text: isGerman ?
+                        "2. Callbook-Zugangsdaten hinterlegen (QRZ.com & HamQTH): Trage QRZ- und/oder kostenlose HamQTH-Zugangsdaten ein für automatische E-Mail- und Namensabfragen." :
+                        "2. Set Callbook Credentials (QRZ.com & HamQTH): Enter QRZ and/or free HamQTH XML logins to automatically retrieve recipient emails and QTH.")
+                    featureRow(icon: "3.circle.fill", text: isGerman ?
+                        "3. Versandart wählen: Wähle 'Apple Mail' (empfohlen, ohne Passwörter) oder trage deine SMTP-Serverdaten ein." :
+                        "3. Choose Email Method: Select 'Apple Mail' (recommended, no passwords needed) or configure direct SMTP.")
+                    featureRow(icon: "4.circle.fill", text: isGerman ?
+                        "4. Betriebsmodus wählen: 'Preview & Confirm' zeigt vor jedem Versand eine Kartenvorschau (Taste ⌘+Return zum Senden)." :
+                        "4. Select Mode: 'Preview & Confirm' shows a high-res card preview before sending (press ⌘+Return to send).")
+                }
+                .padding(.vertical, 4)
+            }
+
+            GroupBox(label: Label(isGerman ? "Täglicher Betrieb: Wie funktioniert der Ablauf?" : "Daily Operating Workflow", systemImage: "arrow.triangle.2.circlepath")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    featureRow(icon: "antenna.radiowaves.left.and.right", text: isGerman ?
-                        "Live UDP-Listener: Empfängt geloggte QSOs in Echtzeit aus WSJT-X, JTDX, RUMlogNG und N1MM." :
-                        "Live UDP Network Listener: Captures logged QSOs in real time from WSJT-X, JTDX, RUMlogNG, and N1MM.")
-                    featureRow(icon: "person.text.rectangle.fill", text: isGerman ?
-                        "QRZ.com XML API: Automatischer Abruf von Empfänger-Namen, E-Mail-Adressen, QTH und Maidenhead-Grid." :
-                        "QRZ.com XML Integration: Automatic lookup of recipient name, email address, QTH, and Maidenhead grid.")
-                    featureRow(icon: "paintpalette.fill", text: isGerman ?
-                        "Visueller WYSIWYG Drag & Drop Designer: Individuelle Hintergründe, 3D-Präge-Effekte, Abzeichen und anpassbare QSO-Bestätigungstabellen." :
-                        "Visual WYSIWYG Drag & Drop Designer: Custom backgrounds, 3D embossed text effects, club badges, and customizable QSO tables.")
-                    featureRow(icon: "square.stack.3d.up.fill", text: isGerman ?
-                        "Massenverarbeitung: Wähle mehrere QSOs mit Shift + Pfeiltasten aus, um sie alle auf einmal zu versenden oder zu löschen." :
-                        "Batch Processing: Select multiple QSOs using Shift + Arrow Keys to dispatch or delete them all at once.")
-                    featureRow(icon: "paperplane.fill", text: isGerman ?
-                        "Flexible Versandwege: Nahtlose Apple Mail Integration (kein SMTP-Server nötig), Standard-Mail-Client oder direkter SMTP-Server." :
-                        "Versatile Delivery: Seamless Apple Mail automation (no SMTP password required), default mail client, or direct SMTP dispatch.")
+                    Text(isGerman ?
+                        "• Automatischer Empfang: Sobald ein QSO in WSJT-X oder RUMlogNG geloggt wird, empfängt AutoQSL das Datenpaket via UDP, fragt QRZ.com ab und rendert die Karte.\n• Manuelles Loggen: Über die Schaltfläche 'Log QSO Manually' kannst du jederzeit QSOs nachträglich eingeben (mit automatischer Band/Frequenzerkennung und beliebigen Betriebsarten).\n• Letztes QSO holen: Klicke auf 'Grab RUMlog', um das letzte QSO direkt per AppleScript aus RUMlogNG zu importieren.\n• Massenversand: Wähle mehrere QSOs mit Shift + Pfeiltasten aus und klicke auf 'Send Selected'." :
+                        "• Automated Capture: When a QSO is logged in WSJT-X or RUMlogNG, AutoQSL captures it over UDP, fetches QRZ info, and renders the card.\n• Manual Logging: Click 'Log QSO Manually' to enter ad-hoc contacts (with dynamic Band/Freq synchronization and custom mode support).\n• One-Click Grab: Click 'Grab RUMlog' to pull the latest QSO directly from RUMlogNG via AppleScript.\n• Batch Processing: Select multiple QSOs with Shift + Arrow Keys and click 'Send Selected'.")
+                        .font(.callout)
                 }
                 .padding(.vertical, 4)
             }
@@ -176,6 +188,25 @@ public struct HelpView: View {
             Text(isGerman ?
                 "Mit dem integrierten Designer erstellst du professionelle QSL-Karten im hochauflösenden 300-DPI Druckformat (Standard QSL 3.5 x 5.5 Zoll / 140x90mm oder Postkartenformat)." :
                 "The built-in Card Designer lets you compose high-resolution (300 DPI print quality) QSL cards matching standard 3.5 x 5.5 inch / 140x90mm dimensions.")
+
+            GroupBox(label: Label(isGerman ? "Direkte Canvas-Bearbeitung vs. Seitenleisten-Inspektor" : "Direct Canvas Editing vs. Sidebar Inspector", systemImage: "pencil.and.outline")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(isGerman ?
+                        "Welche Elemente können direkt auf der Karte bearbeitet werden?" :
+                        "Which elements can be edited directly on the canvas?")
+                        .font(.subheadline.bold())
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        featureRow(icon: "checkmark.circle.fill", text: isGerman ?
+                            "✅ Direkt auf der Karte editierbar: Rufzeichen (Callsign), Adressblock (Address) und freier Text (Custom Text). Klicke einfach auf das Element auf der Leinwand, um den Text direkt einzutippen." :
+                            "✅ Directly editable on canvas: Callsign Block, Address Block, and Custom Text. Simply click the element on the canvas to type and edit its text inline.")
+                        featureRow(icon: "gearshape.fill", text: isGerman ?
+                            "⚙️ Über die rechte Seitenleiste konfiguriert: QSO-Bestätigungstabelle (Spalten, Header, Datumsformate, Farben), Standort-Zeile (Location Footer), Abzeichen/Sticker (Badges) sowie Hintergrundbilder und Kartenmaße." :
+                            "⚙️ Configured via right sidebar inspector: QSO Confirmation Table (columns, headers, date formats, colors), Location Footer (dynamic station data), Badges & Stickers, and Background image / Card aspect ratio.")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
 
             GroupBox(label: Label(isGerman ? "Bedienung & Gestaltungs-Optionen" : "Controls & Formatting Features", systemImage: "hand.draw.fill")) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -283,7 +314,67 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 4. Email Delivery
+    // MARK: - 4. Callbooks (QRZ & HamQTH)
+    private var callbooksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(isGerman ? "Callbook-Abfragen (QRZ.com & HamQTH.com)" : "Callbook Lookups (QRZ.com & HamQTH.com)")
+                .font(.title2.bold())
+            
+            Text(isGerman ?
+                "AutoQSL fragt bei jedem empfangenen QSO automatisch die Kontaktdaten der Gegenstation über standardisierte XML-Schnittstellen ab, um die E-Mail-Adresse für den Kartenversand, den vollen Namen, den Maidenhead-Locator und das Land zu ermitteln." :
+                "AutoQSL automatically queries recipient contact details via standardized XML APIs upon logging, retrieving email addresses for card delivery, names, Maidenhead grid squares, and DXCC entities.")
+                .font(.body)
+
+            GroupBox(label: Label(isGerman ? "Unterstützte Callbook-Dienste" : "Supported Callbook Services", systemImage: "person.2.badge.gearshape.fill")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    featureRow(
+                        icon: "globe",
+                        text: isGerman ?
+                            "QRZ.com XML API: Weltweit größtes Callbook. Erfordert ein QRZ-Konto mit aktivem XML-Logbook-Abonnement. Zuverlässig und umfangreich." :
+                            "QRZ.com XML API: Global standard callbook database. Requires an active QRZ XML subscription. Very comprehensive and up-to-date."
+                    )
+                    featureRow(
+                        icon: "antenna.radiowaves.left.and.right",
+                        text: isGerman ?
+                            "HamQTH.com XML API (100% Kostenlos): Community-Callbook von Petr (OK2CQR). Erfordert lediglich eine kostenlose Registrierung auf hamqth.com – kein bezahltes Abo nötig!" :
+                            "HamQTH.com XML API (100% Free): Community-driven callbook by OK2CQR. Requires only a free registration at hamqth.com – no paid subscription required!"
+                    )
+                }
+                .padding(4)
+            }
+
+            GroupBox(label: Label(isGerman ? "Abfrage-Strategien & Prioritäten" : "Lookup Priority & Fallback Strategies", systemImage: "arrow.triangle.branch")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(isGerman ?
+                        "In den Einstellungen unter 'Callbook Lookups' kannst du festlegen, wie AutoQSL vorgehen soll:" :
+                        "In Settings under 'Callbook Lookups', select your preferred lookup strategy:")
+                        .font(.subheadline.bold())
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        featureRow(icon: "1.circle.fill", text: isGerman ?
+                            "QRZ.com (Primary) + HamQTH (Fallback) [Empfohlen]: Fragt zuerst QRZ.com ab. Fehlt die E-Mail oder existiert kein Profil, wird automatisch HamQTH.com angefragt." :
+                            "QRZ.com (Primary) + HamQTH (Fallback) [Recommended]: Queries QRZ first. If no email is found, seamlessly falls back to HamQTH.com.")
+                        featureRow(icon: "2.circle.fill", text: isGerman ?
+                            "HamQTH (Primary) + QRZ.com (Fallback): Nutzt primär das kostenlose HamQTH und fragt bei Lücken QRZ.com an." :
+                            "HamQTH (Primary) + QRZ.com (Fallback): Uses free HamQTH first, querying QRZ only when needed.")
+                        featureRow(icon: "checkmark.circle", text: isGerman ?
+                            "QRZ.com Only oder HamQTH Only: Beschränkt alle Abfragen ausschließlich auf den gewählten Dienst." :
+                            "QRZ.com Only or HamQTH Only: Restricts lookups exclusively to a single chosen provider.")
+                    }
+                }
+                .padding(4)
+            }
+
+            GroupBox(label: Label(isGerman ? "In-Memory Caching & Geschwindigkeit" : "In-Memory Caching & Performance", systemImage: "bolt.badge.clock.fill")) {
+                Text(isGerman ?
+                    "Erfolgreich abgerufene Profile werden während der Programmlaufzeit im Arbeitsspeicher zwischengespeichert. Wiederholte QSOs mit derselben Station erfordern keine erneute Netzwerkanfrage, schonen API-Limits und ermöglichen sofortiges Rendern." :
+                    "Successfully fetched profiles are cached in memory during runtime. Repeated contacts with the same station require no network requests, preserving API limits and enabling instant rendering.")
+                    .font(.caption)
+            }
+        }
+    }
+
+    // MARK: - 5. Email Delivery
     private var emailDeliverySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(isGerman ? "E-Mail Versandarten" : "Email Delivery Options")
@@ -346,31 +437,82 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 6. Templates
+    // MARK: - 6. Templates & Dynamic Placeholders
     private var templatesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(isGerman ? "Platzhalter für E-Mail-Vorlagen & Texte" : "Email Template & Text Placeholders")
+            Text(isGerman ? "Dynamische Platzhalter & Vorlagen-Anleitung" : "Dynamic Placeholders & Template Guide")
                 .font(.title2.bold())
             
             Text(isGerman ?
-                "Folgende Platzhalter werden in Betreff, Nachrichtentext und Freitext-Kartenfeldern automatisch durch die echten QSO- und Stationsdaten ersetzt:" :
-                "The following tags are dynamically replaced with active QSO and station profile values:")
+                "AutoQSL unterstützt dynamische Platzhalter in geschweiften Klammern {TAG}. Diese können flexibel in E-Mail-Betreffzeilen, E-Mail-Nachrichtentexten, Freitext-Kartenfeldern ('Custom Text') und der Standort-Zeile ('Location Footer') verwendet werden." :
+                "AutoQSL supports dynamic {TAG} placeholders. You can use them in Email Subject lines, Email Body messages, Custom Text card elements, and the Location Footer line.")
+                .font(.body)
 
-            VStack(alignment: .leading, spacing: 4) {
-                placeholderRow(tag: "{DX_CALL}", desc: isGerman ? "Rufzeichen der Gegenstation" : "Recipient Callsign")
-                placeholderRow(tag: "{DX_NAME}", desc: isGerman ? "Name der Gegenstation (aus QRZ)" : "Recipient Name (QRZ lookup)")
-                placeholderRow(tag: "{DATE}", desc: isGerman ? "QSO-Datum nach gewähltem Format" : "QSO Date formatted per settings")
-                placeholderRow(tag: "{TIME}", desc: isGerman ? "QSO-Uhrzeit in UTC (z. B. 14:05)" : "QSO Time in UTC (e.g. 14:05)")
-                placeholderRow(tag: "{BAND}", desc: isGerman ? "Amateurfunkband (z. B. 20m)" : "Band (e.g. 20m)")
-                placeholderRow(tag: "{MODE}", desc: isGerman ? "Betriebsart (z. B. FT8, CW, SSB)" : "Mode (e.g. FT8, CW, SSB)")
-                placeholderRow(tag: "{FREQ}", desc: isGerman ? "Frequenz in MHz (z. B. 14.074 MHz)" : "Frequency in MHz")
-                placeholderRow(tag: "{RST_SENT}", desc: isGerman ? "Gesendeter Signal-Report (z. B. -12, 599)" : "Sent RST Report")
-                placeholderRow(tag: "{MY_CALL}", desc: isGerman ? "Eigenes Rufzeichen" : "Your Callsign")
-                placeholderRow(tag: "{MY_GRID}", desc: isGerman ? "Eigener Maidenhead-Locator" : "Your Grid Square")
+            GroupBox(label: Label(isGerman ? "Wo können Platzhalter verwendet werden?" : "Where Can You Use Placeholders?", systemImage: "sparkles")) {
+                VStack(alignment: .leading, spacing: 6) {
+                    featureRow(icon: "envelope.fill", text: isGerman ?
+                        "E-Mail Betreff & Nachrichtentext: In den Einstellungen unter 'Email Template' für persönliche Anschreiben." :
+                        "Email Subject & Body: In Settings under 'Email Template' for customized email delivery.")
+                    featureRow(icon: "paintpalette.fill", text: isGerman ?
+                        "QSL-Kartendesigner (Custom Text): Füge Freitextfelder auf der Karte ein (z. B. 'Confirming 2-way {MODE} QSO with {DX_CALL}')." :
+                        "Card Designer (Custom Text): Add text elements directly onto your card (e.g. 'Confirming 2-way {MODE} QSO with {DX_CALL}').")
+                    featureRow(icon: "mappin.and.ellipse", text: isGerman ?
+                        "Standort-Zeile (Location Footer): Automatische Anzeige von Locator und Zonen ('ITU {MY_ITU} • CQ {MY_CQ} • Grid {MY_GRID}')." :
+                        "Location Footer: Automatic display of zones and locators ('ITU {MY_ITU} • CQ {MY_CQ} • Grid {MY_GRID}').")
+                }
+                .padding(.vertical, 4)
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+
+            GroupBox(label: Text(isGerman ? "1. Empfänger- & DX-Informationen (aus Log & QRZ)" : "1. DX Contact & Recipient Data")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    placeholderRow(tag: "{DX_CALL}", desc: isGerman ? "Rufzeichen der Gegenstation (z. B. DJ6GI)" : "Recipient Callsign (e.g. DJ6GI)")
+                    placeholderRow(tag: "{DX_NAME}", desc: isGerman ? "Name der Gegenstation aus QRZ (oder Rufzeichen)" : "Recipient Name (from QRZ lookup)")
+                    placeholderRow(tag: "{DX_GRID}", desc: isGerman ? "Maidenhead-Locator der Gegenstation" : "Recipient Maidenhead Grid (e.g. JN58td)")
+                    placeholderRow(tag: "{DX_EMAIL}", desc: isGerman ? "E-Mail-Adresse des Empfängers" : "Recipient Email Address")
+                    placeholderRow(tag: "{DX_COUNTRY}", desc: isGerman ? "Land / DXCC-Gebiet" : "Recipient Country / DXCC")
+                }
+                .padding(4)
+            }
+
+            GroupBox(label: Text(isGerman ? "2. QSO-Parameter" : "2. QSO Parameters")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    placeholderRow(tag: "{BAND}", desc: isGerman ? "Amateurfunkband (z. B. 20m)" : "Operating Band (e.g. 20m)")
+                    placeholderRow(tag: "{MODE}", desc: isGerman ? "Betriebsart (z. B. FT8, CW, SSB, VARAC)" : "Operating Mode (e.g. FT8, CW, SSB)")
+                    placeholderRow(tag: "{FREQ}", desc: isGerman ? "Genaue Frequenz in MHz (z. B. 14.074 MHz)" : "Exact Frequency in MHz (e.g. 14.074 MHz)")
+                    placeholderRow(tag: "{RST_SENT}", desc: isGerman ? "Gesendeter Signal-Report (z. B. -12, 599)" : "Sent RST Signal Report (e.g. -12, 599)")
+                    placeholderRow(tag: "{RST_RCVD}", desc: isGerman ? "Empfangener Signal-Report" : "Received RST Signal Report")
+                    placeholderRow(tag: "{DATE}", desc: isGerman ? "QSO-Datum nach gewähltem Format" : "QSO Date formatted per settings")
+                    placeholderRow(tag: "{TIME}", desc: isGerman ? "QSO-Uhrzeit in UTC (z. B. 14:05)" : "QSO Time in UTC (e.g. 14:05)")
+                    placeholderRow(tag: "{COMMENT}", desc: isGerman ? "QSO-Bemerkung / Grußtext" : "QSO Comment / Remarks")
+                }
+                .padding(4)
+            }
+
+            GroupBox(label: Text(isGerman ? "3. Eigene Stationsdaten (aus den Einstellungen)" : "3. My Station Data (from Settings)")) {
+                VStack(alignment: .leading, spacing: 4) {
+                    placeholderRow(tag: "{MY_CALL}", desc: isGerman ? "Eigenes Rufzeichen" : "Your Station Callsign")
+                    placeholderRow(tag: "{MY_NAME}", desc: isGerman ? "Eigener Name" : "Your Operator Name")
+                    placeholderRow(tag: "{MY_GRID}", desc: isGerman ? "Eigener Maidenhead-Locator" : "Your Grid Square")
+                    placeholderRow(tag: "{MY_CITY}", desc: isGerman ? "Stadt / QTH" : "Your City / QTH")
+                    placeholderRow(tag: "{MY_COUNTRY}", desc: isGerman ? "Land" : "Your Country")
+                    placeholderRow(tag: "{MY_CQ}", desc: isGerman ? "CQ-Zone (z. B. 14)" : "Your CQ Zone (e.g. 14)")
+                    placeholderRow(tag: "{MY_ITU}", desc: isGerman ? "ITU-Zone (z. B. 28)" : "Your ITU Zone (e.g. 28)")
+                }
+                .padding(4)
+            }
+
+            GroupBox(label: Label(isGerman ? "Praktisches E-Mail-Beispiel" : "Example Outgoing Email Template", systemImage: "doc.text.fill")) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(isGerman ?
+                        "Hallo {DX_NAME},\n\nvielen Dank für das nette {MODE}-QSO auf {BAND} ({FREQ}) am {DATE} um {TIME} UTC!\nDein Signalreport war {RST_SENT} an meinen Standort in {MY_GRID}.\n\nIm Anhang findest du meine elektronische QSL-Karte.\n\n73 de {MY_NAME} ({MY_CALL})" :
+                        "Hello {DX_NAME},\n\nThank you for the {MODE} QSO on {BAND} ({FREQ}) on {DATE} at {TIME} UTC!\nYour signal report was {RST_SENT} in grid {MY_GRID}.\n\nPlease find my electronic QSL card attached.\n\nBest 73 & Good DX,\n{MY_NAME} ({MY_CALL})")
+                        .font(.caption.monospaced())
+                        .padding(8)
+                        .background(Color(NSColor.textBackgroundColor))
+                        .cornerRadius(6)
+                }
+                .padding(4)
+            }
         }
     }
 
@@ -521,6 +663,18 @@ public struct HelpView: View {
             GroupBox(label: Text("Version 1.1.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(
+                        icon: "antenna.radiowaves.left.and.right",
+                        text: isGerman ?
+                            "HamQTH.com Callbook-Integration: Vollständige Unterstützung für HamQTH XML-Abfragen mit konfigurierbarer Priorität (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only)." :
+                            "HamQTH.com Callbook Integration: Full support for free HamQTH XML lookups with configurable fallback priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only)."
+                    )
+                    featureRow(
+                        icon: "pencil.line",
+                        text: isGerman ?
+                            "Direkte Canvas-Textbearbeitung: Rufzeichen, Adressblock und benutzerdefinierter Text können direkt auf der Karte im Designer bearbeitet werden." :
+                            "Direct On-Canvas Editing: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas."
+                    )
+                    featureRow(
                         icon: "waveform.path",
                         text: isGerman ?
                             "Dynamische Band- & Frequenzeingabe: Automatische Synchronisation zwischen Band-Dropdown und Frequenzfeld in 'Manuell loggen' und 'QSO bearbeiten'." :
@@ -537,6 +691,12 @@ public struct HelpView: View {
                         text: isGerman ?
                             "Erweiterte Band-Erkennung: Zentralisiertes RadioUtils-Modul mit automatischer Zuordnung und Einheitenumrechnung." :
                             "Enhanced Band Detection: Centralized RadioUtils engine with automatic band matching and unit parsing."
+                    )
+                    featureRow(
+                        icon: "cylinder.split.1x2.fill",
+                        text: isGerman ?
+                            "SQLite Queue-Synchronisation: Dauerhafte Lösch-Synchronisation und Schutz vor doppelten Legacy-Reimporten bei Neustarts." :
+                            "SQLite Queue Synchronization: Permanent deletion synchronization and prevention of duplicate legacy re-imports across restarts."
                     )
                 }
                 .padding(8)

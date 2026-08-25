@@ -6,6 +6,8 @@ public struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .station
     @State private var qrzTestStatus: String? = nil
     @State private var isTestingQRZ: Bool = false
+    @State private var hamqthTestStatus: String? = nil
+    @State private var isTestingHamQTH: Bool = false
     @State private var smtpTestStatus: String? = nil
     @State private var isTestingSMTP: Bool = false
     @State private var mailTestStatus: String? = nil
@@ -18,7 +20,7 @@ public struct SettingsView: View {
         case automation = "Automation & Modes"
         case storage = "Storage & iCloud"
         case udp = "UDP Logging"
-        case qrz = "QRZ.com Lookup"
+        case callbook = "Callbook Lookups"
         case email = "Email Delivery"
         case templates = "Email Templates"
         
@@ -30,7 +32,7 @@ public struct SettingsView: View {
             case .automation: return "gearshape.2"
             case .storage: return "icloud.circle.fill"
             case .udp: return "network"
-            case .qrz: return "person.text.rectangle"
+            case .callbook: return "person.text.rectangle"
             case .email: return "envelope.badge"
             case .templates: return "doc.text"
             }
@@ -72,8 +74,8 @@ public struct SettingsView: View {
                         storageSettingsTab
                     case .udp:
                         udpSection
-                    case .qrz:
-                        qrzSection
+                    case .callbook:
+                        callbookSection
                     case .email:
                         emailDeliverySection
                     case .templates:
@@ -453,16 +455,29 @@ public struct SettingsView: View {
         }
     }
     
-    // MARK: - QRZ.com Settings
-    private var qrzSection: some View {
+    // MARK: - Callbook Settings (QRZ.com & HamQTH)
+    private var callbookSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("QRZ.com XML API Integration")
+            Text("Callbook Lookups (QRZ.com & HamQTH)")
                 .font(.title2.bold())
-            Text("Retrieves recipient email addresses, QTH, names, and grid squares automatically from QRZ XML Database.")
+            Text("Retrieves recipient email addresses, QTH, names, and grid squares automatically from QRZ.com and/or HamQTH.com XML databases.")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Account Credentials").font(.headline)) {
+            GroupBox(label: Text("Lookup Provider & Priority").font(.headline)) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Picker("Provider:", selection: $appState.settings.callbookProvider) {
+                        ForEach(CallbookProvider.allCases) { prov in
+                            Text(prov.rawValue).tag(prov)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                }
+                .padding(8)
+            }
+            
+            // QRZ.com Configuration
+            GroupBox(label: Label("QRZ.com XML Subscription", systemImage: "globe").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Enable QRZ.com Lookups", isOn: $appState.settings.qrzEnabled)
                     
@@ -477,26 +492,64 @@ public struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 220)
                     }
+                    
+                    HStack {
+                        Button("Test QRZ Connection") {
+                            testQRZ()
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(appState.settings.qrzUsername.isEmpty || appState.settings.qrzPassword.isEmpty || isTestingQRZ)
+                        
+                        if isTestingQRZ {
+                            ProgressView().scaleEffect(0.7)
+                        }
+                        
+                        if let status = qrzTestStatus {
+                            Text(status)
+                                .font(.caption)
+                                .foregroundColor(status.contains("Success") ? .green : .red)
+                        }
+                    }
                 }
                 .padding(8)
             }
             
-            HStack {
-                Button("Test QRZ Connection") {
-                    testQRZ()
+            // HamQTH.com Configuration
+            GroupBox(label: Label("HamQTH.com XML API (Free)", systemImage: "antenna.radiowaves.left.and.right").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Enable HamQTH.com Lookups", isOn: $appState.settings.hamqthEnabled)
+                    
+                    FormRow(label: "Username / Call:", labelWidth: 120) {
+                        TextField("HamQTH Callsign / Login", text: $appState.settings.hamqthUsername)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 220)
+                    }
+                    
+                    FormRow(label: "Password:", labelWidth: 120) {
+                        SecureField("HamQTH Password", text: $appState.settings.hamqthPassword)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 220)
+                    }
+                    
+                    HStack {
+                        Button("Test HamQTH Connection") {
+                            testHamQTH()
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(appState.settings.hamqthUsername.isEmpty || appState.settings.hamqthPassword.isEmpty || isTestingHamQTH)
+                        
+                        if isTestingHamQTH {
+                            ProgressView().scaleEffect(0.7)
+                        }
+                        
+                        if let status = hamqthTestStatus {
+                            Text(status)
+                                .font(.caption)
+                                .foregroundColor(status.contains("Success") ? .green : .red)
+                        }
+                    }
                 }
-                .buttonStyle(.bordered)
-                .disabled(appState.settings.qrzUsername.isEmpty || appState.settings.qrzPassword.isEmpty || isTestingQRZ)
-                
-                if isTestingQRZ {
-                    ProgressView().scaleEffect(0.7)
-                }
-                
-                if let status = qrzTestStatus {
-                    Text(status)
-                        .font(.caption)
-                        .foregroundColor(status.contains("Success") ? .green : .red)
-                }
+                .padding(8)
             }
         }
     }
@@ -822,6 +875,23 @@ public struct SettingsView: View {
                 qrzTestStatus = "Success! Logged into QRZ.com successfully."
             } else {
                 qrzTestStatus = appState.qrzService.lastError ?? "Authentication failed"
+            }
+        }
+    }
+    
+    private func testHamQTH() {
+        isTestingHamQTH = true
+        hamqthTestStatus = nil
+        Task {
+            let ok = await appState.hamqthService.authenticate(
+                username: appState.settings.hamqthUsername,
+                password: appState.settings.hamqthPassword
+            )
+            isTestingHamQTH = false
+            if ok {
+                hamqthTestStatus = "Success! Logged into HamQTH.com successfully."
+            } else {
+                hamqthTestStatus = appState.hamqthService.lastError ?? "Authentication failed"
             }
         }
     }

@@ -184,6 +184,11 @@ public struct QSLCardEditorModalView: View {
                                     workingTemplate.elements[idx].normalizedX = newNormX
                                     workingTemplate.elements[idx].normalizedY = newNormY
                                 }
+                            },
+                            onElementTextChanged: { id, newText in
+                                if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                    workingTemplate.elements[idx].textContent = newText
+                                }
                             }
                         )
                         .frame(width: baseW, height: baseH)

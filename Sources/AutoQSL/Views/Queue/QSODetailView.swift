@@ -110,11 +110,7 @@ public struct QSODetailView: View {
                                 .font(.caption)
                         }
                         
-                        Button(action: { isCardEditorPresented = true }) {
-                            Label("Edit Layout", systemImage: "pencil.and.outline")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.borderless)
+
                     }
                     
                     let previewWidth: CGFloat = 520

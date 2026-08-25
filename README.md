@@ -89,9 +89,12 @@ open -a Xcode .
 ## Changelog
 
 ### Version 1.1.0 (2026-08)
+- 🔍 **HamQTH.com Callbook Lookup**: Added full integration for HamQTH XML callbook lookups with customizable provider priorities (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).
+- ✏️ **Direct On-Canvas Editing**: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas in addition to the inspector sidebar.
 - 📻 **Band & Frequency Selection**: Dynamic two-way synchronization between Band and Frequency fields in both "Log QSO Manually" and "Edit QSO" dialogs.
 - ⚡ **Auto Band Detection**: Typing frequency in MHz automatically selects the matching amateur band; selecting a band auto-populates the default frequency.
 - 🎛️ **Custom Modes & Bands**: Added custom mode text input when selecting "Other..." or using non-standard modes (`VARAC`, `JT65`, `DMR`, `C4FM`, `D-STAR`, `WSPR`, etc.), and custom band support.
+- 💾 **SQLite Queue Synchronization**: Permanent deletion synchronization and prevention of duplicate legacy re-imports across restarts.
 - 🧪 **Radio Engine & Tests**: Centralized `RadioUtils` helper and unit tests for frequency calculations and custom QSO logging.
 
 ### Version 1.0.0 (2026-08)

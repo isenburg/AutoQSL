@@ -1,3 +1,12 @@
+public enum CallbookProvider: String, Codable, CaseIterable, Identifiable {
+    case qrzPrimary = "QRZ.com (Primary) + HamQTH (Fallback)"
+    case hamqthPrimary = "HamQTH (Primary) + QRZ.com (Fallback)"
+    case qrzOnly = "QRZ.com Only"
+    case hamqthOnly = "HamQTH Only"
+    
+    public var id: String { rawValue }
+}
+
 import Foundation
 import SwiftUI
 
@@ -145,10 +154,14 @@ public struct AppSettings: Codable {
     public var rumlogAddress: String
     public var rumlogPort: Int
     
-    // QRZ.com XML API
+    // Callbook Lookup (QRZ & HamQTH)
+    public var callbookProvider: CallbookProvider
     public var qrzEnabled: Bool
     public var qrzUsername: String
     public var qrzPassword: String
+    public var hamqthEnabled: Bool
+    public var hamqthUsername: String
+    public var hamqthPassword: String
     
     // Email Delivery
     public var emailDeliveryMethod: EmailDeliveryMethod
@@ -211,6 +224,10 @@ public struct AppSettings: Codable {
         qrzEnabled: Bool = true,
         qrzUsername: String = "",
         qrzPassword: String = "",
+        callbookProvider: CallbookProvider = .qrzPrimary,
+        hamqthEnabled: Bool = true,
+        hamqthUsername: String = "",
+        hamqthPassword: String = "",
         emailDeliveryMethod: EmailDeliveryMethod = .appleMail,
         appleMailSendImmediately: Bool = false,
         smtpHost: String = "smtp.gmail.com",
@@ -258,9 +275,13 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.rumlogEnabled = rumlogEnabled
         self.rumlogAddress = rumlogAddress
         self.rumlogPort = rumlogPort
+        self.callbookProvider = callbookProvider
         self.qrzEnabled = qrzEnabled
         self.qrzUsername = qrzUsername
         self.qrzPassword = qrzPassword
+        self.hamqthEnabled = hamqthEnabled
+        self.hamqthUsername = hamqthUsername
+        self.hamqthPassword = hamqthPassword
         self.emailDeliveryMethod = emailDeliveryMethod
         self.appleMailSendImmediately = appleMailSendImmediately
         self.smtpHost = smtpHost
@@ -283,7 +304,7 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         case myGrid, myCQZone, myITUZone, myCounty, defaultComment
         case dateOrder, dateSeparator, dateHeaderStyle
         case wsjtxEnabled, wsjtxAddress, wsjtxPort, rumlogEnabled, rumlogAddress, rumlogPort
-        case qrzEnabled, qrzUsername, qrzPassword
+        case callbookProvider, qrzEnabled, qrzUsername, qrzPassword, hamqthEnabled, hamqthUsername, hamqthPassword
         case emailDeliveryMethod, appleMailSendImmediately
         case smtpHost, smtpPort, smtpUsername, smtpPassword, smtpUseTLS
         case fromName, fromEmail, replyToEmail
@@ -333,9 +354,13 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.rumlogEnabled = try container.decodeIfPresent(Bool.self, forKey: .rumlogEnabled) ?? true
         self.rumlogAddress = try container.decodeIfPresent(String.self, forKey: .rumlogAddress) ?? "127.0.0.1"
         self.rumlogPort = try container.decodeIfPresent(Int.self, forKey: .rumlogPort) ?? 12063
+        self.callbookProvider = try container.decodeIfPresent(CallbookProvider.self, forKey: .callbookProvider) ?? .qrzPrimary
         self.qrzEnabled = try container.decodeIfPresent(Bool.self, forKey: .qrzEnabled) ?? true
         self.qrzUsername = try container.decodeIfPresent(String.self, forKey: .qrzUsername) ?? ""
         self.qrzPassword = try container.decodeIfPresent(String.self, forKey: .qrzPassword) ?? ""
+        self.hamqthEnabled = try container.decodeIfPresent(Bool.self, forKey: .hamqthEnabled) ?? true
+        self.hamqthUsername = try container.decodeIfPresent(String.self, forKey: .hamqthUsername) ?? ""
+        self.hamqthPassword = try container.decodeIfPresent(String.self, forKey: .hamqthPassword) ?? ""
         self.emailDeliveryMethod = try container.decodeIfPresent(EmailDeliveryMethod.self, forKey: .emailDeliveryMethod) ?? .appleMail
         self.appleMailSendImmediately = try container.decodeIfPresent(Bool.self, forKey: .appleMailSendImmediately) ?? false
         self.smtpHost = try container.decodeIfPresent(String.self, forKey: .smtpHost) ?? "smtp.gmail.com"

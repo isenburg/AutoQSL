@@ -41,6 +41,7 @@ public final class AppState: ObservableObject {
     
     public let udpListener = UDPListenerService()
     public let qrzService = QRZService()
+    public let hamqthService = HamQTHService()
     public let smtpService = SMTPService()
     public let appleMailService = AppleMailService.shared
     
@@ -235,24 +236,71 @@ public final class AppState: ObservableObject {
         qsoQueue[index].status = .lookingUpQRZ
         lastLogMessage = "Looking up QRZ info for \(qsoQueue[index].dxCall)..."
         
-        // 1. QRZ Lookup if enabled
-        if settings.qrzEnabled {
-            if let profile = await qrzService.lookup(callsign: qsoQueue[index].dxCall, username: settings.qrzUsername, password: settings.qrzPassword) {
-                if let email = profile.email, !email.isEmpty {
-                    qsoQueue[index].dxEmail = email
-                }
-                if let name = profile.fname ?? profile.name, !name.isEmpty {
-                    qsoQueue[index].dxName = profile.fullName
-                }
-                if let grid = profile.grid, !grid.isEmpty {
-                    qsoQueue[index].dxGrid = grid
-                }
-                if let country = profile.country, !country.isEmpty {
-                    qsoQueue[index].dxCountry = country
-                }
-                qsoQueue[index].dxAddress = profile.fullAddressFormatted
-                qsoQueue[index].qrzFound = true
+        // 1. Callbook Lookup (QRZ.com & HamQTH)
+        let callsign = qsoQueue[index].dxCall
+        var foundProfile: QRZProfile? = nil
+        
+        switch settings.callbookProvider {
+        case .qrzPrimary:
+            if settings.qrzEnabled {
+                lastLogMessage = "Looking up QRZ info for \(callsign)..."
+                foundProfile = await qrzService.lookup(callsign: callsign, username: settings.qrzUsername, password: settings.qrzPassword)
             }
+            if (foundProfile == nil || (foundProfile?.email?.isEmpty ?? true)) && settings.hamqthEnabled {
+                lastLogMessage = "Looking up HamQTH info for \(callsign)..."
+                if let hProfile = await hamqthService.lookup(callsign: callsign, username: settings.hamqthUsername, password: settings.hamqthPassword) {
+                    if foundProfile == nil {
+                        foundProfile = hProfile
+                    } else if let hEmail = hProfile.email, !hEmail.isEmpty {
+                        foundProfile?.email = hEmail
+                    }
+                }
+            }
+            
+        case .hamqthPrimary:
+            if settings.hamqthEnabled {
+                lastLogMessage = "Looking up HamQTH info for \(callsign)..."
+                foundProfile = await hamqthService.lookup(callsign: callsign, username: settings.hamqthUsername, password: settings.hamqthPassword)
+            }
+            if (foundProfile == nil || (foundProfile?.email?.isEmpty ?? true)) && settings.qrzEnabled {
+                lastLogMessage = "Looking up QRZ info for \(callsign)..."
+                if let qProfile = await qrzService.lookup(callsign: callsign, username: settings.qrzUsername, password: settings.qrzPassword) {
+                    if foundProfile == nil {
+                        foundProfile = qProfile
+                    } else if let qEmail = qProfile.email, !qEmail.isEmpty {
+                        foundProfile?.email = qEmail
+                    }
+                }
+            }
+            
+        case .qrzOnly:
+            if settings.qrzEnabled {
+                lastLogMessage = "Looking up QRZ info for \(callsign)..."
+                foundProfile = await qrzService.lookup(callsign: callsign, username: settings.qrzUsername, password: settings.qrzPassword)
+            }
+            
+        case .hamqthOnly:
+            if settings.hamqthEnabled {
+                lastLogMessage = "Looking up HamQTH info for \(callsign)..."
+                foundProfile = await hamqthService.lookup(callsign: callsign, username: settings.hamqthUsername, password: settings.hamqthPassword)
+            }
+        }
+        
+        if let profile = foundProfile {
+            if let email = profile.email, !email.isEmpty {
+                qsoQueue[index].dxEmail = email
+            }
+            if let name = profile.fname ?? profile.name, !name.isEmpty {
+                qsoQueue[index].dxName = profile.fullName
+            }
+            if let grid = profile.grid, !grid.isEmpty {
+                qsoQueue[index].dxGrid = grid
+            }
+            if let country = profile.country, !country.isEmpty {
+                qsoQueue[index].dxCountry = country
+            }
+            qsoQueue[index].dxAddress = profile.fullAddressFormatted
+            qsoQueue[index].qrzFound = true
         }
         
         let currentQSO = qsoQueue[index]
@@ -419,11 +467,13 @@ public final class AppState: ObservableObject {
     public func deleteQSO(qsoId: UUID) {
         qsoQueue.removeAll(where: { $0.id == qsoId })
         selectedQSOIds.remove(qsoId)
+        QSODatabaseService.shared.delete(qsoId: qsoId)
     }
     
     public func deleteQSOs(qsoIds: Set<UUID>) {
         qsoQueue.removeAll(where: { qsoIds.contains($0.id) })
         selectedQSOIds.subtract(qsoIds)
+        QSODatabaseService.shared.deleteBatch(ids: Array(qsoIds))
     }
     
     public func addManualQSO(

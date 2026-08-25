@@ -258,6 +258,11 @@ public struct CardDesignerRootView: View {
                                     appState.activeTemplate.elements[idx].normalizedX = newNormX
                                     appState.activeTemplate.elements[idx].normalizedY = newNormY
                                 }
+                            },
+                            onElementTextChanged: { id, newText in
+                                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                    appState.activeTemplate.elements[idx].textContent = newText
+                                }
                             }
                         )
                         .frame(width: baseW, height: baseH)

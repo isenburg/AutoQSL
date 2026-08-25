@@ -113,6 +113,42 @@ public final class QSODatabaseService {
         }
     }
     
+    public func deleteAll() {
+        queue.sync {
+            guard let db = db else { return }
+            sqlite3_exec(db, "DELETE FROM qsos;", nil, nil, nil)
+        }
+    }
+    
+    public func syncQueue(activeQSOs: [QSO]) {
+        queue.sync {
+            guard let db = db else { return }
+            sqlite3_exec(db, "BEGIN TRANSACTION;", nil, nil, nil)
+            
+            if activeQSOs.isEmpty {
+                sqlite3_exec(db, "DELETE FROM qsos;", nil, nil, nil)
+            } else {
+                let activeIds = activeQSOs.map { $0.id.uuidString }
+                let placeholders = Array(repeating: "?", count: activeIds.count).joined(separator: ",")
+                let deleteSql = "DELETE FROM qsos WHERE id NOT IN (\(placeholders));"
+                var stmt: OpaquePointer?
+                if sqlite3_prepare_v2(db, deleteSql, -1, &stmt, nil) == SQLITE_OK {
+                    for (index, idStr) in activeIds.enumerated() {
+                        sqlite3_bind_text(stmt, Int32(index + 1), (idStr as NSString).utf8String, -1, nil)
+                    }
+                    sqlite3_step(stmt)
+                }
+                sqlite3_finalize(stmt)
+                
+                for qso in activeQSOs {
+                    insertOrReplaceInternal(qso)
+                }
+            }
+            
+            sqlite3_exec(db, "COMMIT;", nil, nil, nil)
+        }
+    }
+
     public func insertBatch(_ qsos: [QSO]) {
         guard !qsos.isEmpty else { return }
         queue.sync {
@@ -391,7 +427,12 @@ public final class QSODatabaseService {
     // MARK: - Migration from Legacy JSON
     
     public func migrateFromJSONIfNeeded(jsonURL: URL) {
-        guard count() == 0, FileManager.default.fileExists(atPath: jsonURL.path) else { return }
+        let markerURL = jsonURL.deletingLastPathComponent().appendingPathComponent(".sqlite_migration_done")
+        guard !FileManager.default.fileExists(atPath: markerURL.path) else { return }
+        guard count() == 0, FileManager.default.fileExists(atPath: jsonURL.path) else {
+            try? "".write(to: markerURL, atomically: true, encoding: .utf8)
+            return
+        }
         
         if let data = try? Data(contentsOf: jsonURL),
            let qsos = try? JSONDecoder().decode([QSO].self, from: data),
@@ -399,5 +440,6 @@ public final class QSODatabaseService {
             insertBatch(qsos)
             print("Successfully migrated \(qsos.count) QSOs from JSON to SQLite database.")
         }
+        try? "".write(to: markerURL, atomically: true, encoding: .utf8)
     }
 }

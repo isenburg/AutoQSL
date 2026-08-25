@@ -190,7 +190,7 @@ public final class PersistenceService {
         let dbURL = sqliteDatabaseURL(for: loc)
         
         QSODatabaseService.shared.open(at: dbURL)
-        QSODatabaseService.shared.insertBatch(qsos)
+        QSODatabaseService.shared.syncQueue(activeQSOs: qsos)
         
         // Maintain an atomic JSON backup for safety and portability
         let targetURL = storageDirectory(for: loc).appendingPathComponent("qso_history.json")
