@@ -124,7 +124,17 @@ public struct MainView: View {
             .padding(.vertical, 6)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .background(SectionWindowResizer(section: appState.navigationSection))
+        .background(
+            Group {
+                SectionWindowResizer(section: appState.navigationSection)
+                Button("") {
+                    appState.navigationSection = .settings
+                }
+                .keyboardShortcut(",", modifiers: .command)
+                .opacity(0)
+                .frame(width: 0, height: 0)
+            }
+        )
         .preferredColorScheme(appState.settings.appearance.colorScheme)
         .sheet(isPresented: $appState.isConfirmationSheetPresented) {
             if let qso = appState.qsoAwaitingConfirmation {

@@ -54,14 +54,14 @@ struct AutoQSLApp: App {
             MainView(appState: appState)
                 .frame(minWidth: 1000, minHeight: 680)
         }
+        .commands {
+            AutoQSLCommands(appState: appState)
+        }
         
         Window("Help & Docs", id: "help") {
             HelpView()
                 .frame(minWidth: 800, idealWidth: 900, minHeight: 600, idealHeight: 700)
                 .background(WindowAccessor(autosaveName: "AutoQSLHelpWindow", defaultWidth: 900, defaultHeight: 700))
-        }
-        .commands {
-            AutoQSLCommands(appState: appState)
         }
     }
 }
@@ -71,6 +71,16 @@ struct AutoQSLCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     
     var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") {
+                appState.navigationSection = .settings
+                if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" || $0.title.contains("AutoQSL") }) {
+                    window.makeKeyAndOrderFront(nil)
+                }
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
+        
         CommandGroup(replacing: .help) {
             Button("AutoQSL Help") {
                 openWindow(id: "help")
@@ -99,7 +109,7 @@ struct AutoQSLCommands: Commands {
             Button("Settings") {
                 appState.navigationSection = .settings
             }
-            .keyboardShortcut("3", modifiers: .command)
+            .keyboardShortcut(",", modifiers: .command)
             
             Divider()
             

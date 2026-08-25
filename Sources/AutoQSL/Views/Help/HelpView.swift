@@ -669,6 +669,12 @@ public struct HelpView: View {
                             "HamQTH.com Callbook Integration: Full support for free HamQTH XML lookups with configurable fallback priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only)."
                     )
                     featureRow(
+                        icon: "command",
+                        text: isGerman ?
+                            "Natives Einstellungen-Tastaturkürzel (⌘,): Öffnet die Einstellungen direkt aus jedem Fenster und über das macOS-Anwendungsmenü." :
+                            "Native Settings Shortcut (⌘,): Open Settings instantly from any window and via standard macOS App menu."
+                    )
+                    featureRow(
                         icon: "pencil.line",
                         text: isGerman ?
                             "Direkte Canvas-Textbearbeitung: Rufzeichen, Adressblock und benutzerdefinierter Text können direkt auf der Karte im Designer bearbeitet werden." :

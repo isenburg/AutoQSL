@@ -318,6 +318,7 @@ Released for the global amateur radio community.
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com XML Callbook Integration**: Native support for free HamQTH callbook lookups with fallback and dual-lookup priority modes.
+- ⌨️ **Native Settings Shortcut**: Standard macOS `⌘,` shortcut to open Settings from any window or menu.
 - ✏️ **Direct On-Canvas Editing**: Edit Callsign, Address Block, and Custom Text directly on the interactive card canvas in addition to the inspector sidebar.
 - 📻 **Band & Frequency Selection**: Dynamic two-way synchronization between Band and Frequency fields in both "Log QSO Manually" and "Edit QSO" dialogs.
 - ⚡ **Auto Band Detection**: Typing frequency in MHz automatically selects the matching amateur band; selecting a band auto-populates the default frequency.
