@@ -182,3 +182,89 @@ public struct QSO: Identifiable, Codable, Hashable {
         }
     }
 }
+
+
+public struct RadioUtils {
+    public static let standardBands: [String] = [
+        "2190m", "630m", "160m", "80m", "60m", "40m", "30m", "20m",
+        "17m", "15m", "12m", "10m", "6m", "4m", "2m", "1.25m", "70cm",
+        "33cm", "23cm", "13cm"
+    ]
+    
+    public static let standardModes: [String] = [
+        "FT8", "FT4", "CW", "SSB", "USB", "LSB", "RTTY", "PSK31",
+        "FM", "AM", "MSK144", "JS8", "Olivia", "SSTV", "Q65", "FST4",
+        "VARAC", "DMR", "C4FM", "D-STAR", "WSPR"
+    ]
+    
+    public static func defaultFrequencyMHz(for band: String) -> Double? {
+        let clean = band.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch clean {
+        case "2190m": return 0.136
+        case "630m": return 0.474
+        case "160m": return 1.840
+        case "80m": return 3.573
+        case "60m": return 5.357
+        case "40m": return 7.074
+        case "30m": return 10.136
+        case "20m": return 14.074
+        case "17m": return 18.100
+        case "15m": return 21.074
+        case "12m": return 24.915
+        case "10m": return 28.074
+        case "6m": return 50.313
+        case "4m": return 70.154
+        case "2m": return 144.174
+        case "1.25m": return 222.100
+        case "70cm": return 432.174
+        case "33cm": return 902.100
+        case "23cm": return 1296.174
+        case "13cm": return 2304.100
+        default: return nil
+        }
+    }
+    
+    public static func band(forFrequencyMHz mhz: Double) -> String? {
+        switch mhz {
+        case 0.135...0.138: return "2190m"
+        case 0.472...0.479: return "630m"
+        case 1.8...2.0: return "160m"
+        case 3.5...4.0: return "80m"
+        case 5.0...5.5: return "60m"
+        case 7.0...7.3: return "40m"
+        case 10.1...10.15: return "30m"
+        case 14.0...14.35: return "20m"
+        case 18.068...18.168: return "17m"
+        case 21.0...21.45: return "15m"
+        case 24.89...24.99: return "12m"
+        case 28.0...29.7: return "10m"
+        case 50.0...54.0: return "6m"
+        case 70.0...70.5: return "4m"
+        case 144.0...148.0: return "2m"
+        case 222.0...225.0: return "1.25m"
+        case 420.0...450.0: return "70cm"
+        case 902.0...928.0: return "33cm"
+        case 1240.0...1300.0: return "23cm"
+        case 2300.0...2450.0: return "13cm"
+        default: return nil
+        }
+    }
+    
+    public static func parseFrequencyMHz(from string: String) -> Double? {
+        let cleaned = string.replacingOccurrences(of: "MHz", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "kHz", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "Hz", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: ",", with: ".")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard let val = Double(cleaned), val > 0 else { return nil }
+        
+        if val >= 1_000_000 {
+            return val / 1_000_000.0
+        }
+        if val >= 1_000 && val < 1_000_000 {
+            return val / 1_000.0
+        }
+        return val
+    }
+}

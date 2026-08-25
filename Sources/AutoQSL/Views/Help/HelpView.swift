@@ -17,6 +17,7 @@ public struct HelpView: View {
         case storageSync = "7. iCloud Storage & Sync"
         case disclaimer = "8. Disclaimer & Privacy"
         case copyright = "9. Copyright & Credits"
+        case changelog = "10. Changelog & Versions"
 
         public var id: String { rawValue }
         
@@ -31,6 +32,7 @@ public struct HelpView: View {
             case .storageSync: return "icloud.circle.fill"
             case .disclaimer: return "exclamationmark.shield.fill"
             case .copyright: return "c.circle.fill"
+            case .changelog: return "clock.arrow.circlepath"
             }
         }
     }
@@ -89,6 +91,7 @@ public struct HelpView: View {
         case .storageSync: return "7. iCloud-Speicher & Sync"
         case .disclaimer: return "8. Haftungsausschluss & Datenschutz"
         case .copyright: return "9. Urheberrecht & Credits"
+        case .changelog: return "10. Versionsgeschichte & Changelog"
         }
     }
 
@@ -113,6 +116,8 @@ public struct HelpView: View {
             disclaimerSection
         case .copyright:
             copyrightSection
+        case .changelog:
+            changelogSection
         }
     }
 
@@ -491,6 +496,81 @@ public struct HelpView: View {
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
+        }
+    }
+
+
+    // MARK: - 10. Changelog & Versions
+    private var changelogSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.title)
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isGerman ? "Versionsgeschichte & Changelog" : "Changelog & Version History")
+                        .font(.title2.bold())
+                    Text("AutoQSL Updates & Release Notes")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            GroupBox(label: Text("Version 1.1.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "waveform.path",
+                        text: isGerman ?
+                            "Dynamische Band- & Frequenzeingabe: Automatische Synchronisation zwischen Band-Dropdown und Frequenzfeld in 'Manuell loggen' und 'QSO bearbeiten'." :
+                            "Dynamic Band & Frequency Selection: 2-way sync between Band dropdown and Frequency field in Manual Log and Edit QSO modals."
+                    )
+                    featureRow(
+                        icon: "character.cursor.ibeam",
+                        text: isGerman ?
+                            "Benutzerdefinierte Modi: Freie Texteingabe für beliebige Betriebsarten (z.B. VARAC, JT65, DMR, C4FM, WSPR) bei Auswahl von 'Other...'." :
+                            "Custom Modes: Text entry for any custom digital or voice mode (e.g. VARAC, JT65, DMR, C4FM, WSPR) when selecting 'Other...'."
+                    )
+                    featureRow(
+                        icon: "antenna.radiowaves.left.and.right",
+                        text: isGerman ?
+                            "Erweiterte Band-Erkennung: Zentralisiertes RadioUtils-Modul mit automatischer Zuordnung und Einheitenumrechnung." :
+                            "Enhanced Band Detection: Centralized RadioUtils engine with automatic band matching and unit parsing."
+                    )
+                }
+                .padding(8)
+            }
+
+            GroupBox(label: Text("Version 1.0.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "sparkles",
+                        text: isGerman ?
+                            "Erstveröffentlichung: Echtzeit UDP-Erfassung für WSJT-X, JTDX und RUMlogNG." :
+                            "Initial Release: Real-time UDP capture for WSJT-X, JTDX, and RUMlogNG."
+                    )
+                    featureRow(
+                        icon: "paintpalette.fill",
+                        text: isGerman ?
+                            "Visueller WYSIWYG QSL-Kartendesigner mit Ebenenverwaltung, Transparenzen und Undo (⌘Z)." :
+                            "Visual WYSIWYG QSL Card Designer with layer management, alpha opacity, and undo support (⌘Z)."
+                    )
+                    featureRow(
+                        icon: "paperplane.fill",
+                        text: isGerman ?
+                            "Automatischer Versand über Apple Mail, Standard-Mailclient oder direktes SMTP mit QRZ.com-Abfrage." :
+                            "Multi-channel dispatch via Apple Mail, default email client, or direct SMTP with QRZ.com lookup."
+                    )
+                    featureRow(
+                        icon: "internaldrive.fill",
+                        text: isGerman ?
+                            "Native SQLite-Datenbank und duale lokale / iCloud Drive Synchronisation." :
+                            "Native SQLite database engine and dual Local / iCloud Drive sync."
+                    )
+                }
+                .padding(8)
+            }
         }
     }
 

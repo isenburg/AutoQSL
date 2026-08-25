@@ -88,3 +88,24 @@ AutoQSL operates entirely locally on your Mac. All credentials, settings, templa
 ## 7. Copyright & License
 **Copyright © 2024–2026 Georg Isenbürger · DJ6GI**  
 All rights reserved. Released for the global amateur radio community.
+
+---
+
+## 8. Changelog & Version History
+
+### Version 1.1.0 (2026-08)
+- **Band & Frequency Input**: Added flexible Band and Frequency selection with dynamic two-way synchronization in both "Log QSO Manually" and "Edit QSO" dialogs.
+- **Auto-Detection**: Selecting a band auto-populates standard frequency; entering a frequency in MHz automatically detects and selects the corresponding amateur band.
+- **Custom Band Support**: Support for entering custom or microwave/satellite bands when selecting "Custom...".
+- **Custom Mode Input**: Added custom mode string text field when selecting "Other..." or when editing a QSO with non-standard digital/voice modes (e.g. `VARAC`, `JT65`, `DMR`, `C4FM`, `D-STAR`, `WSPR`, etc.).
+- **RadioUtils Engine**: Centralized amateur radio band specifications, frequencies, and parsing utilities.
+- **Testing**: Added unit test coverage for frequency calculation, band detection, and manual logging with custom modes.
+
+### Version 1.0.0 (2026-08)
+- Initial public release of AutoQSL for macOS.
+- Real-time UDP capture for WSJT-X, JTDX, and RUMlogNG.
+- WYSIWYG QSL card designer with layer management, drag-and-drop, badges, and undo support.
+- QRZ.com XML API automatic lookup for email, name, and QTH.
+- Multi-channel email delivery (Apple Mail, Default Mail Client, direct SMTP).
+- SQLite storage backend with optional iCloud Drive sync.
+- Preview & Confirm, Fully Automatic, and Manual Queue automation modes.

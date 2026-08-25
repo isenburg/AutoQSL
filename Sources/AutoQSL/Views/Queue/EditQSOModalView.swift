@@ -7,8 +7,10 @@ public struct EditQSOModalView: View {
     
     // Editable State Variables
     @State private var dxCall: String = ""
-    @State private var band: String = "20m"
-    @State private var mode: String = "FT8"
+    @State private var bandSelection: String = "20m"
+    @State private var customBand: String = ""
+    @State private var modeSelection: String = "FT8"
+    @State private var customMode: String = ""
     @State private var frequencyMHzText: String = ""
     @State private var qsoDate: Date = Date()
     @State private var utcHour: Int = 12
@@ -29,8 +31,21 @@ public struct EditQSOModalView: View {
     @State private var selectedTemplateId: UUID?
     @State private var isCustomCardDesignerPresented: Bool = false
     
-    private let availableBands = ["160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "4m", "2m", "70cm", "23cm"]
-    private let availableModes = ["FT8", "FT4", "CW", "SSB", "RTTY", "PSK31", "FM", "AM", "MSK144", "JS8", "Olivia", "SSTV"]
+    private var effectiveBand: String {
+        if bandSelection == "Custom" {
+            let trimmed = customBand.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "20m" : trimmed
+        }
+        return bandSelection
+    }
+    
+    private var effectiveMode: String {
+        if modeSelection == "Other" {
+            let trimmed = customMode.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "FT8" : trimmed.uppercased()
+        }
+        return modeSelection
+    }
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -118,28 +133,62 @@ public struct EditQSOModalView: View {
                     GroupBox(label: Text("QSO Parameters (Printed on Card)").font(.headline)) {
                         VStack(alignment: .leading, spacing: 10) {
                             FormRow(label: "Band / Mode:") {
-                                HStack(spacing: 12) {
-                                    Picker("", selection: $band) {
-                                        ForEach(availableBands, id: \.self) {
-                                            Text($0).tag($0)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 10) {
+                                        Picker("", selection: $bandSelection) {
+                                            ForEach(RadioUtils.standardBands, id: \.self) {
+                                                Text($0).tag($0)
+                                            }
+                                            Text("Custom...").tag("Custom")
                                         }
-                                    }
-                                    .frame(width: 90)
-                                    
-                                    Picker("", selection: $mode) {
-                                        ForEach(availableModes, id: \.self) {
-                                            Text($0).tag($0)
-                                        }
-                                    }
-                                    .frame(width: 90)
-                                    
-                                    Text("Freq:")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                    
-                                    TextField("MHz", text: $frequencyMHzText)
-                                        .textFieldStyle(.roundedBorder)
+                                        .labelsHidden()
                                         .frame(width: 90)
+                                        .onChange(of: bandSelection) { _, newBand in
+                                            if newBand != "Custom", let defFreq = RadioUtils.defaultFrequencyMHz(for: newBand) {
+                                                frequencyMHzText = String(format: "%.3f", defFreq)
+                                            }
+                                        }
+                                        
+                                        Picker("", selection: $modeSelection) {
+                                            ForEach(RadioUtils.standardModes, id: \.self) {
+                                                Text($0).tag($0)
+                                            }
+                                            Text("Other...").tag("Other")
+                                        }
+                                        .labelsHidden()
+                                        .frame(width: 95)
+                                        
+                                        Text("Freq:")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                        
+                                        TextField("MHz", text: $frequencyMHzText)
+                                            .textFieldStyle(.roundedBorder)
+                                            .frame(width: 85)
+                                            .onChange(of: frequencyMHzText) { _, newFreq in
+                                                if let mhz = RadioUtils.parseFrequencyMHz(from: newFreq),
+                                                   let detectedBand = RadioUtils.band(forFrequencyMHz: mhz) {
+                                                    if bandSelection != detectedBand {
+                                                        bandSelection = detectedBand
+                                                    }
+                                                }
+                                            }
+                                    }
+                                    
+                                    if bandSelection == "Custom" || modeSelection == "Other" {
+                                        HStack(spacing: 10) {
+                                            if bandSelection == "Custom" {
+                                                TextField("Custom Band", text: $customBand)
+                                                    .textFieldStyle(.roundedBorder)
+                                                    .frame(width: 120)
+                                            }
+                                            if modeSelection == "Other" {
+                                                TextField("Custom Mode (e.g. VARAC)", text: $customMode)
+                                                    .textFieldStyle(.roundedBorder)
+                                                    .frame(width: 170)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             
@@ -310,10 +359,12 @@ public struct EditQSOModalView: View {
         q.dxGrid = dxGrid
         q.dxCountry = dxCountry
         q.dxAddress = dxAddress
-        q.band = band
-        q.mode = mode
-        if let fMhz = Double(frequencyMHzText.replacingOccurrences(of: ",", with: ".")) {
+        q.band = effectiveBand
+        q.mode = effectiveMode
+        if let fMhz = RadioUtils.parseFrequencyMHz(from: frequencyMHzText) {
             q.frequencyHz = fMhz * 1_000_000.0
+        } else if let defMhz = RadioUtils.defaultFrequencyMHz(for: effectiveBand) {
+            q.frequencyHz = defMhz * 1_000_000.0
         }
         q.qsoDate = constructUTCDate()
         q.rstSent = rstSent
@@ -333,11 +384,28 @@ public struct EditQSOModalView: View {
         dxGrid = originalQSO.dxGrid
         dxCountry = originalQSO.dxCountry
         dxAddress = originalQSO.dxAddress
-        band = originalQSO.band
-        mode = originalQSO.mode
+        if RadioUtils.standardBands.contains(originalQSO.band) {
+            bandSelection = originalQSO.band
+            customBand = ""
+        } else {
+            bandSelection = "Custom"
+            customBand = originalQSO.band
+        }
+        
+        if RadioUtils.standardModes.contains(originalQSO.mode.uppercased()) {
+            modeSelection = originalQSO.mode.uppercased()
+            customMode = ""
+        } else {
+            modeSelection = "Other"
+            customMode = originalQSO.mode
+        }
         
         if let freq = originalQSO.frequencyHz {
             frequencyMHzText = String(format: "%.3f", freq / 1_000_000.0)
+        } else if let defFreq = RadioUtils.defaultFrequencyMHz(for: originalQSO.band) {
+            frequencyMHzText = String(format: "%.3f", defFreq)
+        } else {
+            frequencyMHzText = ""
         }
         
         qsoDate = originalQSO.qsoDate

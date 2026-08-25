@@ -430,16 +430,27 @@ public final class AppState: ObservableObject {
         dxCall: String,
         band: String,
         mode: String,
+        frequencyHz: Double? = nil,
         rstSent: String,
         rstRcvd: String,
         comment: String,
         dxEmail: String
     ) {
+        let finalFreq: Double?
+        if let f = frequencyHz, f > 0 {
+            finalFreq = f
+        } else if let defMHz = RadioUtils.defaultFrequencyMHz(for: band) {
+            finalFreq = defMHz * 1_000_000.0
+        } else {
+            finalFreq = nil
+        }
+        
         let qso = QSO(
             source: .manual,
             dxCall: dxCall,
             band: band,
             mode: mode,
+            frequencyHz: finalFreq,
             rstSent: rstSent,
             rstRcvd: rstRcvd,
             comment: comment.isEmpty ? settings.defaultComment : comment,

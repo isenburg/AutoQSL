@@ -353,12 +353,31 @@ public struct AddManualQSOView: View {
     @Binding var isPresented: Bool
     
     @State private var dxCall: String = ""
-    @State private var band: String = "20m"
-    @State private var mode: String = "FT8"
+    @State private var bandSelection: String = "20m"
+    @State private var customBand: String = ""
+    @State private var frequencyMHzText: String = "14.074"
+    @State private var modeSelection: String = "FT8"
+    @State private var customMode: String = ""
     @State private var rstSent: String = "59"
     @State private var rstRcvd: String = "59"
     @State private var comment: String = ""
     @State private var dxEmail: String = ""
+    
+    private var effectiveBand: String {
+        if bandSelection == "Custom" {
+            let trimmed = customBand.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "20m" : trimmed
+        }
+        return bandSelection
+    }
+    
+    private var effectiveMode: String {
+        if modeSelection == "Other" {
+            let trimmed = customMode.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "FT8" : trimmed.uppercased()
+        }
+        return modeSelection
+    }
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -394,24 +413,76 @@ public struct AddManualQSOView: View {
                     
                     GroupBox(label: Text("QSO Parameters").font(.headline)) {
                         VStack(alignment: .leading, spacing: 10) {
-                            FormRow(label: "Band:", labelWidth: 90) {
-                                Picker("", selection: $band) {
-                                    ForEach(["160m", "80m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"], id: \.self) {
-                                        Text($0).tag($0)
+                            FormRow(label: "Band / Freq:", labelWidth: 90) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 8) {
+                                        Picker("", selection: $bandSelection) {
+                                            ForEach(RadioUtils.standardBands, id: \.self) {
+                                                Text($0).tag($0)
+                                            }
+                                            Text("Custom...").tag("Custom")
+                                        }
+                                        .labelsHidden()
+                                        .frame(width: 95)
+                                        .onChange(of: bandSelection) { _, newBand in
+                                            if newBand != "Custom", let defFreq = RadioUtils.defaultFrequencyMHz(for: newBand) {
+                                                frequencyMHzText = String(format: "%.3f", defFreq)
+                                            }
+                                        }
+                                        
+                                        Text("Freq:")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                        
+                                        TextField("MHz", text: $frequencyMHzText)
+                                            .textFieldStyle(.roundedBorder)
+                                            .frame(width: 85)
+                                            .onChange(of: frequencyMHzText) { _, newFreq in
+                                                if let mhz = RadioUtils.parseFrequencyMHz(from: newFreq),
+                                                   let detectedBand = RadioUtils.band(forFrequencyMHz: mhz) {
+                                                    if bandSelection != detectedBand {
+                                                        bandSelection = detectedBand
+                                                    }
+                                                }
+                                            }
+                                        
+                                        Text("MHz")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    if bandSelection == "Custom" {
+                                        HStack(spacing: 6) {
+                                            Text("Custom Band:")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            TextField("e.g. 70cm / 3cm / SAT", text: $customBand)
+                                                .textFieldStyle(.roundedBorder)
+                                                .frame(width: 140)
+                                        }
                                     }
                                 }
-                                .labelsHidden()
-                                .frame(width: 110)
                             }
                             
                             FormRow(label: "Mode:", labelWidth: 90) {
-                                Picker("", selection: $mode) {
-                                    ForEach(["FT8", "FT4", "CW", "SSB", "RTTY", "PSK31", "FM", "MSK144"], id: \.self) {
-                                        Text($0).tag($0)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 8) {
+                                        Picker("", selection: $modeSelection) {
+                                            ForEach(RadioUtils.standardModes, id: \.self) {
+                                                Text($0).tag($0)
+                                            }
+                                            Text("Other...").tag("Other")
+                                        }
+                                        .labelsHidden()
+                                        .frame(width: 110)
+                                        
+                                        if modeSelection == "Other" {
+                                            TextField("Custom Mode (e.g. VARAC)", text: $customMode)
+                                                .textFieldStyle(.roundedBorder)
+                                                .frame(width: 170)
+                                        }
                                     }
                                 }
-                                .labelsHidden()
-                                .frame(width: 110)
                             }
                             
                             FormRow(label: "RST:", labelWidth: 90) {
@@ -448,10 +519,12 @@ public struct AddManualQSOView: View {
                 Spacer()
                 
                 Button("Add & Process QSL") {
+                    let freqHz = RadioUtils.parseFrequencyMHz(from: frequencyMHzText).map { $0 * 1_000_000.0 }
                     appState.addManualQSO(
                         dxCall: dxCall,
-                        band: band,
-                        mode: mode,
+                        band: effectiveBand,
+                        mode: effectiveMode,
+                        frequencyHz: freqHz,
                         rstSent: rstSent,
                         rstRcvd: rstRcvd,
                         comment: comment,
@@ -465,6 +538,6 @@ public struct AddManualQSOView: View {
             .padding()
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 460, height: 480)
+        .frame(width: 480, height: 500)
     }
 }
