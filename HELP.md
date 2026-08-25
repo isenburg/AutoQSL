@@ -81,8 +81,9 @@ The **QSO Queue** tab displays all incoming, pending, and sent contacts with liv
 
 ### Reviewing & Sending Cards (Preview & Confirm)
 1. When a QSO arrives, the **Confirmation Sheet** opens with a 300 DPI preview of the card.
-2. Review the recipient's email address and customize the email message if desired.
-3. Keyboard Shortcuts:
+2. **Click to Zoom (100% Original Size):** Click anywhere on the card preview or the "Click to Zoom" badge to open an interactive floating inspection window in 100% original resolution with trackpad pinch zoom and pan scrolling.
+3. Review the recipient's email address and customize the email message if desired.
+4. Keyboard Shortcuts:
    - `⌘ + Return`: Send QSL card immediately.
    - `Esc`: Skip/dismiss without sending.
 
@@ -167,7 +168,7 @@ Open the **Card Designer** tab to create, customize, and manage your QSL card te
 | **Callsign Block** | ✅ **Directly on Canvas** (Click and type) | Font family, size, bold/italic, gold 3D bevel extrusion, neon glow, drop shadows |
 | **Address Block** | ✅ **Directly on Canvas** (Click and type) | Multi-line text for station address, alignment (left/center/right), typography |
 | **Custom Text** | ✅ **Directly on Canvas** (Click and type) | Custom remarks, slogans, or template placeholders (e.g. `{MY_CALL}`, `{DX_CALL}`) |
-| **QSO Table** | ⚙️ **Right Sidebar Inspector** | Toggle columns (`Date`, `UTC`, `Freq/Band`, `RST`, `Mode`, `Remarks`), headers, date format & separators, table background/border colors & opacity |
+| **QSO Table** | ⚙️ **Right Sidebar Inspector** | Toggle columns (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`), custom column headers, selectable frequency/band format (`MHz`, `Band`, `Band + Freq`), remarks row, date format & separators, background/border colors & opacity |
 | **Location Line** | ⚙️ **Right Sidebar Inspector** | Automatic placeholders for `GRID`, `ITU`, `CQ`, and `COUNTY` zones |
 | **Stickers & Badges**| 🛡️ **Toolbar Badge Picker** | Badges & Stickers collection: Built-in ARRL Diamond, POTA, SOTA, IOTA, CQ, WAS badges + custom PNG/SVG logo imports, deletion, and 1-click placement |
 | **Background & Size**| ⚙️ **Right Sidebar Inspector** | Card aspect ratio (Standard QSL `3.5" x 5.5" / 140x90mm`, `4" x 6"`, `16:9`), background image upload, and tint/darken overlays |

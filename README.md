@@ -98,8 +98,10 @@ open -a Xcode .
 ## Changelog
 
 ### Version 1.2.0 (2026-08)
+- 🔎 **Full-Size Card Inspection & Interactive Zoom**: Single-click on the card preview in either the QSO Detail view or the Confirmation Dialog opens an original size (100%) floating window with smooth trackpad pinch-to-zoom, pan scrolling, and zoom toolbar controls (`-`, `+`, `100%`, `Fit`, `Done`, `Esc`, `⌘+`, `⌘-`, `⌘0`).
 - 🛡️ **Badges & Stickers Collection**: Manageable collection of built-in (ARRL Diamond, POTA, IOTA, SOTA, CQ WPX/DX, WAS All States) and custom stickers with persistent storage in `stickers.json` and `Badges/`.
 - ➕ **Add & Delete Stickers**: Import custom PNG, JPG, SVG, and WebP logos with custom display names; delete unwanted stickers from the collection on hover or via context menu.
+- 📊 **Dynamic Confirmation Table**: Full real-time support for column visibility toggles (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`), custom column header labels, selectable frequency/band display modes (`MHz`, `Band`, `Band + Freq`), and greeting/remarks row.
 - 📐 **Proportional Vector Scaling**: Fully scalable geometry-based vector graphics for all built-in badges to eliminate text clipping or overlapping at any size.
 - 🎯 **True WYSIWYG Scale-Compensated Dragging**: Smooth, jump-free mouse dragging with exact canvas scale compensation.
 - ✏️ **Double-Click Inline Editing**: Direct on-canvas inline text editing activated via double-click without layout shift or position jumps.

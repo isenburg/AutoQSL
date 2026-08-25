@@ -6,6 +6,7 @@ public struct QSODetailView: View {
     
     @State private var isEditQSOModalPresented: Bool = false
     @State private var isCardEditorPresented: Bool = false
+    @State private var isCardZoomModalPresented: Bool = false
     
     private var cardTemplate: QSLCardTemplate {
         appState.template(for: qso)
@@ -130,23 +131,38 @@ public struct QSODetailView: View {
                     let previewWidth: CGFloat = 520
                     let previewHeight: CGFloat = previewWidth / CGFloat(cardTemplate.aspectRatio.aspectRatio)
                     
-                    CardCanvasView(
-                        template: cardTemplate,
-                        settings: appState.settings,
-                        qso: qso,
-                        isInteractive: false
-                    )
-                    .frame(width: previewWidth, height: previewHeight)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
-                    .shadow(radius: 4)
-                    .onTapGesture {
-                        isCardEditorPresented = true
+                    Button(action: {
+                        CardZoomWindowManager.shared.present(template: cardTemplate, settings: appState.settings, qso: qso)
+                    }) {
+                        ZStack(alignment: .bottomTrailing) {
+                            CardCanvasView(
+                                template: cardTemplate,
+                                settings: appState.settings,
+                                qso: qso,
+                                isInteractive: false
+                            )
+                            .frame(width: previewWidth, height: previewHeight)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                            )
+                            .shadow(radius: 4)
+                            
+                            HStack(spacing: 4) {
+                                Image(systemName: "magnifyingglass")
+                                Text("Click to Zoom")
+                            }
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(6)
+                            .padding(8)
+                        }
                     }
-                    .help("Click to edit card layout and styling")
+                    .buttonStyle(.plain)
+                    .help("Click to open full original size card preview with zoom controls")
                 }
                 
                 // 2 Column Grid for QSO & Contact Details
@@ -205,6 +221,7 @@ public struct QSODetailView: View {
         .sheet(isPresented: $isCardEditorPresented) {
             QSLCardEditorModalView(appState: appState, qso: qso, isPresented: $isCardEditorPresented)
         }
+        
     }
     
     private var callbookProviderName: String {

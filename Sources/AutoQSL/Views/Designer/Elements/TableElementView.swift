@@ -55,72 +55,139 @@ public struct TableElementView: View {
     }
     
     private var freqString: String {
-        if let f = activeQSO.frequencyHz, f > 0 {
-            return String(format: "%.3f MHz", f / 1_000_000.0)
+        switch element.tableFreqDisplayMode {
+        case .freqOnly:
+            if let f = activeQSO.frequencyHz, f > 0 {
+                return String(format: "%.3f MHz", f / 1_000_000.0)
+            }
+            return "14.074 MHz"
+        case .bandOnly:
+            if !activeQSO.band.isEmpty {
+                return activeQSO.band
+            }
+            return "20m"
+        case .bandAndFreq:
+            let b = activeQSO.band.isEmpty ? "20m" : activeQSO.band
+            if let f = activeQSO.frequencyHz, f > 0 {
+                return "\(b) (\(String(format: "%.3f", f / 1_000_000.0)))"
+            }
+            return "\(b) (14.074)"
         }
-        if !activeQSO.band.isEmpty {
-            return activeQSO.band
-        }
-        return "14.074 MHz"
     }
     
     public var body: some View {
-        let totalW = max(tableWidth, 400.0)
+        let totalW = max(tableWidth, 300.0)
         let isSplit = (dateHeaderStyle == .splitSubheaders)
         let divW = CGFloat(max(element.tableBorderWidth, 1.0))
-        let totalDivW = 5.0 * divW
-        let availableW = max(totalW - totalDivW, 300.0)
         
-        let wCall = floor(availableW * (isSplit ? 0.24 : 0.25))
-        let wDate = floor(availableW * (isSplit ? 0.26 : 0.23))
-        let wDateSub = wDate / 3.0
-        let wTime = floor(availableW * 0.13)
-        let wFreq = floor(availableW * (isSplit ? 0.13 : 0.15))
-        let wRST  = floor(availableW * 0.12)
-        let wMode = availableW - (wCall + wDate + wTime + wFreq + wRST)
+        // Build list of active columns based on user settings
+        var cols: [(id: String, header: String, weight: Double, isDate: Bool, render: (CGFloat) -> AnyView)] = []
         
-        VStack(spacing: 0) {
+        if element.tableShowCallsign {
+            let hdr = element.tableCallsignHeader.isEmpty ? "Confirming QSO With" : element.tableCallsignHeader
+            cols.append(("call", hdr, 0.25, false, { w in
+                AnyView(dataCell(activeQSO.dxCall.isEmpty ? "DJ6GI" : activeQSO.dxCall, width: w, isBold: true))
+            }))
+        }
+        
+        if element.tableShowDate {
+            let hdr = element.tableDateHeader.isEmpty ? "Date" : element.tableDateHeader
+            cols.append(("date", hdr, isSplit ? 0.26 : 0.23, true, { w in
+                if isSplit {
+                    let wSub = w / 3.0
+                    return AnyView(
+                        Group {
+                            if dateOrder == .ddMMyyyy {
+                                HStack(spacing: 0) {
+                                    subDataCell(activeQSO.formattedDateDay, width: wSub)
+                                    subDataCell(activeQSO.formattedDateMonth, width: wSub)
+                                    subDataCell(activeQSO.formattedDateYear, width: wSub)
+                                }
+                                .frame(width: w)
+                            } else {
+                                HStack(spacing: 0) {
+                                    subDataCell(activeQSO.formattedDateYear, width: wSub)
+                                    subDataCell(activeQSO.formattedDateMonth, width: wSub)
+                                    subDataCell(activeQSO.formattedDateDay, width: wSub)
+                                }
+                                .frame(width: w)
+                            }
+                        }
+                    )
+                } else {
+                    return AnyView(dataCell(formattedDateString, width: w))
+                }
+            }))
+        }
+        
+        if element.tableShowTime {
+            let hdr = element.tableTimeHeader.isEmpty ? "UTC Time" : element.tableTimeHeader
+            cols.append(("time", hdr, 0.13, false, { w in
+                AnyView(dataCell(activeQSO.formattedUTCTime.isEmpty ? "11:15" : activeQSO.formattedUTCTime, width: w))
+            }))
+        }
+        
+        if element.tableShowFreq {
+            let hdr = element.tableFreqHeader.isEmpty ? "Frequency" : element.tableFreqHeader
+            cols.append(("freq", hdr, 0.15, false, { w in
+                AnyView(dataCell(freqString, width: w))
+            }))
+        }
+        
+        if element.tableShowRST {
+            let hdr = element.tableRSTHeader.isEmpty ? "Report" : element.tableRSTHeader
+            cols.append(("rst", hdr, 0.12, false, { w in
+                AnyView(dataCell(activeQSO.rstSent.isEmpty ? "-12" : activeQSO.rstSent, width: w))
+            }))
+        }
+        
+        if element.tableShowMode {
+            let hdr = element.tableModeHeader.isEmpty ? "Mode" : element.tableModeHeader
+            cols.append(("mode", hdr, 0.12, false, { w in
+                AnyView(dataCell(activeQSO.mode.isEmpty ? "FT8" : activeQSO.mode, width: w))
+            }))
+        }
+        
+        let numDividers = CGFloat(max(cols.count - 1, 0))
+        let availableW = max(totalW - (numDividers * divW), 100.0)
+        let totalWeight = max(cols.reduce(0.0) { $0 + $1.weight }, 0.01)
+        
+        let colWidths: [CGFloat] = cols.enumerated().map { idx, col in
+            if idx == cols.count - 1 {
+                let sumPrior = cols.prefix(idx).enumerated().map { i, c in floor(availableW * (c.weight / totalWeight)) }.reduce(0, +)
+                return max(availableW - sumPrior, 20.0)
+            } else {
+                return floor(availableW * (col.weight / totalWeight))
+            }
+        }
+        
+        return VStack(spacing: 0) {
             // Header Row
             HStack(spacing: 0) {
-                headerCell("Confirming QSO With", width: wCall)
-                
-                dividerVertical(width: divW)
-                
-                if dateHeaderStyle == .splitSubheaders {
-                    if dateOrder == .ddMMyyyy {
+                ForEach(Array(cols.enumerated()), id: \.offset) { idx, col in
+                    let w = colWidths[idx]
+                    if col.isDate && isSplit {
+                        let wSub = w / 3.0
                         HStack(spacing: 0) {
-                            subHeaderCell("Day", width: wDateSub)
-                            subHeaderCell("Month", width: wDateSub)
-                            subHeaderCell("Year", width: wDateSub)
+                            if dateOrder == .ddMMyyyy {
+                                subHeaderCell("Day", width: wSub)
+                                subHeaderCell("Month", width: wSub)
+                                subHeaderCell("Year", width: wSub)
+                            } else {
+                                subHeaderCell("Year", width: wSub)
+                                subHeaderCell("Month", width: wSub)
+                                subHeaderCell("Day", width: wSub)
+                            }
                         }
-                        .frame(width: wDate)
+                        .frame(width: w)
                     } else {
-                        HStack(spacing: 0) {
-                            subHeaderCell("Year", width: wDateSub)
-                            subHeaderCell("Month", width: wDateSub)
-                            subHeaderCell("Day", width: wDateSub)
-                        }
-                        .frame(width: wDate)
+                        headerCell(col.header, width: w)
                     }
-                } else {
-                    headerCell("Date", width: wDate)
+                    
+                    if idx < cols.count - 1 {
+                        dividerVertical(width: divW)
+                    }
                 }
-                
-                dividerVertical(width: divW)
-                
-                headerCell("UTC Time", width: wTime)
-                
-                dividerVertical(width: divW)
-                
-                headerCell("Frequency", width: wFreq)
-                
-                dividerVertical(width: divW)
-                
-                headerCell("Report", width: wRST)
-                
-                dividerVertical(width: divW)
-                
-                headerCell("Mode", width: wMode)
             }
             .frame(width: totalW)
             .background(Color(hex: element.tableHeaderBackgroundHex).opacity(element.tableHeaderBackgroundOpacity))
@@ -129,62 +196,32 @@ public struct TableElementView: View {
             
             // Data Row
             HStack(spacing: 0) {
-                dataCell(activeQSO.dxCall.isEmpty ? "DJ6GI" : activeQSO.dxCall, width: wCall, isBold: true)
-                
-                dividerVertical(width: divW)
-                
-                if dateHeaderStyle == .splitSubheaders {
-                    if dateOrder == .ddMMyyyy {
-                        HStack(spacing: 0) {
-                            subDataCell(activeQSO.formattedDateDay, width: wDateSub)
-                            subDataCell(activeQSO.formattedDateMonth, width: wDateSub)
-                            subDataCell(activeQSO.formattedDateYear, width: wDateSub)
-                        }
-                        .frame(width: wDate)
-                    } else {
-                        HStack(spacing: 0) {
-                            subDataCell(activeQSO.formattedDateYear, width: wDateSub)
-                            subDataCell(activeQSO.formattedDateMonth, width: wDateSub)
-                            subDataCell(activeQSO.formattedDateDay, width: wDateSub)
-                        }
-                        .frame(width: wDate)
+                ForEach(Array(cols.enumerated()), id: \.offset) { idx, col in
+                    let w = colWidths[idx]
+                    col.render(w)
+                    if idx < cols.count - 1 {
+                        dividerVertical(width: divW)
                     }
-                } else {
-                    dataCell(formattedDateString, width: wDate)
                 }
-                
-                dividerVertical(width: divW)
-                
-                dataCell(activeQSO.formattedUTCTime.isEmpty ? "11:15" : activeQSO.formattedUTCTime, width: wTime)
-                
-                dividerVertical(width: divW)
-                
-                dataCell(freqString, width: wFreq)
-                
-                dividerVertical(width: divW)
-                
-                dataCell(activeQSO.rstSent.isEmpty ? "-12" : activeQSO.rstSent, width: wRST)
-                
-                dividerVertical(width: divW)
-                
-                dataCell(activeQSO.mode.isEmpty ? "FT8" : activeQSO.mode, width: wMode)
             }
             .frame(width: totalW)
             
-            dividerHorizontal(height: divW)
-            
             // Remarks Row
-            HStack(spacing: 0) {
-                Text(remarksText)
-                    .font(getFont(size: CGFloat(element.fontSize * 0.85), isHeader: false))
-                    .foregroundColor(Color(hex: element.textColorHex))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                Spacer()
+            if element.tableShowCommentRow {
+                dividerHorizontal(height: divW)
+                
+                HStack(spacing: 0) {
+                    Text(remarksText)
+                        .font(getFont(size: CGFloat(element.fontSize * 0.85), isHeader: false))
+                        .foregroundColor(Color(hex: element.textColorHex))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                    Spacer()
+                }
+                .frame(width: totalW, alignment: .leading)
             }
-            .frame(width: totalW, alignment: .leading)
         }
         .frame(width: totalW)
         .background(Color(hex: element.tableBackgroundColorHex).opacity(element.tableBackgroundOpacity))
@@ -195,7 +232,7 @@ public struct TableElementView: View {
         .shadow(color: element.isShadowEnabled ? .black.opacity(element.shadowOpacity) : .clear, radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) : 0, x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0, y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0)
     }
     
-        private var remarksText: String {
+    private var remarksText: String {
         let elComment = element.tableComment.trimmingCharacters(in: .whitespacesAndNewlines)
         if !elComment.isEmpty {
             return element.tableComment
@@ -253,6 +290,18 @@ public struct TableElementView: View {
             .frame(width: width)
     }
     
+    private func dividerVertical(width: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color(hex: element.tableBorderColorHex))
+            .frame(width: width)
+    }
+    
+    private func dividerHorizontal(height: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color(hex: element.tableBorderColorHex))
+            .frame(height: height)
+    }
+    
     private func getFont(size: CGFloat, isHeader: Bool) -> Font {
         var f: Font
         switch element.fontName {
@@ -270,24 +319,8 @@ public struct TableElementView: View {
         case "Trebuchet MS": f = .custom("Trebuchet MS", size: size)
         default: f = .system(size: size)
         }
-        if element.isBold || isHeader {
-            f = f.bold()
-        }
-        if element.isItalic {
-            f = f.italic()
-        }
+        if isHeader || element.isBold { f = f.bold() }
+        if element.isItalic { f = f.italic() }
         return f
-    }
-    
-    private func dividerVertical(width: CGFloat) -> some View {
-        Rectangle()
-            .fill(Color(hex: element.tableBorderColorHex))
-            .frame(width: width)
-    }
-    
-    private func dividerHorizontal(height: CGFloat) -> some View {
-        Rectangle()
-            .fill(Color(hex: element.tableBorderColorHex))
-            .frame(height: height)
     }
 }

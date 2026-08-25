@@ -271,6 +271,9 @@ public struct HelpView: View {
                         featureRow(icon: "shield.lefthalf.filled", text: isGerman ?
                             "🛡️ Sticker- & Badge-Sammlung: Integrierte Abzeichen (ARRL, POTA, IOTA, SOTA, CQ, WAS) und eigene PNG/SVG-Logos importieren, verwalten und mit einem Klick auf der Karte platzieren." :
                             "🛡️ Badges & Stickers Collection: Built-in scalable badges (ARRL, POTA, IOTA, SOTA, CQ, WAS) plus custom PNG/SVG logo imports, collection management, and 1-click placement.")
+                        featureRow(icon: "magnifyingglass.circle.fill", text: isGerman ?
+                            "🔍 Vollbild-Vorschau & Zoom (100%): Klick auf die Kartenvorschau (in der QSO-Detailansicht oder im Sendedialog) öffnet die Karte in Originalgröße (100%) mit stufenlosem Trackpad-Pinch-Zoom, Scroll-Panning und Zoom-Tasten." :
+                            "🔍 Full-Size Card Inspection & Zoom (100%): Clicking the card preview in either the QSO Detail view or the Confirmation Dialog opens a floating 100% original size preview with smooth trackpad pinch zoom, pan scrolling, and toolbar controls.")
                         featureRow(icon: "gearshape.fill", text: isGerman ?
                             "⚙️ Über die rechte Seitenleiste konfiguriert: QSO-Bestätigungstabelle (Spalten, Header, Datumsformate, Farben), Standort-Zeile (Location Footer), Abzeichen/Sticker (Badges) sowie Hintergrundbilder und Kartenmaße." :
                             "⚙️ Configured via right sidebar inspector: QSO Confirmation Table (columns, headers, date formats, colors), Location Footer (dynamic station data), Badges & Stickers, and Background image / Card aspect ratio.")
@@ -818,6 +821,12 @@ public struct HelpView: View {
             GroupBox(label: Text("Version 1.2.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(
+                        icon: "magnifyingglass.circle.fill",
+                        text: isGerman ?
+                            "Vollbild-Karteninspektion & Zoom (100%): Ein Klick auf die Kartenvorschau (im Hauptfenster oder im Sendedialog) öffnet ein frei skalierbares Vorschaufenster in 100% Originalgröße mit stufenlosem Trackpad-Pinch-Zoom." :
+                            "Full-Size Card Inspection & Zoom (100%): Clicking any card preview in the main window or confirmation dialog opens a floating 100% original size window with fluid trackpad pinch zoom."
+                    )
+                    featureRow(
                         icon: "shield.lefthalf.filled",
                         text: isGerman ?
                             "Sticker- & Badge-Sammlung: Vollständige Sammlung für integrierte Abzeichen (ARRL Diamond, POTA, IOTA, SOTA, CQ WPX/DX, WAS) und eigene Bild-Logos mit persistenter Speicherung." :
@@ -828,6 +837,12 @@ public struct HelpView: View {
                         text: isGerman ?
                             "Eigene Sticker importieren & löschen: Beliebige PNG-, JPG- oder SVG-Grafiken mit eigenem Namen zur Sammlung hinzufügen und per Hover/Rechtsklick entfernen." :
                             "Import & Delete Custom Stickers: Import any PNG, JPG, or SVG graphics with custom display names and remove unwanted items on hover or via context menu."
+                    )
+                    featureRow(
+                        icon: "tablecells.badge.ellipsis",
+                        text: isGerman ?
+                            "Dynamische Bestätigungstabelle: Vollständige Unterstützung für ein-/ausblendbare Spalten, eigene Spaltentitel, Frequenz/Band-Formatierung (MHz, Band, Band+Freq) und Gruß-/Bemerkungszeile." :
+                            "Dynamic Confirmation Table: Full support for togglable columns, custom header labels, frequency/band formatting (MHz, Band, Band+Freq), and greeting/remarks row."
                     )
                     featureRow(
                         icon: "arrow.up.and.down.and.arrow.left.and.right",

@@ -32,6 +32,7 @@ public struct QSLConfirmationSheet: View {
     @State private var isSending: Bool = false
     @State private var errorMessage: String? = nil
     @State private var isCardEditorPresented: Bool = false
+    @State private var isCardZoomModalPresented: Bool = false
     
     private var activeCardTemplate: QSLCardTemplate {
         appState.template(for: currentWorkingQSO)
@@ -102,19 +103,38 @@ public struct QSLConfirmationSheet: View {
                     let previewWidth: CGFloat = 460
                     let previewHeight: CGFloat = previewWidth / CGFloat(activeCardTemplate.aspectRatio.aspectRatio)
                     
-                    CardCanvasView(
-                        template: activeCardTemplate,
-                        settings: appState.settings,
-                        qso: currentWorkingQSO,
-                        isInteractive: false
-                    )
-                    .frame(width: previewWidth, height: previewHeight)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                    )
-                    .shadow(radius: 6)
+                    Button(action: {
+                        CardZoomWindowManager.shared.present(template: activeCardTemplate, settings: appState.settings, qso: currentWorkingQSO)
+                    }) {
+                        ZStack(alignment: .bottomTrailing) {
+                            CardCanvasView(
+                                template: activeCardTemplate,
+                                settings: appState.settings,
+                                qso: currentWorkingQSO,
+                                isInteractive: false
+                            )
+                            .frame(width: previewWidth, height: previewHeight)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(radius: 6)
+                            
+                            HStack(spacing: 4) {
+                                Image(systemName: "magnifyingglass")
+                                Text("Click to Zoom")
+                            }
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(6)
+                            .padding(8)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help("Click to open full original size card preview with zoom controls")
                     
                     HStack {
                         Label("Template: \(activeCardTemplate.name)", systemImage: "paintbrush")
@@ -198,12 +218,19 @@ public struct QSLConfirmationSheet: View {
         .onAppear {
             loadInitialData()
         }
-        .sheet(isPresented: $isCardEditorPresented) {
-            QSLCardEditorModalView(
-                appState: appState,
-                qso: currentWorkingQSO,
-                isPresented: $isCardEditorPresented
-            )
+
+        .overlay {
+            if isCardEditorPresented {
+                QSLCardEditorModalView(
+                    appState: appState,
+                    qso: currentWorkingQSO,
+                    isPresented: $isCardEditorPresented
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.windowBackgroundColor))
+                .transition(.opacity)
+                .zIndex(90)
+            }
         }
     }
     
