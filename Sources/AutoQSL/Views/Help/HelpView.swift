@@ -4,6 +4,7 @@ public struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTopic: HelpTopic = .overview
     @State private var isGerman: Bool = false
+    @State private var searchText: String = ""
 
     public init() {}
 
@@ -15,10 +16,11 @@ public struct HelpView: View {
         case emailDelivery = "5. Email Dispatching"
         case automationModes = "6. Automation & Modes"
         case templates = "7. Placeholders & Templates"
-        case storageSync = "8. iCloud Storage & Sync"
-        case disclaimer = "9. Disclaimer & Privacy"
-        case copyright = "10. Copyright & Credits"
-        case changelog = "11. Changelog & Versions"
+        case shortcuts = "8. Keyboard & Mouse Shortcuts"
+        case storageSync = "9. iCloud Storage & Sync"
+        case disclaimer = "10. Disclaimer & Privacy"
+        case copyright = "11. Copyright & Credits"
+        case changelog = "12. Changelog & Versions"
 
         public var id: String { rawValue }
         
@@ -31,6 +33,7 @@ public struct HelpView: View {
             case .emailDelivery: return "paperplane.fill"
             case .automationModes: return "gearshape.2"
             case .templates: return "text.badge.checkmark"
+            case .shortcuts: return "command"
             case .storageSync: return "icloud.circle.fill"
             case .disclaimer: return "exclamationmark.shield.fill"
             case .copyright: return "c.circle.fill"
@@ -58,14 +61,76 @@ public struct HelpView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 8)
                 
-                List(HelpTopic.allCases, selection: $selectedTopic) { topic in
-                    Label(isGerman ? topicTitleDe(topic) : topic.rawValue, systemImage: topic.icon)
-                        .tag(topic)
+                // Search Bar
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 12))
+                    
+                    TextField(isGerman ? "Hilfe durchsuchen..." : "Search topics, keys...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+                    
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 11))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .listStyle(.sidebar)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(Color(NSColor.textBackgroundColor))
+                .cornerRadius(7)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                
+                let filtered = HelpTopic.allCases.filter { $0.matches(query: searchText, isGerman: isGerman) }
+                
+                if filtered.isEmpty {
+                    VStack(spacing: 10) {
+                        Spacer()
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 28))
+                            .foregroundColor(.secondary.opacity(0.6))
+                        Text(isGerman ? "Keine Treffer" : "No Results")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
+                        Text(isGerman ? "Kein Thema passend zu '\(searchText)' gefunden." : "No help topic matches '\(searchText)'.")
+                            .font(.caption)
+                            .foregroundColor(.secondary.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                        Button(isGerman ? "Suche löschen" : "Clear Search") {
+                            searchText = ""
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    List(filtered, selection: $selectedTopic) { topic in
+                        Label(isGerman ? topicTitleDe(topic) : topic.rawValue, systemImage: topic.icon)
+                            .tag(topic)
+                    }
+                    .listStyle(.sidebar)
+                }
             }
-            .frame(width: 220)
+            .frame(width: 250)
             .background(Color(NSColor.controlBackgroundColor))
+            .onChange(of: searchText) { _, newQuery in
+                let matches = HelpTopic.allCases.filter { $0.matches(query: newQuery, isGerman: isGerman) }
+                if let first = matches.first, !matches.contains(selectedTopic) {
+                    selectedTopic = first
+                }
+            }
             
             Divider()
             
@@ -91,10 +156,11 @@ public struct HelpView: View {
         case .emailDelivery: return "5. E-Mail Versand"
         case .automationModes: return "6. Automatisierung & Modi"
         case .templates: return "7. Platzhalter & Vorlagen"
-        case .storageSync: return "8. iCloud-Speicher & Sync"
-        case .disclaimer: return "9. Haftungsausschluss & Datenschutz"
-        case .copyright: return "10. Urheberrecht & Credits"
-        case .changelog: return "11. Versionsgeschichte & Changelog"
+        case .shortcuts: return "8. Tastatur- & Maus-Kurzbefehle"
+        case .storageSync: return "9. iCloud-Speicher & Sync"
+        case .disclaimer: return "10. Haftungsausschluss & Datenschutz"
+        case .copyright: return "11. Urheberrecht & Credits"
+        case .changelog: return "12. Versionsgeschichte & Changelog"
         }
     }
 
@@ -115,6 +181,8 @@ public struct HelpView: View {
             automationModesSection
         case .templates:
             templatesSection
+        case .shortcuts:
+            shortcutsSection
         case .storageSync:
             storageSyncSection
         case .disclaimer:
@@ -516,7 +584,91 @@ public struct HelpView: View {
         }
     }
 
-    // MARK: - 7. iCloud Storage & Multi-Mac Sync
+    // MARK: - 8. Shortcuts & Gestures
+    private var shortcutsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: "command")
+                    .font(.title)
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isGerman ? "Tastatur- & Maus-Kurzbefehle" : "Keyboard & Mouse Shortcuts")
+                        .font(.title2.bold())
+                    Text(isGerman ? "Schnellnavigation, Auswahl & Aktionen" : "Quick navigation, selection & actions")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Divider()
+
+            GroupBox(label: Label(isGerman ? "Globale Navigation" : "Global Navigation", systemImage: "macwindow.badge.plus")) {
+                VStack(spacing: 6) {
+                    shortcutRow(key: "⌘,", desc: isGerman ? "Einstellungen öffnen" : "Open Settings dialog")
+                    shortcutRow(key: "⌘?", desc: isGerman ? "Hilfe & Dokumentation öffnen" : "Open Help & Documentation")
+                    shortcutRow(key: "⌘1", desc: isGerman ? "Zur QSO-Warteschlange wechseln" : "Switch to QSO Queue tab")
+                    shortcutRow(key: "⌘2", desc: isGerman ? "Zum QSL-Karten Designer wechseln" : "Switch to Card Designer tab")
+                    shortcutRow(key: "⇧⌘G", desc: isGerman ? "Letztes QSO aus RUMlogNG abrufen" : "Grab last QSO from RUMlogNG via AppleScript")
+                    shortcutRow(key: "⇧⌘K", desc: isGerman ? "Test-QSO simulieren" : "Simulate test QSO")
+                }
+                .padding(6)
+            }
+
+            GroupBox(label: Label(isGerman ? "QSO-Warteschlange & Verwaltung" : "QSO Queue & Management", systemImage: "list.bullet.rectangle")) {
+                VStack(spacing: 6) {
+                    shortcutRow(key: isGerman ? "Klick" : "Click", desc: isGerman ? "Eintrag selektieren & Details anzeigen" : "Select entry & display detail preview")
+                    shortcutRow(key: "⌘A", desc: isGerman ? "Alle QSOs in der Liste auswählen" : "Select all QSOs in current list")
+                    shortcutRow(key: "⌘+Klick", desc: isGerman ? "Einzelne QSOs zur Auswahl hinzufügen/entfernen" : "Toggle individual QSOs in selection")
+                    shortcutRow(key: "⇧+Klick / ⇧+↑/↓", desc: isGerman ? "Bereich von QSOs auswählen" : "Select a range of QSOs")
+                    shortcutRow(key: "⌫ / Delete", desc: isGerman ? "Ausgewählte(s) QSO(s) löschen" : "Delete selected QSO(s)")
+                    shortcutRow(key: isGerman ? "Rechtsklick" : "Right-Click", desc: isGerman ? "Kontextmenü (Senden, Callbook-Abfrage, Löschen)" : "Context menu (Send, Callbook Lookup, Delete)")
+                    shortcutRow(key: isGerman ? "Callbook-Icon" : "Callbook Icon", desc: isGerman ? "QRZ.com / HamQTH im Webbrowser öffnen" : "Open QRZ.com / HamQTH in web browser")
+                }
+                .padding(6)
+            }
+
+            GroupBox(label: Label(isGerman ? "Bestätigungs- & Dialogfenster" : "Confirmation Sheet & Dialogs", systemImage: "questionmark.app.dashed")) {
+                VStack(spacing: 6) {
+                    shortcutRow(key: "⌘↩", desc: isGerman ? "QSL-Karte sofort bestätigen & senden" : "Confirm & send QSL card immediately")
+                    shortcutRow(key: "Esc", desc: isGerman ? "Abbrechen / Fenster schließen" : "Cancel / dismiss modal sheet")
+                    shortcutRow(key: "↩ (Enter)", desc: isGerman ? "Speichern / Standardaktion ausführen" : "Save / confirm default action in modals")
+                }
+                .padding(6)
+            }
+
+            GroupBox(label: Label(isGerman ? "QSL-Karten Designer" : "Card Designer Canvas", systemImage: "paintpalette")) {
+                VStack(spacing: 6) {
+                    shortcutRow(key: "⌘Z", desc: isGerman ? "Letzte Änderung rückgängig machen (Undo)" : "Undo last design change")
+                    shortcutRow(key: "⇧⌘Z", desc: isGerman ? "Wiederherstellen (Redo)" : "Redo last undone change")
+                    shortcutRow(key: isGerman ? "Klick" : "Click", desc: isGerman ? "Element auswählen & Inspektor öffnen" : "Select element & open inspector")
+                    shortcutRow(key: isGerman ? "Doppelklick" : "Double-Click", desc: isGerman ? "Direkte Textbearbeitung auf der Karte" : "Direct inline text editing on canvas")
+                    shortcutRow(key: isGerman ? "Ziehen (Drag)" : "Drag", desc: isGerman ? "Element verschieben" : "Move element position on canvas")
+                    shortcutRow(key: isGerman ? "Griffe ziehen" : "Drag Handles", desc: isGerman ? "Elementgröße verändern" : "Resize element on canvas")
+                }
+                .padding(6)
+            }
+        }
+    }
+
+    private func shortcutRow(key: String, desc: String) -> some View {
+        HStack {
+            Text(key)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.primary.opacity(0.08))
+                .cornerRadius(5)
+                .frame(minWidth: 100, alignment: .leading)
+            
+            Text(desc)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+        }
+    }
+
+    // MARK: - 9. iCloud Storage & Multi-Mac Sync
     private var storageSyncSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
@@ -669,10 +821,10 @@ public struct HelpView: View {
                             "HamQTH.com Callbook Integration: Full support for free HamQTH XML lookups with configurable fallback priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only)."
                     )
                     featureRow(
-                        icon: "cursorarrow.click.2",
+                        icon: "contextualmenu.and.cursor",
                         text: isGerman ?
-                            "Doppelklick-Callbook: Doppelklick auf einen Warteschlangen-Eintrag öffnet das Rufzeichen direkt im konfigurierten Callbook (QRZ.com oder HamQTH) im Browser." :
-                            "Double-Click Callbook Lookup: Double-click any queue entry to open the callsign in your configured callbook (QRZ.com or HamQTH) in the default browser."
+                            "Callbook per Rechtsklick: Rechtsklick auf einen Eintrag (oder Button in der Detailansicht) öffnet das Rufzeichen direkt im konfigurierten Callbook (QRZ.com oder HamQTH) im Browser." :
+                            "Callbook via Right-Click: Right-clicking any queue entry (or Callbook button in detail view) opens the callsign in your configured callbook (QRZ.com or HamQTH) in the browser."
                     )
                     featureRow(
                         icon: "checkmark.circle",
@@ -778,6 +930,63 @@ public struct HelpView: View {
             Text(desc)
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+}
+
+extension HelpView.HelpTopic {
+    func matches(query: String, isGerman: Bool) -> Bool {
+        let clean = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if clean.isEmpty { return true }
+        let titleEn = rawValue.lowercased()
+        let titleDe = deTitle.lowercased()
+        if titleEn.contains(clean) || titleDe.contains(clean) { return true }
+        return keywords.lowercased().contains(clean)
+    }
+
+    var deTitle: String {
+        switch self {
+        case .overview: return "1. Einführung & Übersicht"
+        case .designer: return "2. QSL-Karten Designer"
+        case .udpNetwork: return "3. UDP & Logger-Anbindung"
+        case .callbooks: return "4. Callbook-Abfragen (QRZ & HamQTH)"
+        case .emailDelivery: return "5. E-Mail Versand"
+        case .automationModes: return "6. Automatisierung & Modi"
+        case .templates: return "7. Platzhalter & Vorlagen"
+        case .shortcuts: return "8. Tastatur- & Maus-Kurzbefehle"
+        case .storageSync: return "9. iCloud-Speicher & Sync"
+        case .disclaimer: return "10. Haftungsausschluss & Datenschutz"
+        case .copyright: return "11. Urheberrecht & Credits"
+        case .changelog: return "12. Versionsgeschichte & Changelog"
+        }
+    }
+
+    var keywords: String {
+        switch self {
+        case .overview:
+            return "getting started quickstart intro e-qsl electronic cards setup workflow step by step start anleitung einführung send empfang"
+        case .designer:
+            return "qsl card designer wysiwyg canvas layers elements background stickers fonts text callsign address table badges resize drag drop undo redo vorlagen gestaltung bild grafik logo"
+        case .udpNetwork:
+            return "udp network logging wsjt-x jtdx rumlog rumlogng n1mm broadcast multicast 2239 12064 adif applescript grab contactinfo rx tx frequency band port logger funk netzwerk"
+        case .callbooks:
+            return "callbook lookups qrz qrz.com hamqth hamqth.com xml api subscription free username password email lookup right-click context menu profile abfrage zugang abruf"
+        case .emailDelivery:
+            return "email dispatching delivery apple mail default mail client direct smtp smtp server port ssl tls starttls authentication subject body attachment versand postfach"
+        case .automationModes:
+            return "automation modes fully automatic preview & confirm manual queue review background pop-up sheet workflow betriebsmodi automatik vorschau"
+        case .templates:
+            return "placeholders templates email subject body variables {CALL} {NAME} {BAND} {MODE} {DATE} {TIME} {FREQ} {RST_SENT} {RST_RCVD} {MY_CALL} {MY_GRID} {MY_NAME} platzhalter textvorlagen"
+        case .shortcuts:
+            return "shortcuts keybindings keys keyboard mouse click double-click right-click cmd+a cmd+, cmd+z shift+cmd+z cmd+return esc cmd+1 cmd+2 shift+cmd+g shift+cmd+k delete tastatur kurzbefehle tastenkürzel tasten tastenkombination maus klick"
+        case .storageSync:
+            return "icloud storage sync local folder multi-mac backup sqlite autoqsl.sqlite reveal finder migration export import datenspeicherung datenbank sicherung"
+        case .disclaimer:
+            return "disclaimer warranty privacy data local storage security license haftungsausschluss datenschutz sicherheit gewährleistet"
+        case .copyright:
+            return "copyright credits author georg isenbuerger dj6gi amateur radio lizenz urheberrecht entwickler"
+        case .changelog:
+            return "changelog version history release notes updates 1.1.0 1.0.0 features bugfixes versionsgeschichte neuerung änderungen verlauf"
         }
     }
 }

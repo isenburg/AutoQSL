@@ -286,9 +286,6 @@ public struct QSOQueueView: View {
             }
         }
         .padding(.vertical, 6)
-        .onDoubleClick {
-            openCallbook(for: qso.dxCall)
-        }
     }
     
     private var callbookProviderName: String {
@@ -568,55 +565,5 @@ public struct AddManualQSOView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 480, height: 500)
-    }
-}
-
-// MARK: - Native Double Click Handler
-struct DoubleClickHandler: NSViewRepresentable {
-    var onDoubleClick: () -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        view.autoresizingMask = [.width, .height]
-        let recognizer = NSClickGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleClick(_:)))
-        recognizer.numberOfClicksRequired = 2
-        recognizer.delaysPrimaryMouseButtonEvents = false
-        recognizer.delegate = context.coordinator
-        view.addGestureRecognizer(recognizer)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.onDoubleClick = onDoubleClick
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onDoubleClick: onDoubleClick)
-    }
-
-    class Coordinator: NSObject, NSGestureRecognizerDelegate {
-        var onDoubleClick: () -> Void
-        
-        init(onDoubleClick: @escaping () -> Void) {
-            self.onDoubleClick = onDoubleClick
-        }
-        
-        @objc func handleClick(_ sender: NSClickGestureRecognizer) {
-            if sender.state == .ended {
-                onDoubleClick()
-            }
-        }
-        
-        func gestureRecognizer(_ gestureRecognizer: NSGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: NSGestureRecognizer) -> Bool {
-            return true
-        }
-    }
-}
-
-extension View {
-    func onDoubleClick(perform action: @escaping () -> Void) -> some View {
-        self.background(
-            DoubleClickHandler(onDoubleClick: action)
-        )
     }
 }

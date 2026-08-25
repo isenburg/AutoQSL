@@ -286,17 +286,45 @@ Grid: {MY_GRID} • CQ Zone: {MY_CQ}
 
 ---
 
-## 8. Keyboard Shortcuts Reference
+## 8. Keyboard & Mouse Shortcuts Reference
 
+### Global Navigation & Actions
 | Shortcut | Action | Scope |
 | :--- | :--- | :--- |
-| `⌘ + Return` | Send QSL card immediately | Confirmation Preview Sheet |
-| `Esc` | Skip / Dismiss without sending | Confirmation Preview Sheet |
-| `⌘Z` | Undo last change | Card Designer |
-| `⇧ + ⌘Z` | Redo last undone change | Card Designer |
-| `⌘A` | Select all QSOs in list | QSO Queue |
-| `⇧ + ↑ / ↓` | Multi-select QSO items | QSO Queue |
 | `⌘,` | Open Settings | Global |
+| `⌘?` | Open Help & Documentation | Global |
+| `⌘1` | Switch to QSO Queue | Global |
+| `⌘2` | Switch to Card Designer | Global |
+| `⇧ + ⌘G` | Grab last QSO from RUMlogNG | Global |
+| `⇧ + ⌘K` | Simulate test QSO | Global |
+
+### QSO Queue & Management
+| Shortcut / Gesture | Action | Scope |
+| :--- | :--- | :--- |
+| `Click` | Select and highlight entry; view details | QSO Queue |
+| `⌘A` | Select all QSOs in the current list | QSO Queue |
+| `⌘ + Click` | Multi-select / toggle individual QSOs | QSO Queue |
+| `⇧ + Click` / `⇧ + ↑ / ↓` | Select a range of QSOs | QSO Queue |
+| `Delete` / `⌫` | Delete selected QSO(s) | QSO Queue |
+| `Right-Click` | Open context menu (Send, Lookup, Delete) | QSO Queue |
+| `Click Callbook Icon` | Open QRZ.com / HamQTH in browser | QSO Detail View |
+
+### Confirmation Sheet & Dialogs
+| Shortcut | Action | Scope |
+| :--- | :--- | :--- |
+| `⌘ + Return` | Confirm & Send QSL card immediately | Confirmation Preview Sheet |
+| `Esc` | Skip / Dismiss without sending | All Sheets & Modals |
+| `Return` | Save / Confirm default action | Add / Edit QSO Dialogs |
+
+### QSL Card Designer
+| Shortcut / Gesture | Action | Scope |
+| :--- | :--- | :--- |
+| `⌘Z` | Undo last design change | Card Designer |
+| `⇧ + ⌘Z` | Redo last undone design change | Card Designer |
+| `Click` | Select element and open inspector | Card Designer Canvas |
+| `Double-Click` | Direct inline text editing (Callsign, Address, Text) | Card Designer Canvas |
+| `Drag` | Move element position | Card Designer Canvas |
+| `Drag Handles` | Resize element | Card Designer Canvas |
 
 ---
 
@@ -318,7 +346,7 @@ Released for the global amateur radio community.
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com XML Callbook Integration**: Native support for free HamQTH callbook lookups with fallback and dual-lookup priority modes.
-- 🖱️ **Double-Click Callbook Lookup**: Double-clicking any queue entry opens the callsign in your configured callbook (QRZ.com or HamQTH) in the default browser.
+- 🖱️ **Callbook Lookup via Context Menu**: Right-clicking any queue entry (or clicking the Callbook button in the detail view) opens the callsign in your configured callbook (QRZ.com or HamQTH.com) in the browser.
 - ✅ **Native Queue Selection**: Single-click selects entries with standard macOS highlight; `⌘A` selects all; `⌘+click` / `Shift+click` for multi-select.
 - 📡 **Improved RUMlogNG UDP Parsing**: Full N1MM XML contact format support (CDATA, 10 Hz frequency units, UTF-8/Latin-1 encoding).
 - 🔒 **Port Isolation**: AutoQSL only binds explicitly configured ports and never auto-binds fallback ports that could conflict with other apps.

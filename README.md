@@ -64,15 +64,24 @@ open -a Xcode .
 
 ---
 
-## Keyboard Shortcuts
+## Keyboard & Mouse Shortcuts
 
-| Shortcut | Description |
-| :--- | :--- |
-| `⌘Z` | Undo last change in Card Designer |
-| `⌘↩` (Cmd+Return) | Send QSL card in Confirmation Sheet |
-| `Esc` | Skip/Dismiss Confirmation Sheet |
-| `⌘A` | Select all QSOs in Queue |
-| `⇧ + ↑/↓` | Multi-select QSO items in Queue |
+| Shortcut / Gesture | Description | Scope |
+| :--- | :--- | :--- |
+| `⌘,` | Open Settings | Global |
+| `⌘?` | Open Help & Documentation | Global |
+| `⌘1` / `⌘2` | Switch between QSO Queue and Card Designer | Global |
+| `⇧⌘G` | Grab last QSO from RUMlogNG via AppleScript | Global |
+| `⇧⌘K` | Simulate test QSO | Global |
+| `⌘A` | Select all QSOs in Queue | QSO Queue |
+| `⌘ + Click` / `⇧ + Click` | Multi-select / range-select QSOs | QSO Queue |
+| `Delete` / `⌫` | Delete selected QSO(s) | QSO Queue |
+| `Right-Click` | Context menu (Send, Callbook Lookup, Delete) | QSO Queue |
+| `Click Callbook Icon` | Open QRZ / HamQTH in web browser | QSO Detail View |
+| `⌘↩` (Cmd+Return) | Send QSL card in Confirmation Sheet | Confirmation Sheet |
+| `Esc` | Skip / Dismiss modal sheets | Dialogs |
+| `⌘Z` / `⇧⌘Z` | Undo / Redo design change | Card Designer |
+| `Double-Click` | Direct inline text editing on canvas | Card Designer Canvas |
 
 ---
 
@@ -90,7 +99,7 @@ open -a Xcode .
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com Callbook Lookup**: Full integration for free HamQTH XML callbook lookups with customizable priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).
-- 🖱️ **Double-Click Callbook Lookup**: Double-click any queue entry to open the callsign in QRZ.com or HamQTH (whichever is configured) directly in the browser.
+- 🖱️ **Callbook Context Menu**: Right-click any queue entry to open the callsign in QRZ.com or HamQTH.com (whichever is configured) in the browser.
 - ✅ **Native Queue Selection**: Single-click highlight with standard macOS selection colours; `⌘A` to select all; `⌘+click` / `Shift+click` for multi-select.
 - 📡 **Improved RUMlogNG UDP Parsing**: N1MM XML contact format support (CDATA, 10 Hz frequency units, UTF-8/Latin-1 multi-encoding).
 - 🔒 **Port Isolation**: Binds only explicitly configured UDP ports — no background fallback ports that could conflict with other apps.
