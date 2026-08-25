@@ -266,8 +266,11 @@ public struct HelpView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         featureRow(icon: "checkmark.circle.fill", text: isGerman ?
-                            "✅ Direkt auf der Karte editierbar: Rufzeichen (Callsign), Adressblock (Address) und freier Text (Custom Text). Klicke einfach auf das Element auf der Leinwand, um den Text direkt einzutippen." :
-                            "✅ Directly editable on canvas: Callsign Block, Address Block, and Custom Text. Simply click the element on the canvas to type and edit its text inline.")
+                            "✅ Direkt auf der Karte editierbar: Rufzeichen (Callsign), Adressblock (Address), Standort-Zeile und freier Text (Custom Text). Mit einem Doppelklick auf das Element öffnet sich die direkte Texteingabe auf der Leinwand." :
+                            "✅ Directly editable on canvas: Callsign Block, Address Block, Location Line, and Custom Text. Double-click any element on the canvas to edit its text inline with live preview.")
+                        featureRow(icon: "shield.lefthalf.filled", text: isGerman ?
+                            "🛡️ Sticker- & Badge-Sammlung: Integrierte Abzeichen (ARRL, POTA, IOTA, SOTA, CQ, WAS) und eigene PNG/SVG-Logos importieren, verwalten und mit einem Klick auf der Karte platzieren." :
+                            "🛡️ Badges & Stickers Collection: Built-in scalable badges (ARRL, POTA, IOTA, SOTA, CQ, WAS) plus custom PNG/SVG logo imports, collection management, and 1-click placement.")
                         featureRow(icon: "gearshape.fill", text: isGerman ?
                             "⚙️ Über die rechte Seitenleiste konfiguriert: QSO-Bestätigungstabelle (Spalten, Header, Datumsformate, Farben), Standort-Zeile (Location Footer), Abzeichen/Sticker (Badges) sowie Hintergrundbilder und Kartenmaße." :
                             "⚙️ Configured via right sidebar inspector: QSO Confirmation Table (columns, headers, date formats, colors), Location Footer (dynamic station data), Badges & Stickers, and Background image / Card aspect ratio.")
@@ -811,6 +814,36 @@ public struct HelpView: View {
             }
 
             Divider()
+
+            GroupBox(label: Text("Version 1.2.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "shield.lefthalf.filled",
+                        text: isGerman ?
+                            "Sticker- & Badge-Sammlung: Vollständige Sammlung für integrierte Abzeichen (ARRL Diamond, POTA, IOTA, SOTA, CQ WPX/DX, WAS) und eigene Bild-Logos mit persistenter Speicherung." :
+                            "Badges & Stickers Collection: Manageable library for built-in badges (ARRL, POTA, IOTA, SOTA, CQ, WAS) and custom images with persistent storage."
+                    )
+                    featureRow(
+                        icon: "plus.circle.fill",
+                        text: isGerman ?
+                            "Eigene Sticker importieren & löschen: Beliebige PNG-, JPG- oder SVG-Grafiken mit eigenem Namen zur Sammlung hinzufügen und per Hover/Rechtsklick entfernen." :
+                            "Import & Delete Custom Stickers: Import any PNG, JPG, or SVG graphics with custom display names and remove unwanted items on hover or via context menu."
+                    )
+                    featureRow(
+                        icon: "arrow.up.and.down.and.arrow.left.and.right",
+                        text: isGerman ?
+                            "Präzises WYSIWYG-Dragging: Skalierungskompensierte Mausbewegung ohne Ruckler oder Positionsversatz beim Auswählen und Verschieben von Elementen." :
+                            "Scale-Compensated WYSIWYG Dragging: Scale-compensated mouse tracking with zero jump or lag when selecting and moving elements."
+                    )
+                    featureRow(
+                        icon: "cursorarrow.click.2",
+                        text: isGerman ?
+                            "Doppelklick-Direkteingabe: Doppelklick auf ein Textelement startet die Live-Bearbeitung direkt auf der Leinwand." :
+                            "Double-Click Inline Editing: Double-click any text element on canvas to trigger seamless inline text editing."
+                    )
+                }
+                .padding(8)
+            }
 
             GroupBox(label: Text("Version 1.1.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {

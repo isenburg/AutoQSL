@@ -214,11 +214,12 @@ public struct QSLCardEditorModalView: View {
         .frame(minWidth: 850, idealWidth: 1080, maxWidth: .infinity, minHeight: 580, idealHeight: 740, maxHeight: .infinity)
         .background(WindowResizeEnabler())
         .sheet(isPresented: $isStickerPickerPresented) {
-            StickerPickerView { type, customPath in
-                addStickerElement(type: type, customPath: customPath)
+            StickerPickerView { item in
+                addStickerElement(item: item)
                 isStickerPickerPresented = false
             }
-            .frame(width: 420, height: 380)
+            .environmentObject(appState)
+            .frame(width: 520, height: 500)
         }
     }
     
@@ -254,17 +255,16 @@ public struct QSLCardEditorModalView: View {
         selectedElementId = newElement.id
     }
     
-    private func addStickerElement(type: StickerType, customPath: String?) {
-        let name = type == .custom ? "Custom Badge" : type.rawValue
+    private func addStickerElement(item: StickerItem) {
         let newElement = CardElement(
             type: .sticker,
-            name: name,
+            name: item.name,
             normalizedX: 0.5,
             normalizedY: 0.25,
             normalizedWidth: 0.12,
             normalizedHeight: 0.18,
-            stickerType: type,
-            customImagePath: customPath
+            stickerType: item.type,
+            customImagePath: item.customImagePath
         )
         workingTemplate.elements.append(newElement)
         selectedElementId = newElement.id

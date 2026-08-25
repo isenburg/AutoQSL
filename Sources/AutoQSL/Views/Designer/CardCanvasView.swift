@@ -52,6 +52,7 @@ public struct CardCanvasView: View {
                             qso: qso,
                             cardWidth: baseWidth,
                             cardHeight: baseHeight,
+                            scale: scale,
                             isInteractive: isInteractive,
                             isSelected: isInteractive && (selectedElementId == element.id),
                             onSelect: {
@@ -117,6 +118,7 @@ public struct DraggableElementWrapperView: View {
     public let qso: QSO?
     public let cardWidth: CGFloat
     public let cardHeight: CGFloat
+    public let scale: CGFloat
     public let isInteractive: Bool
     public let isSelected: Bool
     public let onSelect: () -> Void
@@ -127,6 +129,8 @@ public struct DraggableElementWrapperView: View {
     @State private var dragStartNormY: Double? = nil
     @State private var currentDragOffset: CGSize = .zero
     @State private var isHovering: Bool = false
+    @State private var isInlineEditing: Bool = false
+    @FocusState private var isInlineFieldFocused: Bool
     
     public var body: some View {
         let posX = (CGFloat(element.normalizedX) * cardWidth) + currentDragOffset.width
@@ -135,10 +139,10 @@ public struct DraggableElementWrapperView: View {
         let elHeight = CGFloat(element.normalizedHeight) * cardHeight
         
         ZStack {
-            if isInteractive && isSelected && !element.isLocked && isDirectlyEditable(element.type) {
-                inlineEditableView(elWidth: elWidth, elHeight: elHeight)
+            if isInlineEditing && isInteractive && !element.isLocked {
+                inlineEditorView(elWidth: elWidth, elHeight: elHeight)
             } else {
-                readOnlyView(elWidth: elWidth, elHeight: elHeight)
+                renderElementView(elWidth: elWidth, elHeight: elHeight)
             }
         }
         .frame(width: elWidth > 0 ? elWidth : nil, height: elHeight > 0 ? elHeight : nil)
@@ -165,21 +169,34 @@ public struct DraggableElementWrapperView: View {
                 isHovering = hovering
             }
         }
+        .onChange(of: isSelected) { _, selected in
+            if !selected {
+                isInlineEditing = false
+            }
+        }
         .gesture(
-            isInteractive && !element.isLocked ?
-            DragGesture(minimumDistance: 8, coordinateSpace: .named("CardCanvas"))
+            isInteractive && !element.isLocked && !isInlineEditing ?
+            DragGesture(minimumDistance: 1, coordinateSpace: .global)
                 .onChanged { value in
                     if dragStartNormX == nil {
                         dragStartNormX = element.normalizedX
                         dragStartNormY = element.normalizedY
                         onSelect()
                     }
-                    currentDragOffset = value.translation
+                    let effectiveScale = max(scale, 0.05)
+                    currentDragOffset = CGSize(
+                        width: value.translation.width / effectiveScale,
+                        height: value.translation.height / effectiveScale
+                    )
                 }
                 .onEnded { value in
+                    let effectiveScale = max(scale, 0.05)
+                    let unscaledWidth = value.translation.width / effectiveScale
+                    let unscaledHeight = value.translation.height / effectiveScale
+                    
                     if let startX = dragStartNormX, let startY = dragStartNormY {
-                        let finalNormX = min(max(startX + Double(value.translation.width / cardWidth), 0.02), 0.98)
-                        let finalNormY = min(max(startY + Double(value.translation.height / cardHeight), 0.02), 0.98)
+                        let finalNormX = min(max(startX + Double(unscaledWidth / cardWidth), 0.01), 0.99)
+                        let finalNormY = min(max(startY + Double(unscaledHeight / cardHeight), 0.01), 0.99)
                         onMove(finalNormX, finalNormY)
                     }
                     currentDragOffset = .zero
@@ -187,6 +204,13 @@ public struct DraggableElementWrapperView: View {
                     dragStartNormY = nil
                 }
             : nil
+        )
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                if isInteractive && isDirectlyEditable(element.type) && !element.isLocked {
+                    isInlineEditing = true
+                }
+            }
         )
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -198,47 +222,60 @@ public struct DraggableElementWrapperView: View {
     }
     
     private func isDirectlyEditable(_ type: ElementType) -> Bool {
-        return type == .callsign || type == .address || type == .text
+        return type == .callsign || type == .address || type == .text || type == .locationFooter
     }
     
     @ViewBuilder
-    private func inlineEditableView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
+    private func inlineEditorView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
         switch element.type {
         case .callsign:
             TextField("", text: Binding(
-                get: {
-                    let text = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return text.isEmpty ? (settings.myCallsign.isEmpty ? "KG4OJT" : settings.myCallsign) : element.textContent
-                },
+                get: { element.textContent.isEmpty ? settings.myCallsign : element.textContent },
                 set: { onTextChanged($0) }
             ))
-            .font(resolveFont(element: element))
+            .font(resolveCustomTextFont(element: element))
             .foregroundColor(Color(hex: element.textColorHex))
             .multilineTextAlignment(.center)
             .textFieldStyle(.plain)
             .padding(4)
-            .background(Color.accentColor.opacity(0.12))
-            .cornerRadius(4)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.18)).stroke(Color.accentColor, lineWidth: 1.5))
+            .focused($isInlineFieldFocused)
+            .onSubmit { isInlineEditing = false }
+            .onAppear { isInlineFieldFocused = true }
             
         case .address:
             TextEditor(text: Binding(
                 get: {
-                    let text = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !text.isEmpty && !text.contains("Pete Norloff") && !text.contains("Miller Road") {
+                    if !element.textContent.isEmpty {
                         return element.textContent
                     }
-                    let addr = settings.fullMyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return (!addr.isEmpty && !addr.contains("Pete Norloff")) ? addr : "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany"
+                    return settings.fullMyAddress.isEmpty ? "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany" : settings.fullMyAddress
                 },
                 set: { onTextChanged($0) }
             ))
-            .font(resolveFont(element: element))
+            .font(resolveCustomTextFont(element: element))
             .foregroundColor(Color(hex: element.textColorHex))
             .multilineTextAlignment(resolveAlignment(element: element))
             .scrollContentBackground(.hidden)
-            .background(Color.accentColor.opacity(0.12))
-            .cornerRadius(4)
-            .padding(2)
+            .padding(4)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.18)).stroke(Color.accentColor, lineWidth: 1.5))
+            .focused($isInlineFieldFocused)
+            .onAppear { isInlineFieldFocused = true }
+            
+        case .locationFooter:
+            TextField("", text: Binding(
+                get: { element.textContent },
+                set: { onTextChanged($0) }
+            ))
+            .font(resolveCustomTextFont(element: element))
+            .foregroundColor(Color(hex: element.textColorHex))
+            .multilineTextAlignment(resolveAlignment(element: element))
+            .textFieldStyle(.plain)
+            .padding(4)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.18)).stroke(Color.accentColor, lineWidth: 1.5))
+            .focused($isInlineFieldFocused)
+            .onSubmit { isInlineEditing = false }
+            .onAppear { isInlineFieldFocused = true }
             
         case .text:
             TextField("", text: Binding(
@@ -247,18 +284,21 @@ public struct DraggableElementWrapperView: View {
             ), axis: .vertical)
             .font(resolveCustomTextFont(element: element))
             .foregroundColor(Color(hex: element.textColorHex))
+            .multilineTextAlignment(resolveAlignment(element: element))
             .textFieldStyle(.plain)
             .padding(4)
-            .background(Color.accentColor.opacity(0.12))
-            .cornerRadius(4)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.18)).stroke(Color.accentColor, lineWidth: 1.5))
+            .focused($isInlineFieldFocused)
+            .onSubmit { isInlineEditing = false }
+            .onAppear { isInlineFieldFocused = true }
             
         default:
-            readOnlyView(elWidth: elWidth, elHeight: elHeight)
+            renderElementView(elWidth: elWidth, elHeight: elHeight)
         }
     }
     
     @ViewBuilder
-    private func readOnlyView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
+    private func renderElementView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
         switch element.type {
         case .callsign:
             CallsignElementView(element: element, myCallsign: settings.myCallsign)
@@ -274,42 +314,20 @@ public struct DraggableElementWrapperView: View {
             Text(EmailTemplateEngine.render(template: element.textContent, qso: qso ?? QSO(), settings: settings))
                 .font(resolveCustomTextFont(element: element))
                 .foregroundColor(Color(hex: element.textColorHex))
+                .multilineTextAlignment(resolveAlignment(element: element))
                 .shadow(
-                    color: Color(hex: element.shadowColorHex).opacity(element.shadowOpacity),
-                    radius: CGFloat(element.shadowRadius),
-                    x: CGFloat(element.shadowX),
-                    y: CGFloat(element.shadowY)
+                    color: element.isShadowEnabled ? Color(hex: element.shadowColorHex).opacity(element.shadowOpacity) : .clear,
+                    radius: element.isShadowEnabled ? CGFloat(element.shadowRadius) : 0,
+                    x: element.isShadowEnabled ? CGFloat(element.shadowX) : 0,
+                    y: element.isShadowEnabled ? CGFloat(element.shadowY) : 0
                 )
         }
-    }
-    
-    private func resolveFont(element: CardElement) -> Font {
-        let size = CGFloat(element.fontSize)
-        var f: Font
-        switch element.fontName {
-        case "System": f = .system(size: size)
-        case "System Rounded": f = .system(size: size, design: .rounded)
-        case "System Serif": f = .system(size: size, design: .serif)
-        case "System Monospaced": f = .system(size: size, design: .monospaced)
-        case "Helvetica": f = .custom("Helvetica", size: size)
-        case "Arial": f = .custom("Arial", size: size)
-        case "Impact": f = .custom("Impact", size: size)
-        case "Times New Roman": f = .custom("Times New Roman", size: size)
-        case "Courier New", "Courier": f = .custom("Courier New", size: size)
-        case "Georgia": f = .custom("Georgia", size: size)
-        case "Menlo": f = .custom("Menlo", size: size)
-        case "Trebuchet MS": f = .custom("Trebuchet MS", size: size)
-        default: f = .system(size: size)
-        }
-        if element.isBold { f = f.bold() }
-        if element.isItalic { f = f.italic() }
-        return f
     }
     
     private func resolveAlignment(element: CardElement) -> TextAlignment {
         switch element.textAlignment.lowercased() {
         case "center": return .center
-        case "right": return .trailing
+        case "right", "trailing": return .trailing
         default: return .leading
         }
     }

@@ -199,6 +199,37 @@ public final class PersistenceService {
         }
     }
     
+    // MARK: - Sticker Collection
+    
+    public func stickersDirectory(for location: StorageLocation? = nil) -> URL {
+        let loc = location ?? currentStorageLocation()
+        let dir = storageDirectory(for: loc).appendingPathComponent("Badges", isDirectory: true)
+        ensureDirectoryExists(dir)
+        return dir
+    }
+    
+    public func loadStickers(from location: StorageLocation? = nil) -> [StickerItem] {
+        let loc = location ?? currentStorageLocation()
+        let targetURL = storageDirectory(for: loc).appendingPathComponent("stickers.json")
+        
+        if let data = try? Data(contentsOf: targetURL),
+           let items = try? decoder.decode([StickerItem].self, from: data), !items.isEmpty {
+            return items
+        }
+        
+        let defaults = StickerItem.builtinStickers
+        saveStickers(defaults, to: loc)
+        return defaults
+    }
+    
+    public func saveStickers(_ stickers: [StickerItem], to location: StorageLocation? = nil) {
+        let loc = location ?? currentStorageLocation()
+        let targetURL = storageDirectory(for: loc).appendingPathComponent("stickers.json")
+        if let data = try? encoder.encode(stickers) {
+            try? data.write(to: targetURL, options: .atomic)
+        }
+    }
+    
     // MARK: - Migration & Finder Integration
     
     /// Migrates all configuration, templates, QSO queue, and rendered cards from source to destination
@@ -209,7 +240,7 @@ public final class PersistenceService {
         
         ensureDirectoryExists(dstDir)
         
-        let files = ["settings.json", "templates.json", "qso_history.json", "autoqsl.sqlite", "autoqsl.sqlite-wal", "autoqsl.sqlite-shm"]
+        let files = ["settings.json", "templates.json", "stickers.json", "qso_history.json", "autoqsl.sqlite", "autoqsl.sqlite-wal", "autoqsl.sqlite-shm"]
         for file in files {
             let srcFile = srcDir.appendingPathComponent(file)
             let dstFile = dstDir.appendingPathComponent(file)

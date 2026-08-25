@@ -29,6 +29,12 @@ public final class AppState: ObservableObject {
         }
     }
     
+    @Published public var stickerCollection: [StickerItem] = [] {
+        didSet {
+            PersistenceService.shared.saveStickers(stickerCollection)
+        }
+    }
+    
     @Published public var selectedQSOIds: Set<UUID> = []
     @Published public var navigationSection: NavigationSection = .queue
     
@@ -56,6 +62,7 @@ public final class AppState: ObservableObject {
         self.selectedTemplateId = initialTemplateId
         
         self.qsoQueue = PersistenceService.shared.loadQSOQueue()
+        self.stickerCollection = PersistenceService.shared.loadStickers()
         
         PrefixMatcher.shared.loadCtyDatabase()
         if settings.myCQZone.isEmpty || settings.myITUZone.isEmpty || settings.myCountry.isEmpty {
@@ -85,6 +92,7 @@ public final class AppState: ObservableObject {
         let loadedTemplates = PersistenceService.shared.loadTemplates(from: newLocation, myCall: settings.myCallsign, myAddress: settings.fullMyAddress)
         self.templates = loadedTemplates
         self.qsoQueue = PersistenceService.shared.loadQSOQueue(from: newLocation)
+        self.stickerCollection = PersistenceService.shared.loadStickers(from: newLocation)
         
         if let activeId = settings.activeTemplateId, templates.contains(where: { $0.id == activeId }) {
             self.selectedTemplateId = activeId
@@ -93,6 +101,63 @@ public final class AppState: ObservableObject {
         }
     }
     
+    // MARK: - Sticker / Badge Management
+    
+    public func addCustomSticker(name: String, sourceURL: URL) {
+        let badgesDir = PersistenceService.shared.stickersDirectory(for: settings.storageLocation)
+        let fileExt = sourceURL.pathExtension.isEmpty ? "png" : sourceURL.pathExtension
+        let uniqueFileName = "\(UUID().uuidString).\(fileExt)"
+        let destinationURL = badgesDir.appendingPathComponent(uniqueFileName)
+        
+        do {
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            
+            let displayName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? sourceURL.deletingPathExtension().lastPathComponent
+                : name
+            
+            let item = StickerItem(
+                name: displayName,
+                category: "Custom",
+                type: .custom,
+                customImagePath: destinationURL.path,
+                isBuiltin: false
+            )
+            stickerCollection.append(item)
+            lastLogMessage = "Added badge '\(displayName)' to collection."
+        } catch {
+            lastLogMessage = "Failed to import badge: \(error.localizedDescription)"
+        }
+    }
+    
+    public func deleteSticker(id: UUID) {
+        if let index = stickerCollection.firstIndex(where: { $0.id == id }) {
+            let item = stickerCollection[index]
+            if let customPath = item.customImagePath {
+                try? FileManager.default.removeItem(atPath: customPath)
+            }
+            stickerCollection.remove(at: index)
+            lastLogMessage = "Removed badge '\(item.name)' from collection."
+        }
+    }
+    
+    public func restoreDefaultStickers() {
+        let existingCustom = stickerCollection.filter { !$0.isBuiltin }
+        let builtins = StickerItem.builtinStickers
+        // Avoid duplicate builtin IDs/types
+        var combined = builtins
+        for c in existingCustom {
+            if !combined.contains(where: { $0.id == c.id }) {
+                combined.append(c)
+            }
+        }
+        stickerCollection = combined
+        lastLogMessage = "Restored built-in badges to collection."
+    }
+
     public var activeTemplate: QSLCardTemplate {
         get {
             templates.first(where: { $0.id == selectedTemplateId }) ?? templates.first ?? QSLCardTemplate.createDefaultTemplate(myCall: settings.myCallsign)

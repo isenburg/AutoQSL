@@ -97,6 +97,13 @@ open -a Xcode .
 
 ## Changelog
 
+### Version 1.2.0 (2026-08)
+- 🛡️ **Badges & Stickers Collection**: Manageable collection of built-in (ARRL Diamond, POTA, IOTA, SOTA, CQ WPX/DX, WAS All States) and custom stickers with persistent storage in `stickers.json` and `Badges/`.
+- ➕ **Add & Delete Stickers**: Import custom PNG, JPG, SVG, and WebP logos with custom display names; delete unwanted stickers from the collection on hover or via context menu.
+- 📐 **Proportional Vector Scaling**: Fully scalable geometry-based vector graphics for all built-in badges to eliminate text clipping or overlapping at any size.
+- 🎯 **True WYSIWYG Scale-Compensated Dragging**: Smooth, jump-free mouse dragging with exact canvas scale compensation.
+- ✏️ **Double-Click Inline Editing**: Direct on-canvas inline text editing activated via double-click without layout shift or position jumps.
+
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com Callbook Lookup**: Full integration for free HamQTH XML callbook lookups with customizable priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).
 - 🖱️ **Callbook Context Menu**: Right-click any queue entry to open the callsign in QRZ.com or HamQTH.com (whichever is configured) in the browser.
