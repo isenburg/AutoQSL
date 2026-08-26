@@ -10,9 +10,18 @@ public struct QSOQueueView: View {
     
     enum QueueFilter: String, CaseIterable {
         case all = "All"
-        case awaiting = "Awaiting Action"
+        case awaiting = "Action"
         case sent = "Sent"
-        case failed = "Failed / Skipped"
+        case failed = "Failed / Skip"
+        
+        func localizedName(_ lang: AppLanguage) -> String {
+            switch self {
+            case .all: return L10n.Queue.filterAll(lang)
+            case .awaiting: return L10n.Queue.filterAwaiting(lang)
+            case .sent: return L10n.Queue.filterSent(lang)
+            case .failed: return L10n.Queue.filterFailed(lang)
+            }
+        }
     }
     
     private var filteredQSOs: [QSO] {
@@ -43,7 +52,7 @@ public struct QSOQueueView: View {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
-                        TextField("Search callsign, band, mode...", text: $searchText)
+                        TextField(L10n.Queue.searchPlaceholder(appState.settings.appLanguage), text: $searchText)
                             .textFieldStyle(.plain)
                         if !searchText.isEmpty {
                             Button(action: { searchText = "" }) {
@@ -60,7 +69,7 @@ public struct QSOQueueView: View {
                     // Filter Picker
                     Picker("", selection: $filterMode) {
                         ForEach(QueueFilter.allCases, id: \.self) { filter in
-                            Text(filter.rawValue).tag(filter)
+                            Text(filter.localizedName(appState.settings.appLanguage)).tag(filter)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -78,7 +87,7 @@ public struct QSOQueueView: View {
                         Image(systemName: "antenna.radiowaves.left.and.right.slash")
                             .font(.system(size: 36))
                             .foregroundColor(.secondary)
-                        Text("No QSOs in Queue")
+                        Text(L10n.Queue.emptyTitle(appState.settings.appLanguage))
                             .font(.headline)
                             .foregroundColor(.secondary)
                         Text(verbatim: "AutoQSL is listening for WSJT-X & RUMlog UDP packets on ports \(appState.settings.wsjtxPort) / \(appState.settings.rumlogPort)")
@@ -88,7 +97,7 @@ public struct QSOQueueView: View {
                             .padding(.horizontal, 20)
                         
                         Button(action: simulateTestQSO) {
-                            Label("Simulate Sample QSO (WSJT-X)", systemImage: "sparkles")
+                            Label(L10n.Queue.simulateSample(appState.settings.appLanguage), systemImage: "sparkles")
                         }
                         .padding(.top, 8)
                         
@@ -103,68 +112,68 @@ public struct QSOQueueView: View {
                                 .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                                 .contextMenu {
                                     if appState.selectedQSOIds.contains(qso.id) && appState.selectedQSOIds.count > 1 {
-                                        Button("Send \(appState.selectedQSOIds.count) Selected") {
+                                        Button(L10n.Queue.sendSelected(appState.settings.appLanguage, count: appState.selectedQSOIds.count)) {
                                             sendSelectedQSOs()
                                         }
                                         
-                                        Menu("Set Status for \(appState.selectedQSOIds.count) Selected") {
+                                        Menu(L10n.Queue.setStatusBatch(appState.settings.appLanguage, count: appState.selectedQSOIds.count)) {
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .readyToSend)
                                             } label: {
-                                                Label("Ready to Send", systemImage: QSOStatus.readyToSend.iconName)
+                                                Label(QSOStatus.readyToSend.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.readyToSend.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .awaitingConfirmation)
                                             } label: {
-                                                Label("Awaiting Confirmation", systemImage: QSOStatus.awaitingConfirmation.iconName)
+                                                Label(QSOStatus.awaitingConfirmation.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.awaitingConfirmation.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .sent)
                                             } label: {
-                                                Label("Sent", systemImage: QSOStatus.sent.iconName)
+                                                Label(QSOStatus.sent.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.sent.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .pending)
                                             } label: {
-                                                Label("Pending", systemImage: QSOStatus.pending.iconName)
+                                                Label(QSOStatus.pending.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.pending.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .skipped)
                                             } label: {
-                                                Label("Skipped", systemImage: QSOStatus.skipped.iconName)
+                                                Label(QSOStatus.skipped.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.skipped.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .failedEmailMissing)
                                             } label: {
-                                                Label("Failed: Email missing", systemImage: QSOStatus.failedEmailMissing.iconName)
+                                                Label(QSOStatus.failedEmailMissing.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.failedEmailMissing.iconName)
                                             }
                                             Button {
                                                 appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .failed)
                                             } label: {
-                                                Label("Failed", systemImage: QSOStatus.failed.iconName)
+                                                Label(QSOStatus.failed.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.failed.iconName)
                                             }
                                         }
                                         
                                         Divider()
                                         
-                                        Button("Delete \(appState.selectedQSOIds.count) Selected", role: .destructive) {
+                                        Button(L10n.Queue.deleteSelected(appState.settings.appLanguage, count: appState.selectedQSOIds.count), role: .destructive) {
                                             appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
                                         }
                                     } else {
-                                        Button("Confirm & Send Card") {
+                                        Button(L10n.Queue.confirmAndSend(appState.settings.appLanguage)) {
                                             appState.qsoAwaitingConfirmation = qso
                                             appState.isConfirmationSheetPresented = true
                                         }
-                                        Button("Lookup in Callbook (\(callbookProviderName))") {
+                                        Button(L10n.Queue.lookupInCallbook(appState.settings.appLanguage, provider: callbookProviderName)) {
                                             openCallbook(for: qso.dxCall)
                                         }
                                         
-                                        Menu("Set Status") {
+                                        Menu(L10n.Queue.setStatus(appState.settings.appLanguage)) {
                                             Button {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .readyToSend)
                                             } label: {
                                                 HStack {
-                                                    Label("Ready to Send", systemImage: QSOStatus.readyToSend.iconName)
+                                                    Label(QSOStatus.readyToSend.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.readyToSend.iconName)
                                                     if qso.status == .readyToSend { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -172,7 +181,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .awaitingConfirmation)
                                             } label: {
                                                 HStack {
-                                                    Label("Awaiting Confirmation", systemImage: QSOStatus.awaitingConfirmation.iconName)
+                                                    Label(QSOStatus.awaitingConfirmation.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.awaitingConfirmation.iconName)
                                                     if qso.status == .awaitingConfirmation { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -180,7 +189,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .sent)
                                             } label: {
                                                 HStack {
-                                                    Label("Sent", systemImage: QSOStatus.sent.iconName)
+                                                    Label(QSOStatus.sent.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.sent.iconName)
                                                     if qso.status == .sent { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -188,7 +197,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .pending)
                                             } label: {
                                                 HStack {
-                                                    Label("Pending", systemImage: QSOStatus.pending.iconName)
+                                                    Label(QSOStatus.pending.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.pending.iconName)
                                                     if qso.status == .pending { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -196,7 +205,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .skipped)
                                             } label: {
                                                 HStack {
-                                                    Label("Skipped", systemImage: QSOStatus.skipped.iconName)
+                                                    Label(QSOStatus.skipped.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.skipped.iconName)
                                                     if qso.status == .skipped { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -204,7 +213,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .failedEmailMissing)
                                             } label: {
                                                 HStack {
-                                                    Label("Failed: Email missing", systemImage: QSOStatus.failedEmailMissing.iconName)
+                                                    Label(QSOStatus.failedEmailMissing.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.failedEmailMissing.iconName)
                                                     if qso.status == .failedEmailMissing { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -212,7 +221,7 @@ public struct QSOQueueView: View {
                                                 appState.setQSOStatus(qsoId: qso.id, status: .failed)
                                             } label: {
                                                 HStack {
-                                                    Label("Failed", systemImage: QSOStatus.failed.iconName)
+                                                    Label(QSOStatus.failed.localizedName(appState.settings.appLanguage), systemImage: QSOStatus.failed.iconName)
                                                     if qso.status == .failed { Image(systemName: "checkmark") }
                                                 }
                                             }
@@ -220,7 +229,7 @@ public struct QSOQueueView: View {
                                         
                                         Divider()
                                         
-                                        Button("Delete Record", role: .destructive) {
+                                        Button(L10n.Queue.deleteRecord(appState.settings.appLanguage), role: .destructive) {
                                             appState.deleteQSO(qsoId: qso.id)
                                         }
                                     }
@@ -236,22 +245,29 @@ public struct QSOQueueView: View {
                 Divider()
                 
                 // Bottom Bar with Quick Actions
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     Button(action: { isAddManualPresented = true }) {
-                        Label("Add Manual", systemImage: "plus")
+                        Label(L10n.Queue.addManual(appState.settings.appLanguage), systemImage: "plus")
                     }
                     .buttonStyle(.borderless)
                     
-                    Button(action: { appState.grabLastQSOFromRUMlog() }) {
-                        Label("Grab RUMlog", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                    Menu {
+                        Button(action: { appState.grabLastQSOFromRUMlog() }) {
+                            Label("RUMlogNG (AppleScript)", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                        }
+                        Button(action: { appState.grabLastQSOFromMacLoggerDX() }) {
+                            Label("MacLoggerDX (AppleScript)", systemImage: "antenna.radiowaves.left.and.right")
+                        }
+                    } label: {
+                        Label(L10n.tr(appState.settings.appLanguage, "Grab", "Holen"), systemImage: "arrow.triangle.2.circlepath.circle.fill")
                     }
-                    .buttonStyle(.borderless)
-                    .help("Fetch the last logged QSO from RUMlogNG via AppleScript and generate QSL card")
+                    .menuStyle(.borderlessButton)
+                    .help(L10n.tr(appState.settings.appLanguage, "Fetch the last logged contact from RUMlogNG or MacLoggerDX via AppleScript", "Holt das zuletzt geloggte QSO per AppleScript aus RUMlogNG oder MacLoggerDX"))
                     
                     Spacer()
                     
                     Button(action: simulateTestQSO) {
-                        Label("Simulate", systemImage: "bolt.fill")
+                        Label(L10n.tr(appState.settings.appLanguage, "Simulate", "Simulieren"), systemImage: "bolt.fill")
                     }
                     .buttonStyle(.borderless)
                 }
@@ -270,7 +286,7 @@ public struct QSOQueueView: View {
                         Image(systemName: "square.stack.3d.up")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary)
-                        Text("\(appState.selectedQSOIds.count) QSOs selected")
+                        Text(L10n.tr(appState.settings.appLanguage, "\(appState.selectedQSOIds.count) QSOs selected", "\(appState.selectedQSOIds.count) QSOs ausgewählt"))
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
@@ -278,7 +294,7 @@ public struct QSOQueueView: View {
                             Button(action: {
                                 appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
                             }) {
-                                Label("Delete Selected", systemImage: "trash")
+                                Label(L10n.tr(appState.settings.appLanguage, "Delete Selected", "Ausgewählte löschen"), systemImage: "trash")
                             }
                             .buttonStyle(.bordered)
                             .tint(.red)
@@ -286,7 +302,7 @@ public struct QSOQueueView: View {
                             Button(action: {
                                 sendSelectedQSOs()
                             }) {
-                                Label("Send Selected", systemImage: "paperplane.fill")
+                                Label(L10n.tr(appState.settings.appLanguage, "Send Selected", "Ausgewählte senden"), systemImage: "paperplane.fill")
                             }
                             .buttonStyle(.borderedProminent)
                         }
@@ -302,7 +318,7 @@ public struct QSOQueueView: View {
                         Image(systemName: "envelope.badge")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary)
-                        Text("Select a QSO from the queue to view details and card preview")
+                        Text(L10n.tr(appState.settings.appLanguage, "Select a QSO from the queue to view details and card preview", "Wähle ein QSO aus der Warteschlange, um Details und die Kartenvorschau anzuzeigen"))
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -363,7 +379,7 @@ public struct QSOQueueView: View {
                     
                     Spacer()
                     
-                    Text(qso.status == .failedEmailMissing ? "Failed" : qso.status.rawValue)
+                    Text(qso.status == .failedEmailMissing ? L10n.tr(appState.settings.appLanguage, "Failed", "Fehlgeschlagen") : qso.status.localizedName(appState.settings.appLanguage))
                         .font(.caption2.bold())
                         .foregroundColor(statusColor(qso.status))
                 }
@@ -377,7 +393,7 @@ public struct QSOQueueView: View {
                     Spacer()
                     
                     if qso.status == .failedEmailMissing {
-                        Text("Email missing")
+                        Text(L10n.tr(appState.settings.appLanguage, "Email missing", "E-Mail fehlt"))
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -385,7 +401,7 @@ public struct QSOQueueView: View {
                             .background(Color.red)
                             .cornerRadius(4)
                     } else if qso.status == .failed, let msg = qso.statusMessage {
-                        Text(msg)
+                        Text(localizedStatusBadgeText(msg))
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -423,6 +439,20 @@ public struct QSOQueueView: View {
         }
     }
     
+    private func localizedStatusBadgeText(_ msg: String) -> String {
+        let lang = appState.settings.appLanguage
+        if msg.starts(with: "Status set to") || msg.starts(with: "Manually marked") {
+            return L10n.tr(lang, "Manually set", "Manuell gesetzt")
+        }
+        if msg.localizedCaseInsensitiveContains("email") && (msg.localizedCaseInsensitiveContains("missing") || msg.localizedCaseInsensitiveContains("not found")) {
+            return L10n.tr(lang, "Email missing", "E-Mail fehlt")
+        }
+        if msg == "Skipped by user" {
+            return L10n.tr(lang, "Skipped", "Übersprungen")
+        }
+        return msg
+    }
+    
     private func statusColor(_ status: QSOStatus) -> Color {
         switch status {
         case .pending, .readyToSend: return .blue
@@ -446,9 +476,11 @@ public struct QSOQueueView: View {
             df.dateFormat = "yyyy'\(sep)'MM'\(sep)'dd HH:mm"
         }
         
-        var timeStr = "Queued: \(df.string(from: qso.timestamp))"
+        let qPrefix = L10n.tr(appState.settings.appLanguage, "Queued: ", "Eingereiht: ")
+        let sPrefix = L10n.tr(appState.settings.appLanguage, " • Sent: ", " • Gesendet: ")
+        var timeStr = "\(qPrefix)\(df.string(from: qso.timestamp))"
         if let sent = qso.sentAt {
-            timeStr += " • Sent: \(df.string(from: sent))"
+            timeStr += "\(sPrefix)\(df.string(from: sent))"
         }
         return timeStr
     }

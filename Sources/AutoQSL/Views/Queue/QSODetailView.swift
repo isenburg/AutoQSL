@@ -42,7 +42,7 @@ public struct QSODetailView: View {
                             if qso.customTemplate != nil {
                                 HStack(spacing: 4) {
                                     Image(systemName: "paintbrush.pointed.fill")
-                                    Text("Customized Card")
+                                    Text(L10n.tr(appState.settings.appLanguage, "Customized Card", "Individuelle Karte"))
                                 }
                                 .font(.caption2.bold())
                                 .padding(.horizontal, 8)
@@ -67,14 +67,14 @@ public struct QSODetailView: View {
                         Button(action: {
                             isEditQSOModalPresented = true
                         }) {
-                            Label("Edit QSO Data", systemImage: "pencil")
+                            Label(L10n.Detail.editQSO(appState.settings.appLanguage), systemImage: "pencil")
                         }
                         .buttonStyle(.bordered)
                         
                         Button(action: {
                             isCardEditorPresented = true
                         }) {
-                            Label("Customize Card", systemImage: "paintbrush")
+                            Label(L10n.Detail.customizeCard(appState.settings.appLanguage), systemImage: "paintbrush")
                         }
                         .buttonStyle(.bordered)
                         
@@ -83,7 +83,7 @@ public struct QSODetailView: View {
                                 appState.qsoAwaitingConfirmation = qso
                                 appState.isConfirmationSheetPresented = true
                             }) {
-                                Label("Preview & Send", systemImage: "paperplane.fill")
+                                Label(L10n.Detail.previewAndSend(appState.settings.appLanguage), systemImage: "paperplane.fill")
                             }
                             .buttonStyle(.borderedProminent)
                         } else if qso.status == .sent {
@@ -91,7 +91,7 @@ public struct QSODetailView: View {
                                 appState.qsoAwaitingConfirmation = qso
                                 appState.isConfirmationSheetPresented = true
                             }) {
-                                Label("Resend Card", systemImage: "arrow.clockwise")
+                                Label(L10n.tr(appState.settings.appLanguage, "Resend Card", "Erneut senden"), systemImage: "arrow.clockwise")
                             }
                             .buttonStyle(.bordered)
                         }
@@ -104,7 +104,7 @@ public struct QSODetailView: View {
                 // Generated Card Preview Box
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("Rendered QSL Card Preview")
+                        Text(L10n.Detail.qslPreview(appState.settings.appLanguage))
                             .font(.headline)
                         
                         Spacer()
@@ -151,7 +151,7 @@ public struct QSODetailView: View {
                             
                             HStack(spacing: 4) {
                                 Image(systemName: "magnifyingglass")
-                                Text("Click to Zoom")
+                                Text(L10n.Detail.clickToZoom(appState.settings.appLanguage))
                             }
                             .font(.caption2.bold())
                             .padding(.horizontal, 8)
@@ -165,38 +165,82 @@ public struct QSODetailView: View {
                     .help("Click to open full original size card preview with zoom controls")
                 }
                 
+
+                // Dispatch History (if resent)
+                if !qso.dispatchHistory.isEmpty {
+                    GroupBox(label: Label(L10n.tr(appState.settings.appLanguage, "Dispatch History (Previous Sends)", "Sendehistorie (Vorherige Sendungen)"), systemImage: "clock.arrow.circlepath")) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(qso.dispatchHistory) { rec in
+                                HStack(alignment: .center, spacing: 10) {
+                                    Image(systemName: "checkmark.circle")
+                                        .foregroundColor(.green)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(rec.sentAt.formatted(date: .abbreviated, time: .shortened))
+                                            .font(.caption.bold())
+                                        if let tName = rec.templateName {
+                                            Text(L10n.tr(appState.settings.appLanguage, "Template: \(tName)", "Vorlage: \(tName)"))
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        if let method = rec.deliveryMethod {
+                                            Text(method)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    Spacer()
+                                    if let path = rec.cardImagePath, FileManager.default.fileExists(atPath: path) {
+                                        Button(action: {
+                                            NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                                        }) {
+                                            Label(L10n.tr(appState.settings.appLanguage, "Show Card", "Karte anzeigen"), systemImage: "photo")
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.small)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                                if rec.id != qso.dispatchHistory.last?.id {
+                                    Divider()
+                                }
+                            }
+                        }
+                        .padding(4)
+                    }
+                }
+
                 // 2 Column Grid for QSO & Contact Details
                 HStack(alignment: .top, spacing: 20) {
                     // Left Column: QSO Parameters
-                    GroupBox(label: Label("QSO Parameters", systemImage: "antenna.radiowaves.left.and.right")) {
+                    GroupBox(label: Label(L10n.tr(appState.settings.appLanguage, "QSO Parameters", "QSO-Parameter"), systemImage: "antenna.radiowaves.left.and.right")) {
                         VStack(alignment: .leading, spacing: 10) {
-                            qsoRow(label: "Source", value: qso.source.rawValue)
-                            qsoRow(label: "Date & Time", value: "\(qso.formattedDate(format: appState.settings.dateFormat))  \(qso.formattedUTCTime) UTC")
-                            qsoRow(label: "Band / Mode", value: "\(qso.band) • \(qso.mode)")
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Source", "Quelle"), value: qso.source.rawValue)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Date & Time", "Datum & Zeit"), value: "\(qso.formattedDate(format: appState.settings.dateFormat))  \(qso.formattedUTCTime) UTC")
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Band / Mode", "Band / Mode"), value: "\(qso.band) • \(qso.mode)")
                             if let freq = qso.frequencyHz {
-                                qsoRow(label: "Frequency", value: String(format: "%.3f MHz", freq / 1_000_000.0))
+                                qsoRow(label: L10n.tr(appState.settings.appLanguage, "Frequency", "Frequenz"), value: String(format: "%.3f MHz", freq / 1_000_000.0))
                             }
-                            qsoRow(label: "RST Sent / Rcvd", value: "\(qso.rstSent) / \(qso.rstRcvd)")
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "RST Sent / Rcvd", "RST Gesendet / Empf."), value: "\(qso.rstSent) / \(qso.rstRcvd)")
                             if let pwr = qso.txPowerWatts {
-                                qsoRow(label: "TX Power", value: "\(Int(pwr)) W")
+                                qsoRow(label: L10n.tr(appState.settings.appLanguage, "TX Power", "Sendeleistung"), value: "\(Int(pwr)) W")
                             }
-                            qsoRow(label: "Remarks", value: qso.comment)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Remarks", "Kommentar"), value: qso.comment)
                         }
                         .padding(.top, 4)
                     }
                     .frame(maxWidth: .infinity)
                     
                     // Right Column: Recipient Info (QRZ)
-                    GroupBox(label: Label("Recipient Profile", systemImage: "person.crop.square")) {
+                    GroupBox(label: Label(L10n.tr(appState.settings.appLanguage, "Recipient Profile", "Empfängerprofil"), systemImage: "person.crop.square")) {
                         VStack(alignment: .leading, spacing: 10) {
-                            qsoRow(label: "Callsign", value: qso.dxCall)
-                            qsoRow(label: "Email", value: qso.dxEmail.isEmpty ? "Not available" : qso.dxEmail)
-                            qsoRow(label: "Grid Square", value: qso.dxGrid.isEmpty ? "—" : qso.dxGrid)
-                            qsoRow(label: "Country", value: qso.dxCountry.isEmpty ? "—" : qso.dxCountry)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Callsign", "Rufzeichen"), value: qso.dxCall)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Email", "E-Mail"), value: qso.dxEmail.isEmpty ? L10n.tr(appState.settings.appLanguage, "Not available", "Nicht verfügbar") : qso.dxEmail)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Grid Square", "Locator (Grid)"), value: qso.dxGrid.isEmpty ? "—" : qso.dxGrid)
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Country", "Land / DXCC"), value: qso.dxCountry.isEmpty ? "—" : qso.dxCountry)
                             if !qso.dxAddress.isEmpty {
-                                qsoRow(label: "Address", value: qso.dxAddress)
+                                qsoRow(label: L10n.tr(appState.settings.appLanguage, "Address", "Adresse"), value: qso.dxAddress)
                             }
-                            qsoRow(label: "QRZ Status", value: qso.qrzFound ? "Verified from QRZ.com" : "Not on QRZ / Manual")
+                            qsoRow(label: L10n.tr(appState.settings.appLanguage, "Callbook Status", "Callbook-Status"), value: qso.qrzFound ? L10n.tr(appState.settings.appLanguage, "Verified from Callbook", "Verifiziert aus Callbook") : L10n.tr(appState.settings.appLanguage, "Manual / Not verified", "Manuell / Nicht verifiziert"))
                         }
                         .padding(.top, 4)
                     }
@@ -268,7 +312,7 @@ public struct StatusBadgeView: View {
         HStack(spacing: 4) {
             Image(systemName: status.iconName)
                 .font(.caption)
-            Text(status.rawValue)
+            Text(status.localizedName(Locale.current.language.languageCode?.identifier == "de" ? .german : .english))
                 .font(.caption.bold())
         }
         .padding(.horizontal, 8)

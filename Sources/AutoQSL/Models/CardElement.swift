@@ -8,6 +8,17 @@ public enum ElementType: String, Codable, CaseIterable {
     case locationFooter = "Location Footer"
     case sticker = "Sticker / Badge"
     case text = "Custom Text"
+
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .callsign: return L10n.tr(lang, "Callsign Block", "Rufzeichen-Block")
+        case .address: return L10n.tr(lang, "Address Block", "Adress-Block")
+        case .table: return L10n.tr(lang, "QSO Table", "QSO-Tabelle")
+        case .locationFooter: return L10n.tr(lang, "Location Line", "Standortzeile")
+        case .sticker: return L10n.tr(lang, "Badge / Sticker", "Sticker / Abzeichen")
+        case .text: return L10n.tr(lang, "Custom Text", "Freier Text")
+        }
+    }
 }
 
 public enum TextEffectType: String, Codable, CaseIterable {
@@ -16,11 +27,23 @@ public enum TextEffectType: String, Codable, CaseIterable {
     case outline = "Outlined"
     case metallicGold = "Metallic Gold"
     case glow = "Neon Glow"
+
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .standard: return L10n.tr(lang, "Flat", "Flach (Standard)")
+        case .bevel3D: return L10n.tr(lang, "3D Bevel & Shadow", "3D-Prägung & Schatten")
+        case .outline: return L10n.tr(lang, "Outlined", "Kontur / Umrandet")
+        case .metallicGold: return L10n.tr(lang, "Metallic Gold", "Metallisches Gold")
+        case .glow: return L10n.tr(lang, "Neon Glow", "Neon-Leuchten")
+        }
+    }
 }
 
 public enum StickerType: String, Codable, CaseIterable {
+    case darc = "DARC Logo"
     case arrl = "ARRL Diamond"
     case pota = "POTA (Parks)"
+    case wwff = "WWFF (Flora & Fauna)"
     case iota = "IOTA (Islands)"
     case sota = "SOTA (Summits)"
     case cq = "CQ Zone / WPX"
@@ -79,6 +102,13 @@ public struct CardElement: Identifiable, Codable, Hashable {
     public var tableHeaderBackgroundOpacity: Double
     public var tableComment: String
     
+    // Table Typography Specifics (Headers)
+    public var tableHeaderFontName: String?
+    public var tableHeaderFontSize: Double?
+    public var tableHeaderIsBold: Bool?
+    public var tableHeaderIsItalic: Bool?
+    public var tableHeaderTextColorHex: String?
+    
     // Table Columns Configuration
     public var tableShowCallsign: Bool
     public var tableCallsignHeader: String
@@ -99,6 +129,31 @@ public struct CardElement: Identifiable, Codable, Hashable {
     public var stickerType: StickerType
     public var customImagePath: String?
     public var stickerTintHex: String?
+    
+    public var effectiveHeaderFontName: String {
+        get { tableHeaderFontName ?? fontName }
+        set { tableHeaderFontName = newValue }
+    }
+    
+    public var effectiveHeaderFontSize: Double {
+        get { tableHeaderFontSize ?? fontSize }
+        set { tableHeaderFontSize = newValue }
+    }
+    
+    public var effectiveHeaderIsBold: Bool {
+        get { tableHeaderIsBold ?? true }
+        set { tableHeaderIsBold = newValue }
+    }
+    
+    public var effectiveHeaderIsItalic: Bool {
+        get { tableHeaderIsItalic ?? isItalic }
+        set { tableHeaderIsItalic = newValue }
+    }
+    
+    public var effectiveHeaderTextColorHex: String {
+        get { tableHeaderTextColorHex ?? textColorHex }
+        set { tableHeaderTextColorHex = newValue }
+    }
     
     public init(
         id: UUID = UUID(),
@@ -134,6 +189,11 @@ public struct CardElement: Identifiable, Codable, Hashable {
         tableHeaderBackgroundHex: String = "#F0F0F0",
         tableHeaderBackgroundOpacity: Double = 0.95,
         tableComment: String = "73, Thanks for the QSO. I hope to meet you further down the log.",
+        tableHeaderFontName: String? = nil,
+        tableHeaderFontSize: Double? = nil,
+        tableHeaderIsBold: Bool? = nil,
+        tableHeaderIsItalic: Bool? = nil,
+        tableHeaderTextColorHex: String? = nil,
         tableShowCallsign: Bool = true,
         tableCallsignHeader: String = "Confirming QSO With",
         tableShowDate: Bool = true,
@@ -185,6 +245,11 @@ public struct CardElement: Identifiable, Codable, Hashable {
         self.tableHeaderBackgroundHex = tableHeaderBackgroundHex
         self.tableHeaderBackgroundOpacity = tableHeaderBackgroundOpacity
         self.tableComment = tableComment
+        self.tableHeaderFontName = tableHeaderFontName
+        self.tableHeaderFontSize = tableHeaderFontSize
+        self.tableHeaderIsBold = tableHeaderIsBold
+        self.tableHeaderIsItalic = tableHeaderIsItalic
+        self.tableHeaderTextColorHex = tableHeaderTextColorHex
         self.tableShowCallsign = tableShowCallsign
         self.tableCallsignHeader = tableCallsignHeader
         self.tableShowDate = tableShowDate
@@ -210,7 +275,7 @@ public struct CardElement: Identifiable, Codable, Hashable {
         case textContent, fontName, fontSize, isBold, isItalic, textAlignment, textColorHex, secondaryColorHex
         case effectType, shadowRadius, shadowX, shadowY, shadowColorHex, shadowOpacity, isShadowEnabled
         case tableBorderColorHex, tableBorderWidth, tableBackgroundColorHex, tableBackgroundOpacity
-        case tableHeaderBackgroundHex, tableHeaderBackgroundOpacity, tableComment
+        case tableHeaderBackgroundHex, tableHeaderBackgroundOpacity, tableComment, tableHeaderFontName, tableHeaderFontSize, tableHeaderIsBold, tableHeaderIsItalic, tableHeaderTextColorHex
         case tableShowCallsign, tableCallsignHeader, tableShowDate, tableDateHeader
         case tableShowTime, tableTimeHeader, tableShowFreq, tableFreqHeader, tableFreqDisplayMode
         case tableShowRST, tableRSTHeader, tableShowMode, tableModeHeader, tableShowCommentRow
@@ -252,6 +317,11 @@ public struct CardElement: Identifiable, Codable, Hashable {
         self.tableHeaderBackgroundHex = try c.decodeIfPresent(String.self, forKey: .tableHeaderBackgroundHex) ?? "#F0F0F0"
         self.tableHeaderBackgroundOpacity = try c.decodeIfPresent(Double.self, forKey: .tableHeaderBackgroundOpacity) ?? 0.95
         self.tableComment = try c.decodeIfPresent(String.self, forKey: .tableComment) ?? "73, Thanks for the QSO. I hope to meet you further down the log."
+        self.tableHeaderFontName = try c.decodeIfPresent(String.self, forKey: .tableHeaderFontName)
+        self.tableHeaderFontSize = try c.decodeIfPresent(Double.self, forKey: .tableHeaderFontSize)
+        self.tableHeaderIsBold = try c.decodeIfPresent(Bool.self, forKey: .tableHeaderIsBold)
+        self.tableHeaderIsItalic = try c.decodeIfPresent(Bool.self, forKey: .tableHeaderIsItalic)
+        self.tableHeaderTextColorHex = try c.decodeIfPresent(String.self, forKey: .tableHeaderTextColorHex)
         self.tableShowCallsign = try c.decodeIfPresent(Bool.self, forKey: .tableShowCallsign) ?? true
         self.tableCallsignHeader = try c.decodeIfPresent(String.self, forKey: .tableCallsignHeader) ?? "Confirming QSO With"
         self.tableShowDate = try c.decodeIfPresent(Bool.self, forKey: .tableShowDate) ?? true

@@ -214,7 +214,17 @@ public final class PersistenceService {
         
         if let data = try? Data(contentsOf: targetURL),
            let items = try? decoder.decode([StickerItem].self, from: data), !items.isEmpty {
-            return items
+            var filtered = items.filter { $0.type != .cq && $0.type != .was && $0.name != "CQ Zone / WPX" && $0.name != "WAS - Worked All States" }
+            if !filtered.contains(where: { $0.type == .darc }) {
+                filtered.insert(StickerItem(name: "DARC Logo", category: "Badges", type: .darc), at: 0)
+            }
+            if !filtered.contains(where: { $0.type == .wwff }) {
+                filtered.append(StickerItem(name: "WWFF - Flora & Fauna", category: "Activities", type: .wwff))
+            }
+            if filtered != items {
+                saveStickers(filtered, to: loc)
+            }
+            return filtered
         }
         
         let defaults = StickerItem.builtinStickers

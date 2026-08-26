@@ -10,13 +10,13 @@ public struct AddressElementView: View {
     }
     
     private var displayText: String {
-        let addr = myAddress.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !addr.isEmpty && !addr.contains("Pete Norloff") {
-            return addr
-        }
         let elText = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !elText.isEmpty && !elText.contains("Pete Norloff") && !elText.contains("Miller Road") {
-            return elText
+        if !elText.isEmpty {
+            return element.textContent
+        }
+        let addr = myAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !addr.isEmpty {
+            return myAddress
         }
         return "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany"
     }
@@ -51,7 +51,12 @@ public struct AddressElementView: View {
         case "Georgia": f = .custom("Georgia", size: size)
         case "Menlo": f = .custom("Menlo", size: size)
         case "Trebuchet MS": f = .custom("Trebuchet MS", size: size)
-        default: f = .system(size: size)
+        default:
+            if NSFont(name: element.fontName, size: size) != nil {
+                f = .custom(element.fontName, size: size)
+            } else {
+                f = .system(size: size)
+            }
         }
         if element.isBold { f = f.bold() }
         if element.isItalic { f = f.italic() }

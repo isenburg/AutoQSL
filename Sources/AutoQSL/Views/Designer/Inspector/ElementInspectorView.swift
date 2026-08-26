@@ -34,6 +34,13 @@ public struct ElementInspectorView: View {
         )
     }
     
+    private var tableHeaderTextColorBinding: Binding<Color> {
+        Binding(
+            get: { Color(hex: element.effectiveHeaderTextColorHex) },
+            set: { element.tableHeaderTextColorHex = $0.toHex() }
+        )
+    }
+    
     private var tableHeaderBackgroundColorBinding: Binding<Color> {
         Binding(
             get: { Color(hex: element.tableHeaderBackgroundHex).opacity(element.tableHeaderBackgroundOpacity) },
@@ -88,7 +95,7 @@ public struct ElementInspectorView: View {
                 Divider()
                 
                 // Position & Dimensions (Geometry)
-                Section("Position & Size (Normalized)") {
+                Section("Position & Size") {
                     VStack(spacing: 8) {
                         HStack {
                             Text("X Position: \(Int(element.normalizedX * 100))%")
@@ -126,7 +133,7 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var fontSelectionGroup: some View {
         Group {
-            Text("Typography (Standard macOS Font Picker)")
+            Text("Typography")
                 .font(.caption.bold())
                 .foregroundColor(.secondary)
             
@@ -209,6 +216,71 @@ public struct ElementInspectorView: View {
                         .font(.caption)
                     Slider(value: $element.shadowOpacity, in: 0.0...1.0)
                 }
+            }
+        }
+    }
+    
+    private func openMacOSHeaderFontPicker() {
+        FontPanelBridge.shared.present(
+            fontName: element.effectiveHeaderFontName,
+            fontSize: element.effectiveHeaderFontSize,
+            isBold: element.effectiveHeaderIsBold,
+            isItalic: element.effectiveHeaderIsItalic
+        ) { name, size, isBold, isItalic in
+            element.tableHeaderFontName = name
+            element.tableHeaderFontSize = size
+            element.tableHeaderIsBold = isBold
+            element.tableHeaderIsItalic = isItalic
+        }
+    }
+    
+    @ViewBuilder
+    private var headerFontSelectionGroup: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Header Typography")
+                .font(.caption.bold())
+                .foregroundColor(.secondary)
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(element.effectiveHeaderFontName)
+                        .font(.body.bold())
+                    Text("\(Int(element.effectiveHeaderFontSize)) pt" + (element.effectiveHeaderIsBold ? " • Bold" : "") + (element.effectiveHeaderIsItalic ? " • Italic" : ""))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button(action: openMacOSHeaderFontPicker) {
+                    Label("Choose Header Font…", systemImage: "textformat")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+            .padding(8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(6)
+            
+            HStack {
+                Text("Header Size: \(Int(element.effectiveHeaderFontSize)) pt")
+                    .font(.caption)
+                Slider(value: Binding(
+                    get: { element.effectiveHeaderFontSize },
+                    set: { element.effectiveHeaderFontSize = $0 }
+                ), in: 8...60, step: 1)
+            }
+            
+            HStack(spacing: 16) {
+                Toggle("Bold", isOn: Binding(
+                    get: { element.effectiveHeaderIsBold },
+                    set: { element.effectiveHeaderIsBold = $0 }
+                ))
+                Toggle("Italic", isOn: Binding(
+                    get: { element.effectiveHeaderIsItalic },
+                    set: { element.effectiveHeaderIsItalic = $0 }
+                ))
+                Spacer()
             }
         }
     }
@@ -385,7 +457,16 @@ public struct ElementInspectorView: View {
             
             Divider()
             
-            fontSelectionGroup
+            headerFontSelectionGroup
+            
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Table Data Typography")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+                fontSelectionGroup
+            }
             
             Divider()
             
@@ -394,9 +475,10 @@ public struct ElementInspectorView: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Font / Text Color", selection: textColorBinding)
-                colorRow(title: "Table Background Color", selection: tableBackgroundColorBinding)
+                colorRow(title: "Header Text Color", selection: tableHeaderTextColorBinding)
+                colorRow(title: "Data Text Color", selection: textColorBinding)
                 colorRow(title: "Header Background Color", selection: tableHeaderBackgroundColorBinding)
+                colorRow(title: "Table Background Color", selection: tableBackgroundColorBinding)
                 colorRow(title: "Grid Border Color", selection: tableBorderColorBinding)
             }
             

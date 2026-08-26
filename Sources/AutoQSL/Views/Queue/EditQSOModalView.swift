@@ -48,6 +48,7 @@ public struct EditQSOModalView: View {
     }
     
     public var body: some View {
+        let lang = appState.settings.appLanguage
         VStack(spacing: 0) {
             // Header
             HStack(spacing: 12) {
@@ -58,16 +59,16 @@ public struct EditQSOModalView: View {
                     .foregroundColor(.accentColor)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Edit QSO & QSL Card Details")
+                    Text(L10n.tr(lang, "Edit QSO & QSL Card Details", "QSO- & QSL-Kartendaten bearbeiten"))
                         .font(.headline)
-                    Text("Modify contact information, QSO parameters, and card layout for \(originalQSO.dxCall)")
+                    Text(L10n.tr(lang, "Modify contact information, QSO parameters, and card layout for \(originalQSO.dxCall)", "Kontaktdaten, QSO-Parameter und Kartenlayout für \(originalQSO.dxCall) anpassen"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
-                Button("Cancel") {
+                Button(L10n.tr(lang, "Cancel", "Abbrechen")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
@@ -81,9 +82,9 @@ public struct EditQSOModalView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // Section 1: Call & Recipient Info
-                    GroupBox(label: Text("Station & Recipient Profile").font(.headline)) {
+                    GroupBox(label: Text(L10n.tr(lang, "Station & Recipient Profile", "Empfänger- & Stationsprofil")).font(.headline)) {
                         VStack(alignment: .leading, spacing: 10) {
-                            FormRow(label: "Callsign:") {
+                            FormRow(label: L10n.tr(lang, "Callsign:", "Rufzeichen:")) {
                                 TextField("DX Callsign", text: $dxCall)
                                     .font(.body.bold())
                                     .textFieldStyle(.roundedBorder)
@@ -96,31 +97,31 @@ public struct EditQSOModalView: View {
                                     }
                             }
                             
-                            FormRow(label: "Name:") {
+                            FormRow(label: L10n.tr(lang, "Name:", "Name:")) {
                                 TextField("DX Name / Operator", text: $dxName)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 240)
                             }
                             
-                            FormRow(label: "Email:") {
+                            FormRow(label: L10n.tr(lang, "Email:", "E-Mail:")) {
                                 TextField("Recipient Email Address", text: $dxEmail)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 260)
                             }
                             
-                            FormRow(label: "Grid:") {
+                            FormRow(label: L10n.tr(lang, "Grid:", "Locator (Grid):")) {
                                 TextField("Grid Square (e.g. JO31)", text: $dxGrid)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 140)
                             }
                             
-                            FormRow(label: "Country:") {
+                            FormRow(label: L10n.tr(lang, "Country:", "Land / DXCC:")) {
                                 TextField("Country / DXCC", text: $dxCountry)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 200)
                             }
                             
-                            FormRow(label: "Address:") {
+                            FormRow(label: L10n.tr(lang, "Address:", "Adresse:")) {
                                 TextField("Full Postal Address", text: $dxAddress)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 320)
@@ -130,7 +131,7 @@ public struct EditQSOModalView: View {
                     }
                     
                     // Section 2: QSO Details
-                    GroupBox(label: Text("QSO Parameters (Printed on Card)").font(.headline)) {
+                    GroupBox(label: Text(L10n.tr(lang, "QSO Parameters (Printed on Card)", "QSO-Parameter (Kartendruck)")).font(.headline)) {
                         VStack(alignment: .leading, spacing: 10) {
                             FormRow(label: "Band / Mode:") {
                                 VStack(alignment: .leading, spacing: 8) {
@@ -192,7 +193,7 @@ public struct EditQSOModalView: View {
                                 }
                             }
                             
-                            FormRow(label: "Date & Time:") {
+                            FormRow(label: L10n.tr(lang, "Date & Time:", "Datum & Uhrzeit:")) {
                                 HStack(spacing: 12) {
                                     DatePicker("", selection: $qsoDate, displayedComponents: [.date])
                                         .datePickerStyle(.compact)
@@ -223,7 +224,7 @@ public struct EditQSOModalView: View {
                                 }
                             }
                             
-                            FormRow(label: "RST / Power:") {
+                            FormRow(label: L10n.tr(lang, "RST / Power:", "RST / Leistung:")) {
                                 HStack(spacing: 12) {
                                     TextField("Sent", text: $rstSent)
                                         .textFieldStyle(.roundedBorder)
@@ -250,7 +251,7 @@ public struct EditQSOModalView: View {
                                 }
                             }
                             
-                            FormRow(label: "Comment:") {
+                            FormRow(label: L10n.tr(lang, "Comment:", "Kommentar:")) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     TextField("Comment printed on QSL Card table", text: $comment)
                                         .textFieldStyle(.roundedBorder)
@@ -268,7 +269,7 @@ public struct EditQSOModalView: View {
                     }
                     
                     // Section 3: Card Template & Customization
-                    GroupBox(label: Text("Card Template & Customization").font(.headline)) {
+                    GroupBox(label: Text(L10n.tr(lang, "Card Template & Customization", "Kartenvorlage & Anpassung")).font(.headline)) {
                         VStack(alignment: .leading, spacing: 10) {
                             FormRow(label: "Template:") {
                                 HStack(spacing: 12) {
@@ -284,7 +285,7 @@ public struct EditQSOModalView: View {
                                     Button(action: {
                                         isCustomCardDesignerPresented = true
                                     }) {
-                                        Label("Customize Card...", systemImage: "paintbrush")
+                                        Label(L10n.tr(lang, "Customize Card...", "Karte anpassen..."), systemImage: "paintbrush")
                                     }
                                     .buttonStyle(.bordered)
                                 }
@@ -296,10 +297,10 @@ public struct EditQSOModalView: View {
                                         .frame(width: 110)
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.green)
-                                    Text("Custom layout applied to this QSO")
+                                    Text(L10n.tr(lang, "Custom layout applied to this QSO", "Individuelles Layout für dieses QSO angewendet"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
-                                    Button("Reset") {
+                                    Button(L10n.tr(lang, "Reset", "Zurücksetzen")) {
                                         appState.setCustomTemplate(for: originalQSO.id, template: nil)
                                     }
                                     .buttonStyle(.link)
@@ -317,7 +318,7 @@ public struct EditQSOModalView: View {
             
             // Footer Action Bar
             HStack {
-                Button("Discard Changes") {
+                Button(L10n.tr(lang, "Discard Changes", "Verwerfen")) {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
@@ -327,7 +328,7 @@ public struct EditQSOModalView: View {
                 Button(action: saveChanges) {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
-                        Text("Save & Update QSL Card")
+                        Text(L10n.tr(lang, "Save & Update QSL Card", "Speichern & QSL-Karte aktualisieren"))
                     }
                     .padding(.horizontal, 6)
                 }

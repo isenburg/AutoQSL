@@ -8,6 +8,7 @@ public struct QSLCardEditorModalView: View {
     
     @State private var workingTemplate: QSLCardTemplate
     @State private var selectedElementId: UUID? = canvasBackgroundSelectionId
+    @State private var keyMonitor: Any? = nil
     @State private var zoomScale: CGFloat = 0.8
     @GestureState private var pinchMagnification: CGFloat = 1.0
     @State private var isStickerPickerPresented: Bool = false
@@ -140,8 +141,9 @@ public struct QSLCardEditorModalView: View {
                                         .frame(width: 18)
                                         .foregroundColor(.accentColor)
                                     
-                                    Text(element.name)
+                                    Text(layerDisplayName(for: element))
                                         .font(.callout)
+                                        .lineLimit(1)
                                     
                                     Spacer()
                                     
@@ -231,8 +233,24 @@ public struct QSLCardEditorModalView: View {
                     if let selectedId = selectedElementId,
                        let index = workingTemplate.elements.firstIndex(where: { $0.id == selectedId }) {
                         ElementInspectorView(element: $workingTemplate.elements[index])
+                        
+                        Divider()
+                        
+                        VStack {
+                            Button(role: .destructive, action: {
+                                deleteElement(selectedId)
+                            }) {
+                                Label(appState.settings.appLanguage == .german ? "Element löschen" : "Delete Element", systemImage: "trash")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.red)
+                            .controlSize(.regular)
+                        }
+                        .padding(12)
+                        .background(Color(NSColor.controlBackgroundColor))
                     } else {
-                        BackgroundInspectorView(template: $workingTemplate)
+                        BackgroundInspectorView(template: $workingTemplate, lang: appState.settings.appLanguage)
                     }
                 }
                 .frame(minWidth: 260, maxWidth: 340)
@@ -248,6 +266,41 @@ public struct QSLCardEditorModalView: View {
             .environmentObject(appState)
             .frame(width: 520, height: 500)
         }
+        .onAppear {
+            if keyMonitor == nil {
+                keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    if event.keyCode == 51 || event.keyCode == 117 {
+                        if let window = NSApp.keyWindow,
+                           let responder = window.firstResponder,
+                           (responder is NSTextView || responder is NSTextField) {
+                            return event
+                        }
+                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
+                            deleteElement(selId)
+                            return nil
+                        }
+                    }
+                    return event
+                }
+            }
+        }
+        .onDisappear {
+            if let monitor = keyMonitor {
+                NSEvent.removeMonitor(monitor)
+                keyMonitor = nil
+            }
+        }
+    }
+    
+    private func layerDisplayName(for element: CardElement) -> String {
+        if element.type == .text {
+            let trimmed = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                let firstLine = trimmed.components(separatedBy: .newlines).first ?? trimmed
+                return firstLine.count > 25 ? String(firstLine.prefix(25)) + "..." : firstLine
+            }
+        }
+        return element.name
     }
     
     private func iconForElement(_ type: ElementType) -> String {

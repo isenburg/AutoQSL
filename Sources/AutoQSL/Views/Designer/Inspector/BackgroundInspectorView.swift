@@ -3,15 +3,26 @@ import UniformTypeIdentifiers
 
 public struct BackgroundInspectorView: View {
     @Binding var template: QSLCardTemplate
+    public var lang: AppLanguage = .english
     
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Card Background & Canvas")
+                Text(L10n.tr(lang, "Card Background & Canvas", "Karten-Hintergrund & Layout"))
                     .font(.headline)
                 
+                // Template Name Field
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.tr(lang, "Template Name", "Vorlagenname"))
+                        .font(.subheadline.bold())
+                    TextField(L10n.tr(lang, "Template Name", "Vorlagenname"), text: $template.name)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                Divider()
+                
                 // Aspect Ratio Picker
-                Picker("Card Dimensions", selection: $template.aspectRatio) {
+                Picker(L10n.tr(lang, "Card Dimensions", "Kartenformat"), selection: $template.aspectRatio) {
                     ForEach(CardAspectRatio.allCases, id: \.self) { ratio in
                         Text(ratio.rawValue).tag(ratio)
                     }
@@ -19,7 +30,7 @@ public struct BackgroundInspectorView: View {
                 
                 // Solid Background Color
                 HStack {
-                    Text("Canvas Background Color")
+                    Text(L10n.tr(lang, "Canvas Background Color", "Hintergrundfarbe"))
                         .font(.subheadline.bold())
                     Spacer()
                     ColorPicker("", selection: Binding(
@@ -32,7 +43,7 @@ public struct BackgroundInspectorView: View {
                 Divider()
                 
                 // Background Image
-                Text("Background Picture (Optional)")
+                Text(L10n.tr(lang, "Background Picture (Optional)", "Hintergrundbild (optional)"))
                     .font(.subheadline.bold())
                 
                 if let path = template.backgroundImagePath, !path.isEmpty {
@@ -41,26 +52,26 @@ public struct BackgroundInspectorView: View {
                             .font(.caption)
                             .lineLimit(1)
                         
-                        Button("Remove Picture", role: .destructive) {
+                        Button(L10n.tr(lang, "Remove Picture", "Bild entfernen"), role: .destructive) {
                             template.backgroundImagePath = nil
                         }
                         .buttonStyle(.bordered)
                     }
                 } else {
-                    Text("No picture selected (using solid canvas color)")
+                    Text(L10n.tr(lang, "No picture selected (using solid canvas color)", "Kein Bild gewählt (einfarbiger Hintergrund)"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
                 Button(action: selectImage) {
-                    Label("Choose Background Photo...", systemImage: "photo.on.rectangle")
+                    Label(L10n.tr(lang, "Choose Background Photo...", "Hintergrundfoto wählen..."), systemImage: "photo.on.rectangle")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 
                 if let path = template.backgroundImagePath, !path.isEmpty {
                     // Image Fit
-                    Picker("Image Scaling", selection: $template.backgroundFit) {
+                    Picker(L10n.tr(lang, "Image Scaling", "Bild-Skalierung"), selection: $template.backgroundFit) {
                         ForEach(BackgroundFit.allCases, id: \.self) { fit in
                             Text(fit.rawValue).tag(fit)
                         }
@@ -72,7 +83,7 @@ public struct BackgroundInspectorView: View {
                 // Darken / Tint Overlay Slider
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("Darken Overlay: \(Int(template.backgroundDarkenOpacity * 100))%")
+                        Text(L10n.tr(lang, "Darken Overlay: \(Int(template.backgroundDarkenOpacity * 100))%", "Abdunkeln: \(Int(template.backgroundDarkenOpacity * 100))%"))
                             .font(.caption)
                         Spacer()
                     }

@@ -5,6 +5,15 @@ public enum CallbookProvider: String, Codable, CaseIterable, Identifiable {
     case hamqthOnly = "HamQTH Only"
     
     public var id: String { rawValue }
+    
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .qrzPrimary: return L10n.tr(lang, "QRZ.com (Primary) + HamQTH (Fallback)", "QRZ.com (Haupt) + HamQTH (Fallback)")
+        case .hamqthPrimary: return L10n.tr(lang, "HamQTH (Primary) + QRZ.com (Fallback)", "HamQTH (Haupt) + QRZ.com (Fallback)")
+        case .qrzOnly: return L10n.tr(lang, "QRZ.com Only", "Nur QRZ.com")
+        case .hamqthOnly: return L10n.tr(lang, "HamQTH Only", "Nur HamQTH")
+        }
+    }
 }
 
 import Foundation
@@ -15,14 +24,22 @@ public enum SendingMode: String, Codable, CaseIterable {
     case autoSend = "Fully Automatic (Send Immediately)"
     case manualQueue = "Manual Queue (Hold for Review)"
     
-    public var description: String {
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .confirmBeforeSend: return L10n.tr(lang, "Preview & Confirm (Recommended)", "Vorschau & Bestätigen (Empfohlen)")
+        case .autoSend: return L10n.tr(lang, "Fully Automatic (Send Immediately)", "Vollautomatisch (Sofort senden)")
+        case .manualQueue: return L10n.tr(lang, "Manual Queue (Hold for Review)", "Manuelle Warteschlange (Zur Prüfung)")
+        }
+    }
+    
+    public func localizedDescription(_ lang: AppLanguage) -> String {
         switch self {
         case .confirmBeforeSend:
-            return "Shows the rendered QSL card preview dialog and waits for your confirmation before sending."
+            return L10n.tr(lang, "Shows the rendered QSL card preview dialog and waits for your confirmation before sending.", "Zeigt den Vorschau-Dialog der gerenderten QSL-Karte und wartet vor dem Versand auf deine Bestätigung.")
         case .autoSend:
-            return "Automatically renders and emails the QSL card immediately when a QSO is logged."
+            return L10n.tr(lang, "Automatically renders and emails the QSL card immediately when a QSO is logged.", "Rendert und versendet die QSL-Karte automatisch per E-Mail, sobald ein QSO geloggt wird.")
         case .manualQueue:
-            return "Queues all received QSOs in the list without sending until you manually click Send."
+            return L10n.tr(lang, "Queues all received QSOs in the list without sending until you manually click Send.", "Reiht alle empfangenen QSOs in die Liste ein, bis du manuell auf Senden klickst.")
         }
     }
 }
@@ -34,16 +51,28 @@ public enum EmailDeliveryMethod: String, Codable, CaseIterable, Identifiable {
     
     public var id: String { rawValue }
     
-    public var description: String {
+    public func localizedName(_ lang: AppLanguage) -> String {
         switch self {
-        case .appleMail:
-            return "Dispatches directly through the macOS Apple Mail application. No SMTP server configuration or app passwords needed."
-        case .defaultClient:
-            return "Opens your default macOS email client compose window (Mail, Outlook, Thunderbird, etc.) with the QSL card attached."
-        case .directSMTP:
-            return "Sends directly via an outbound SMTP server (Gmail, Outlook, custom mail host)."
+        case .appleMail: return L10n.tr(lang, "Apple Mail (Recommended for Mac)", "Apple Mail (Empfohlen für Mac)")
+        case .defaultClient: return L10n.tr(lang, "Default macOS Email Client", "Standard macOS E-Mail-Programm")
+        case .directSMTP: return L10n.tr(lang, "Direct SMTP Server", "Direkter SMTP-Server")
         }
     }
+    
+    public func localizedDescription(_ lang: AppLanguage) -> String {
+        switch self {
+        case .appleMail:
+            return L10n.tr(lang, "Dispatches directly through the macOS Apple Mail application. No SMTP server configuration or app passwords needed.", "Versendet direkt über die macOS Apple Mail App. Keine SMTP-Konfiguration oder App-Passwörter erforderlich.")
+        case .defaultClient:
+            return L10n.tr(lang, "Generates an email message and opens it in your default macOS email client for manual review and sending.", "Erstellt eine Nachricht im Standard-Mailprogramm zur Prüfung und zum manuellen Versand.")
+        case .directSMTP:
+            return L10n.tr(lang, "Sends cards directly in the background using your custom SMTP server with TLS encryption.", "Versendet Karten direkt im Hintergrund über deinen eigenen SMTP-Server mit TLS-Verschlüsselung.")
+        }
+    }
+    
+    public var description: String { localizedDescription(.english) }
+    
+
 }
 
 public enum DateOrder: String, Codable, CaseIterable, Identifiable {
@@ -85,6 +114,14 @@ public enum AppAppearance: String, Codable, CaseIterable, Identifiable {
     
     public var id: String { rawValue }
     
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .system: return L10n.tr(lang, "System (Auto)", "System (Automatisch)")
+        case .light: return L10n.tr(lang, "Light", "Hell")
+        case .dark: return L10n.tr(lang, "Dark", "Dunkel")
+        }
+    }
+    
     public var colorScheme: ColorScheme? {
         switch self {
         case .system: return nil
@@ -100,12 +137,19 @@ public enum StorageLocation: String, Codable, CaseIterable, Identifiable {
     
     public var id: String { rawValue }
     
-    public var description: String {
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .local: return L10n.tr(lang, "Local Storage (Mac)", "Lokaler Speicher (Mac)")
+        case .iCloud: return L10n.tr(lang, "iCloud Drive Sync", "iCloud Drive Synchronisation")
+        }
+    }
+    
+    public func localizedDescription(_ lang: AppLanguage) -> String {
         switch self {
         case .local:
-            return "Stores all configuration, templates, and QSO history locally on this Mac (~/Library/Application Support/AutoQSL)."
+            return L10n.tr(lang, "Stores all configuration, templates, and QSO history locally on this Mac (~/Library/Application Support/AutoQSL).", "Speichert alle Konfigurationen, Vorlagen und QSOs lokal auf diesem Mac (~/Library/Application Support/AutoQSL).")
         case .iCloud:
-            return "Stores and synchronizes all settings, card templates, and QSO queues across your Macs via iCloud Drive (iCloud Drive/AutoQSL)."
+            return L10n.tr(lang, "Stores and synchronizes all settings, card templates, and QSO queues across your Macs via iCloud Drive (iCloud Drive/AutoQSL).", "Speichert und synchronisiert Einstellungen, Vorlagen und QSOs über iCloud Drive (iCloud Drive/AutoQSL).")
         }
     }
 }
@@ -118,6 +162,9 @@ public enum DateFormatOption: String, Codable, CaseIterable, Identifiable {
 }
 
 public struct AppSettings: Codable {
+    // Language (English, German)
+    public var appLanguage: AppLanguage
+    
     // Appearance (System, Light, Dark)
     public var appearance: AppAppearance
     
@@ -153,6 +200,9 @@ public struct AppSettings: Codable {
     public var rumlogEnabled: Bool
     public var rumlogAddress: String
     public var rumlogPort: Int
+    public var macloggerEnabled: Bool
+    public var macloggerAddress: String
+    public var macloggerPort: Int
     
     // Callbook Lookup (QRZ & HamQTH)
     public var callbookProvider: CallbookProvider
@@ -197,6 +247,7 @@ public struct AppSettings: Codable {
     }
     
     public init(
+        appLanguage: AppLanguage = (Locale.current.language.languageCode?.identifier == "de" ? .german : .english),
         appearance: AppAppearance = .system,
         storageLocation: StorageLocation = .local,
         autoSyncICloud: Bool = true,
@@ -221,6 +272,9 @@ public struct AppSettings: Codable {
         rumlogEnabled: Bool = true,
         rumlogAddress: String = "127.0.0.1",
         rumlogPort: Int = 12063,
+        macloggerEnabled: Bool = true,
+        macloggerAddress: String = "127.0.0.1",
+        macloggerPort: Int = 9932,
         qrzEnabled: Bool = true,
         qrzUsername: String = "",
         qrzPassword: String = "",
@@ -251,6 +305,7 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
 """,
         activeTemplateId: UUID? = nil
     ) {
+        self.appLanguage = appLanguage
         self.appearance = appearance
         self.storageLocation = storageLocation
         self.autoSyncICloud = autoSyncICloud
@@ -275,6 +330,9 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.rumlogEnabled = rumlogEnabled
         self.rumlogAddress = rumlogAddress
         self.rumlogPort = rumlogPort
+        self.macloggerEnabled = macloggerEnabled
+        self.macloggerAddress = macloggerAddress
+        self.macloggerPort = macloggerPort
         self.callbookProvider = callbookProvider
         self.qrzEnabled = qrzEnabled
         self.qrzUsername = qrzUsername
@@ -298,12 +356,12 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
     }
     
     enum CodingKeys: String, CodingKey {
-        case appearance
+        case appLanguage, appearance
         case storageLocation, autoSyncICloud
         case sendingMode, myCallsign, myName, myStreet, myCity, myState, myCountry
         case myGrid, myCQZone, myITUZone, myCounty, defaultComment
         case dateOrder, dateSeparator, dateHeaderStyle
-        case wsjtxEnabled, wsjtxAddress, wsjtxPort, rumlogEnabled, rumlogAddress, rumlogPort
+        case wsjtxEnabled, wsjtxAddress, wsjtxPort, rumlogEnabled, rumlogAddress, rumlogPort, macloggerEnabled, macloggerAddress, macloggerPort
         case callbookProvider, qrzEnabled, qrzUsername, qrzPassword, hamqthEnabled, hamqthUsername, hamqthPassword
         case emailDeliveryMethod, appleMailSendImmediately
         case smtpHost, smtpPort, smtpUsername, smtpPassword, smtpUseTLS
@@ -318,6 +376,7 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.appLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? (Locale.current.language.languageCode?.identifier == "de" ? .german : .english)
         self.appearance = try container.decodeIfPresent(AppAppearance.self, forKey: .appearance) ?? .system
         self.storageLocation = try container.decodeIfPresent(StorageLocation.self, forKey: .storageLocation) ?? .local
         self.autoSyncICloud = try container.decodeIfPresent(Bool.self, forKey: .autoSyncICloud) ?? true
@@ -354,6 +413,9 @@ Grid: {MY_GRID} | CQ: {MY_CQ} | ITU: {MY_ITU}
         self.rumlogEnabled = try container.decodeIfPresent(Bool.self, forKey: .rumlogEnabled) ?? true
         self.rumlogAddress = try container.decodeIfPresent(String.self, forKey: .rumlogAddress) ?? "127.0.0.1"
         self.rumlogPort = try container.decodeIfPresent(Int.self, forKey: .rumlogPort) ?? 12063
+        self.macloggerEnabled = try container.decodeIfPresent(Bool.self, forKey: .macloggerEnabled) ?? true
+        self.macloggerAddress = try container.decodeIfPresent(String.self, forKey: .macloggerAddress) ?? "127.0.0.1"
+        self.macloggerPort = try container.decodeIfPresent(Int.self, forKey: .macloggerPort) ?? 9932
         self.callbookProvider = try container.decodeIfPresent(CallbookProvider.self, forKey: .callbookProvider) ?? .qrzPrimary
         self.qrzEnabled = try container.decodeIfPresent(Bool.self, forKey: .qrzEnabled) ?? true
         self.qrzUsername = try container.decodeIfPresent(String.self, forKey: .qrzUsername) ?? ""

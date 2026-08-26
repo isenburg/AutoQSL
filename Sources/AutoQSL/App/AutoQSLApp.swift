@@ -59,7 +59,7 @@ struct AutoQSLApp: App {
         }
         
         Window("Help & Docs", id: "help") {
-            HelpView()
+            HelpView(appState: appState)
                 .frame(minWidth: 800, idealWidth: 900, minHeight: 600, idealHeight: 700)
                 .background(WindowAccessor(autosaveName: "AutoQSLHelpWindow", defaultWidth: 900, defaultHeight: 700))
         }

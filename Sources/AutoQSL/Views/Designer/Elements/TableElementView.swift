@@ -212,7 +212,7 @@ public struct TableElementView: View {
                 
                 HStack(spacing: 0) {
                     Text(remarksText)
-                        .font(getFont(size: CGFloat(element.fontSize * 0.85), isHeader: false))
+                        .font(getFont(size: CGFloat(element.fontSize * 0.85), fontName: element.fontName, isBold: element.isBold, isItalic: element.isItalic))
                         .foregroundColor(Color(hex: element.textColorHex))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -233,19 +233,12 @@ public struct TableElementView: View {
     }
     
     private var remarksText: String {
-        let qComment = activeQSO.comment.trimmingCharacters(in: .whitespacesAndNewlines)
         let elComment = element.tableComment.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // If the QSO has an explicitly customized comment:
-        if !qComment.isEmpty && qComment != elComment && qComment != defaultComment && qComment != "73, Thanks for the QSO. I hope to meet you further down the log." {
-            return activeQSO.comment
-        }
-        
-        // Standard template setting from Card Designer:
         if !elComment.isEmpty {
             return element.tableComment
         }
         
+        let qComment = activeQSO.comment.trimmingCharacters(in: .whitespacesAndNewlines)
         if !qComment.isEmpty {
             return activeQSO.comment
         }
@@ -255,8 +248,13 @@ public struct TableElementView: View {
 
     private func headerCell(_ title: String, width: CGFloat) -> some View {
         Text(title)
-            .font(getFont(size: CGFloat(element.fontSize * 0.85), isHeader: true))
-            .foregroundColor(Color(hex: element.textColorHex))
+            .font(getFont(
+                size: CGFloat(element.effectiveHeaderFontSize),
+                fontName: element.effectiveHeaderFontName,
+                isBold: element.effectiveHeaderIsBold,
+                isItalic: element.effectiveHeaderIsItalic
+            ))
+            .foregroundColor(Color(hex: element.effectiveHeaderTextColorHex))
             .multilineTextAlignment(.center)
             .lineLimit(1)
             .minimumScaleFactor(0.60)
@@ -267,8 +265,13 @@ public struct TableElementView: View {
     
     private func subHeaderCell(_ title: String, width: CGFloat) -> some View {
         Text(title)
-            .font(getFont(size: CGFloat(element.fontSize * 0.85), isHeader: true))
-            .foregroundColor(Color(hex: element.textColorHex))
+            .font(getFont(
+                size: CGFloat(element.effectiveHeaderFontSize),
+                fontName: element.effectiveHeaderFontName,
+                isBold: element.effectiveHeaderIsBold,
+                isItalic: element.effectiveHeaderIsItalic
+            ))
+            .foregroundColor(Color(hex: element.effectiveHeaderTextColorHex))
             .multilineTextAlignment(.center)
             .lineLimit(1)
             .minimumScaleFactor(0.60)
@@ -278,7 +281,12 @@ public struct TableElementView: View {
     
     private func dataCell(_ value: String, width: CGFloat, isBold: Bool = false) -> some View {
         Text(value)
-            .font(getFont(size: CGFloat(element.fontSize * 0.95), isHeader: isBold))
+            .font(getFont(
+                size: CGFloat(element.fontSize * 0.95),
+                fontName: element.fontName,
+                isBold: element.isBold || isBold,
+                isItalic: element.isItalic
+            ))
             .foregroundColor(Color(hex: element.textColorHex))
             .multilineTextAlignment(.center)
             .lineLimit(1)
@@ -290,7 +298,12 @@ public struct TableElementView: View {
     
     private func subDataCell(_ value: String, width: CGFloat) -> some View {
         Text(value)
-            .font(getFont(size: CGFloat(element.fontSize * 0.95), isHeader: false))
+            .font(getFont(
+                size: CGFloat(element.fontSize * 0.95),
+                fontName: element.fontName,
+                isBold: element.isBold,
+                isItalic: element.isItalic
+            ))
             .foregroundColor(Color(hex: element.textColorHex))
             .multilineTextAlignment(.center)
             .lineLimit(1)
@@ -311,9 +324,9 @@ public struct TableElementView: View {
             .frame(height: height)
     }
     
-    private func getFont(size: CGFloat, isHeader: Bool) -> Font {
+    private func getFont(size: CGFloat, fontName: String, isBold: Bool, isItalic: Bool) -> Font {
         var f: Font
-        switch element.fontName {
+        switch fontName {
         case "System": f = .system(size: size)
         case "System Rounded": f = .system(size: size, design: .rounded)
         case "System Serif": f = .system(size: size, design: .serif)
@@ -328,8 +341,8 @@ public struct TableElementView: View {
         case "Trebuchet MS": f = .custom("Trebuchet MS", size: size)
         default: f = .system(size: size)
         }
-        if isHeader || element.isBold { f = f.bold() }
-        if element.isItalic { f = f.italic() }
+        if isBold { f = f.bold() }
+        if isItalic { f = f.italic() }
         return f
     }
 }

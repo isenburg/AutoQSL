@@ -5,6 +5,13 @@ public enum ConfirmationTab: String, CaseIterable, Identifiable {
     case editCard = "Edit Card Data"
     
     public var id: String { rawValue }
+    
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .email: return L10n.tr(lang, "Email Delivery", "E-Mail-Versand")
+        case .editCard: return L10n.tr(lang, "Edit Card Data", "Kartendaten bearbeiten")
+        }
+    }
 }
 
 public struct QSLConfirmationSheet: View {
@@ -54,6 +61,7 @@ public struct QSLConfirmationSheet: View {
     }
     
     public var body: some View {
+        let lang = appState.settings.appLanguage
         VStack(spacing: 0) {
             // Header
             HStack(spacing: 12) {
@@ -64,9 +72,9 @@ public struct QSLConfirmationSheet: View {
                     .foregroundColor(.accentColor)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Confirm & Send QSL Card")
+                    Text(L10n.tr(lang, "Confirm & Send QSL Card", "QSL-Karte bestätigen & senden"))
                         .font(.headline)
-                    Text("Review the generated QSL card and email message before dispatching to \(currentWorkingQSO.dxCall).")
+                    Text(L10n.tr(lang, "Review the generated QSL card and email message before dispatching to \(currentWorkingQSO.dxCall).", "Prüfe die generierte QSL-Karte und die E-Mail-Nachricht vor dem Versand an \(currentWorkingQSO.dxCall)."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -74,7 +82,7 @@ public struct QSLConfirmationSheet: View {
                 Spacer()
                 
                 Button(action: { isCardEditorPresented = true }) {
-                    Label("Customize Card Layout...", systemImage: "paintbrush")
+                    Label(L10n.tr(lang, "Customize Card Layout...", "Kartenlayout anpassen..."), systemImage: "paintbrush")
                 }
                 .buttonStyle(.bordered)
             }
@@ -89,11 +97,11 @@ public struct QSLConfirmationSheet: View {
                 // Left: Card Preview
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Live Card Preview")
+                        Text(L10n.tr(lang, "Live Card Preview", "Live-Kartenvorschau"))
                             .font(.headline)
                         Spacer()
                         if currentWorkingQSO.customTemplate != nil {
-                            Text("Custom Layout")
+                            Text(L10n.tr(lang, "Custom Layout", "Individuelles Layout"))
                                 .font(.caption2.bold())
                                 .foregroundColor(.purple)
                         }
@@ -123,7 +131,7 @@ public struct QSLConfirmationSheet: View {
                             
                             HStack(spacing: 4) {
                                 Image(systemName: "magnifyingglass")
-                                Text("Click to Zoom")
+                                Text(L10n.tr(lang, "Click to Zoom", "Klicken zum Vergrößern"))
                             }
                             .font(.caption2.bold())
                             .padding(.horizontal, 8)
@@ -141,7 +149,7 @@ public struct QSLConfirmationSheet: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Text("All edits reflect live")
+                        Text(L10n.tr(lang, "All edits reflect live", "Änderungen live sichtbar"))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -152,7 +160,7 @@ public struct QSLConfirmationSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Picker("", selection: $selectedTab) {
                         ForEach(ConfirmationTab.allCases) { tab in
-                            Text(tab.rawValue).tag(tab)
+                            Text(tab.localizedName(appState.settings.appLanguage)).tag(tab)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -176,7 +184,7 @@ public struct QSLConfirmationSheet: View {
             
             // Bottom Actions Bar
             HStack {
-                Button("Skip / Discard") {
+                Button(L10n.tr(lang, "Skip / Discard", "Überspringen / Verwerfen")) {
                     appState.skipQSO(qsoId: qso.id)
                 }
                 .keyboardShortcut(.cancelAction)

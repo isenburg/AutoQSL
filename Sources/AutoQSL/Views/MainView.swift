@@ -7,6 +7,14 @@ public enum NavigationSection: String, CaseIterable, Identifiable {
     
     public var id: String { rawValue }
     
+    public func localizedTitle(_ lang: AppLanguage) -> String {
+        switch self {
+        case .queue: return L10n.Nav.qsoQueue(lang)
+        case .designer: return L10n.Nav.cardDesigner(lang)
+        case .settings: return L10n.Nav.settings(lang)
+        }
+    }
+    
     public var iconName: String {
         switch self {
         case .queue: return "tray.2.fill"
@@ -30,7 +38,7 @@ public struct MainView: View {
                 List(NavigationSection.allCases, selection: $appState.navigationSection) { section in
                     NavigationLink(value: section) {
                         HStack {
-                            Label(section.rawValue, systemImage: section.iconName)
+                            Label(section.localizedTitle(appState.settings.appLanguage), systemImage: section.iconName)
                             Spacer()
                             if section == .queue && awaitingCount > 0 {
                                 Text("\(awaitingCount)")
@@ -53,7 +61,7 @@ public struct MainView: View {
                             openWindow(id: "help")
                         }) {
                             HStack {
-                                Label("Help & Docs", systemImage: "questionmark.circle.fill")
+                                Label(L10n.Nav.helpDocs(appState.settings.appLanguage), systemImage: "questionmark.circle.fill")
                                 Spacer()
                                 Image(systemName: "macwindow.on.rectangle")
                                     .font(.caption)
@@ -100,7 +108,7 @@ public struct MainView: View {
                     Image(systemName: "hand.raised.fill")
                         .font(.caption2)
                         .foregroundColor(.orange)
-                    Text(appState.settings.sendingMode.rawValue)
+                    Text(appState.settings.sendingMode.localizedName(appState.settings.appLanguage))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -108,7 +116,7 @@ public struct MainView: View {
                 Divider().frame(height: 12)
                 
                 // Last Message
-                Text(appState.lastLogMessage)
+                Text(appState.lastLogMessage == "Ready" ? L10n.tr(appState.settings.appLanguage, "Ready", "Bereit") : appState.lastLogMessage)
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
@@ -116,7 +124,7 @@ public struct MainView: View {
                 Spacer()
                 
                 // Station Callsign
-                Text("Station: \(appState.settings.myCallsign)")
+                Text(L10n.Nav.station(appState.settings.appLanguage, call: appState.settings.myCallsign))
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
@@ -144,10 +152,11 @@ public struct MainView: View {
     }
     
     private var udpStatusText: String {
+        let lang = appState.settings.appLanguage
         let running = appState.udpListener.listeners.values.filter { $0.isRunning }
         if !running.isEmpty {
             let portStrings = running.map { String(format: "%d", $0.port) }
-            return "UDP Active (\(portStrings.joined(separator: " / ")))"
+            return L10n.tr(lang, "UDP Active (\(portStrings.joined(separator: " / ")))", "UDP Aktiv (\(portStrings.joined(separator: " / ")))")
         } else if appState.udpListener.isAnyListening {
             var activePorts: [String] = []
             if appState.settings.wsjtxEnabled {
@@ -156,9 +165,12 @@ public struct MainView: View {
             if appState.settings.rumlogEnabled {
                 activePorts.append(String(format: "%d", appState.settings.rumlogPort))
             }
-            return activePorts.isEmpty ? "UDP Inactive" : "UDP Active (\(activePorts.joined(separator: " / ")))"
+            if appState.settings.macloggerEnabled {
+                activePorts.append(String(format: "%d", appState.settings.macloggerPort))
+            }
+            return activePorts.isEmpty ? L10n.tr(lang, "UDP Inactive", "UDP Inaktiv") : L10n.tr(lang, "UDP Active (\(activePorts.joined(separator: " / ")))", "UDP Aktiv (\(activePorts.joined(separator: " / ")))")
         } else {
-            return "UDP Inactive"
+            return L10n.tr(lang, "UDP Inactive", "UDP Inaktiv")
         }
     }
 }

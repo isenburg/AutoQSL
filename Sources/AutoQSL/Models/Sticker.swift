@@ -26,12 +26,12 @@ public struct StickerItem: Identifiable, Codable, Hashable {
     
     public static var builtinStickers: [StickerItem] {
         return [
+            StickerItem(name: "DARC Logo", category: "Badges", type: .darc),
             StickerItem(name: "ARRL Diamond Logo", category: "Badges", type: .arrl),
             StickerItem(name: "POTA - Parks on the Air", category: "Activities", type: .pota),
+            StickerItem(name: "WWFF - Flora & Fauna", category: "Activities", type: .wwff),
             StickerItem(name: "IOTA - Islands on the Air", category: "Activities", type: .iota),
-            StickerItem(name: "SOTA - Summits on the Air", category: "Activities", type: .sota),
-            StickerItem(name: "CQ Zone / WPX", category: "Contest / Award", type: .cq),
-            StickerItem(name: "WAS - Worked All States", category: "Contest / Award", type: .was)
+            StickerItem(name: "SOTA - Summits on the Air", category: "Activities", type: .sota)
         ]
     }
 }

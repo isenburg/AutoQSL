@@ -62,7 +62,14 @@ public final class AppState: ObservableObject {
         self.selectedTemplateId = initialTemplateId
         
         self.qsoQueue = PersistenceService.shared.loadQSOQueue()
-        self.stickerCollection = PersistenceService.shared.loadStickers()
+        var loadedStickers = PersistenceService.shared.loadStickers().filter { $0.type != .cq && $0.type != .was && $0.name != "CQ Zone / WPX" && $0.name != "WAS - Worked All States" }
+        if !loadedStickers.contains(where: { $0.type == .darc }) {
+            loadedStickers.insert(StickerItem(name: "DARC Logo", category: "Badges", type: .darc), at: 0)
+        }
+        if !loadedStickers.contains(where: { $0.type == .wwff }) {
+            loadedStickers.append(StickerItem(name: "WWFF - Flora & Fauna", category: "Activities", type: .wwff))
+        }
+        self.stickerCollection = loadedStickers
         
         PrefixMatcher.shared.loadCtyDatabase()
         if settings.myCQZone.isEmpty || settings.myITUZone.isEmpty || settings.myCountry.isEmpty {
@@ -217,6 +224,16 @@ public final class AppState: ObservableObject {
         updateQSO(qso, reRenderCard: true)
     }
     
+    public func duplicateTemplate(id: UUID) {
+        guard let original = templates.first(where: { $0.id == id }) else { return }
+        var clone = original
+        clone.id = UUID()
+        clone.name = "\(original.name) (Copy)"
+        templates.append(clone)
+        selectedTemplateId = clone.id
+        lastLogMessage = "Duplicated template '\(original.name)'."
+    }
+    
     public func deleteTemplate(id: UUID) {
         guard templates.count > 1 else { return }
         guard let templateToDelete = templates.first(where: { $0.id == id }) else { return }
@@ -249,6 +266,12 @@ public final class AppState: ObservableObject {
             let isMC = AppSettings.isMulticast(address: settings.rumlogAddress)
             let mode = isMC ? "MC" : "UC"
             listeners.append((port: settings.rumlogPort, address: settings.rumlogAddress, name: "RL (RUMlog) (\(mode))"))
+        }
+        
+        if settings.macloggerEnabled {
+            let isMC = AppSettings.isMulticast(address: settings.macloggerAddress)
+            let mode = isMC ? "MC" : "UC"
+            listeners.append((port: settings.macloggerPort, address: settings.macloggerAddress, name: "MLDX (MacLogger) (\(mode))"))
         }
         
         udpListener.startListening(listeners: listeners)
@@ -446,11 +469,32 @@ public final class AppState: ObservableObject {
         
         let subject = customSubject ?? EmailTemplateEngine.render(template: settings.emailSubjectTemplate, qso: qso, settings: settings)
         let body = customBody ?? EmailTemplateEngine.render(template: settings.emailBodyTemplate, qso: qso, settings: settings)
+        // Remember and permanently snapshot the template used for this card
+        let usedTemplate = qso.customTemplate ?? (templates.first(where: { $0.id == qso.templateId }) ?? activeTemplate)
+        qsoQueue[index].customTemplate = usedTemplate
+        qsoQueue[index].templateId = usedTemplate.id
+        
+        // If this card is being resent, archive the previous dispatch into dispatchHistory
+        if let prevSent = qso.sentAt {
+            let record = QSODispatchRecord(
+                sentAt: prevSent,
+                cardImagePath: qso.generatedCardPath,
+                templateId: qso.templateId,
+                templateName: qso.customTemplate?.name ?? templates.first(where: { $0.id == qso.templateId })?.name,
+                statusMessage: qso.statusMessage,
+                deliveryMethod: settings.emailDeliveryMethod.rawValue
+            )
+            if !qsoQueue[index].dispatchHistory.contains(where: { $0.sentAt == prevSent }) {
+                qsoQueue[index].dispatchHistory.append(record)
+            }
+        }
+        
         let cleanCall = qso.dxCall.replacingOccurrences(of: "/", with: "_")
         let timeStr = qso.formattedUTCTime.replacingOccurrences(of: ":", with: "")
-        let filename = "QSL_\(cleanCall)_\(qso.formattedDateYear)\(qso.formattedDateMonth)\(qso.formattedDateDay)_\(timeStr)_\(qso.id.uuidString.prefix(6)).jpg"
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let filename = "QSL_\(cleanCall)_\(qso.formattedDateYear)\(qso.formattedDateMonth)\(qso.formattedDateDay)_\(timeStr)_\(timestamp)_\(qso.id.uuidString.prefix(6)).jpg"
         
-        // Always write fresh rendered card image to disk
+        // Always write fresh rendered card image to disk (safe copy, never overwrites past cards)
         let cardDir = PersistenceService.shared.renderedCardsDirectory
         let cardFileURL = cardDir.appendingPathComponent(filename)
         try? cardData.write(to: cardFileURL)
@@ -613,6 +657,23 @@ public final class AppState: ObservableObject {
         handleIncomingQSO(qso)
     }
     
+
+    public func grabLastQSOFromMacLoggerDX() {
+        lastLogMessage = "Querying MacLoggerDX for last logged QSO via AppleScript..."
+        Task {
+            do {
+                let qso = try await MacLoggerDXAppleScriptService.shared.fetchLastQSO()
+                await MainActor.run {
+                    self.lastLogMessage = "Grabbed last QSO \(qso.dxCall) from MacLoggerDX."
+                    self.handleIncomingQSO(qso)
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastLogMessage = "Error querying MacLoggerDX: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
     public func grabLastQSOFromRUMlog() {
         lastLogMessage = "Querying RUMlogNG for last logged QSO via AppleScript..."
         Task {

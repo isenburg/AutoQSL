@@ -10,12 +10,13 @@ public struct CardDesignerRootView: View {
     @State private var isStickerPickerPresented: Bool = false
     @State private var selectedPreviewQSOId: UUID? = nil
     @State private var isDeleteTemplateConfirmationPresented: Bool = false
-    
+        
     // Undo / Redo History Stack
     @State private var undoStack: [QSLCardTemplate] = []
     @State private var redoStack: [QSLCardTemplate] = []
     @State private var isUndoRedoAction: Bool = false
     @State private var previousTemplateSnapshot: QSLCardTemplate? = nil
+    @State private var keyMonitor: Any? = nil
     
     private var activePreviewQSO: QSO {
         if let selId = selectedPreviewQSOId, let q = appState.qsoQueue.first(where: { $0.id == selId }) {
@@ -45,21 +46,22 @@ public struct CardDesignerRootView: View {
     }
     
     public var body: some View {
+        let lang = appState.settings.appLanguage
         HSplitView {
             // Left: Elements Tree
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
-                    Text("Card Elements")
+                    Text(L10n.tr(lang, "Card Elements", "Kartenelemente"))
                         .font(.headline)
                     Spacer()
                     Menu {
-                        Button("Callsign Block") { addElement(type: .callsign) }
-                        Button("Address Block") { addElement(type: .address) }
-                        Button("QSO Table") { addElement(type: .table) }
-                        Button("Location Line") { addElement(type: .locationFooter) }
-                        Button("Custom Text") { addElement(type: .text) }
+                        Button(L10n.tr(lang, "Callsign Block", "Rufzeichen-Block")) { addElement(type: .callsign) }
+                        Button(L10n.tr(lang, "Address Block", "Adress-Block")) { addElement(type: .address) }
+                        Button(L10n.tr(lang, "QSO Table", "QSO-Tabelle")) { addElement(type: .table) }
+                        Button(L10n.tr(lang, "Location Line", "Standortzeile")) { addElement(type: .locationFooter) }
+                        Button(L10n.tr(lang, "Custom Text", "Freier Text")) { addElement(type: .text) }
                         Divider()
-                        Button("Add Badge / Sticker...") { isStickerPickerPresented = true }
+                        Button(L10n.tr(lang, "Add Badge / Sticker...", "Sticker / Abzeichen...")) { isStickerPickerPresented = true }
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 16))
@@ -82,7 +84,7 @@ public struct CardDesignerRootView: View {
                                     .frame(width: 20)
                                     .foregroundColor(.accentColor)
                                 
-                                Text("Background Picture")
+                                Text(L10n.tr(lang, "Background Picture", "Hintergrundbild"))
                                     .font(.callout.bold())
                                 
                                 Spacer()
@@ -91,7 +93,7 @@ public struct CardDesignerRootView: View {
                             .tag(bgId as UUID?)
                         }
                     } header: {
-                        Text("Canvas")
+                        Text(L10n.tr(lang, "Canvas", "Leinwand"))
                     }
                     
                     Section {
@@ -101,8 +103,9 @@ public struct CardDesignerRootView: View {
                                     .frame(width: 20)
                                     .foregroundColor(.accentColor)
                                 
-                                Text(element.name)
+                                Text(layerDisplayName(for: element))
                                     .font(.callout)
+                                    .lineLimit(1)
                                 
                                 Spacer()
                                 
@@ -115,80 +118,124 @@ public struct CardDesignerRootView: View {
                             .padding(.vertical, 2)
                             .tag(element.id as UUID?)
                             .contextMenu {
-                                Button("Duplicate") { duplicateElement(element.id) }
-                                Button("Delete", role: .destructive) { deleteElement(element.id) }
+                                Button(lang == .german ? "Duplizieren" : "Duplicate") {
+                                    duplicateElement(element.id)
+                                }
+                                Button(lang == .german ? "Löschen" : "Delete", role: .destructive) {
+                                    deleteElement(element.id)
+                                }
                             }
                         }
                     } header: {
-                        Text("Layers")
+                        Text(L10n.tr(lang, "Layers", "Ebenen"))
                     }
                 }
                 .listStyle(.inset)
+                .onDeleteCommand {
+                    if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
+                        deleteElement(selId)
+                    }
+                }
+                
+                Divider()
+                
+                HStack(spacing: 8) {
+                    Button(action: {
+                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
+                            deleteElement(selId)
+                        }
+                    }) {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(selectedElementId == nil || selectedElementId == canvasBackgroundSelectionId)
+                    .help(lang == .german ? "Ausgewähltes Element löschen (⌫)" : "Delete selected element (⌫)")
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             }
             .frame(minWidth: 200, idealWidth: 240, maxWidth: 350)
             .background(SplitViewAutosaver(name: "AutoQSL_Designer_SplitView"))
+            .onDeleteCommand {
+                if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
+                    deleteElement(selId)
+                }
+            }
             
             // Center: Interactive Workspace Canvas
             VStack(spacing: 0) {
                 // Top Action Toolbar
-                HStack(alignment: .center, spacing: 10) {
-                    // Template Selector
-                    HStack(spacing: 6) {
-                        Text("Template:")
-                            .font(.caption.bold())
+                HStack(alignment: .bottom, spacing: 14) {
+                    // Template Selector (Label above picker)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(L10n.tr(lang, "Template:", "Vorlage:"))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
                         
-                        Picker("", selection: $appState.selectedTemplateId) {
-                            ForEach(appState.templates) { template in
-                                Text(template.name).tag(template.id)
+                        HStack(spacing: 4) {
+                            Picker("", selection: $appState.selectedTemplateId) {
+                                ForEach(appState.templates) { template in
+                                    Text(template.name).tag(template.id)
+                                }
                             }
+                            .labelsHidden()
+                            .controlSize(.regular)
+                            .frame(width: 260)
+                            
+                            Button(action: { appState.duplicateTemplate(id: appState.selectedTemplateId) }) {
+                                Image(systemName: "doc.on.doc")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                            .help(lang == .german ? "Aktive Vorlage duplizieren / kopieren" : "Duplicate active template")
+                            
+                            Button(action: createNewTemplate) {
+                                Image(systemName: "plus")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                            .help(L10n.tr(lang, "Create new template", "Neue Vorlage erstellen"))
+                            
+                            Button(action: { isDeleteTemplateConfirmationPresented = true }) {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                            .help(L10n.tr(lang, "Delete active template", "Aktive Vorlage löschen"))
+                            .disabled(appState.templates.count <= 1)
                         }
-                        .labelsHidden()
-                        .frame(width: 170)
                     }
                     
-                    Button(action: createNewTemplate) {
-                        Image(systemName: "plus")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Create new template")
+                    Divider().frame(height: 22)
                     
-                    Button(action: { isDeleteTemplateConfirmationPresented = true }) {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Delete active template (safe, preserves previously sent cards)")
-                    .disabled(appState.templates.count <= 1)
-                    
-                    Divider().frame(height: 18)
-                    
-                    // Preview QSO Selector
-                    HStack(spacing: 6) {
-                        Text("Preview:")
-                            .font(.caption.bold())
+                    // Preview QSO Selector (Label above picker)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(L10n.tr(lang, "Preview QSO:", "Vorschau-QSO:"))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
                         
                         Picker("", selection: $selectedPreviewQSOId) {
-                            Text("Sample (DJ6GI)").tag(nil as UUID?)
+                            Text(L10n.tr(lang, "Sample (DJ6GI)", "Muster (DJ6GI)")).tag(nil as UUID?)
                             ForEach(appState.qsoQueue) { q in
                                 Text("\(q.dxCall) (\(q.band) \(q.mode))").tag(q.id as UUID?)
                             }
                         }
                         .labelsHidden()
-                        .frame(width: 160)
+                        .controlSize(.regular)
+                        .frame(width: 240)
                     }
                     
-                    Divider().frame(height: 18)
+                    Divider().frame(height: 22)
                     
-                    // Undo / Redo
-                    HStack(spacing: 2) {
+                    // Undo / Redo (Same height and bottom-aligned with pickers)
+                    HStack(spacing: 4) {
                         Button(action: performUndo) {
                             Image(systemName: "arrow.uturn.backward")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         .help("Undo last change (⌘Z)")
                         .disabled(undoStack.isEmpty)
                         .keyboardShortcut("z", modifiers: .command)
@@ -197,7 +244,7 @@ public struct CardDesignerRootView: View {
                             Image(systemName: "arrow.uturn.forward")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         .help("Redo last change (⇧⌘Z)")
                         .disabled(redoStack.isEmpty)
                         .keyboardShortcut("z", modifiers: [.command, .shift])
@@ -205,13 +252,13 @@ public struct CardDesignerRootView: View {
                     
                     Spacer()
                     
-                    // Zoom Controls
+                    // Zoom Controls (Same regular height)
                     HStack(spacing: 4) {
                         Button(action: { zoomScale = max(zoomScale - 0.1, 0.4) }) {
                             Image(systemName: "minus.magnifyingglass")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         
                         Text("\(Int((zoomScale * pinchMagnification) * 100))%")
                             .font(.caption.monospaced())
@@ -221,16 +268,16 @@ public struct CardDesignerRootView: View {
                             Image(systemName: "plus.magnifyingglass")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                     }
                     
-                    Divider().frame(height: 18)
+                    Divider().frame(height: 22)
                     
                     Button(action: exportCardImage) {
-                        Label("Export Image", systemImage: "square.and.arrow.up")
+                        Label(L10n.tr(lang, "Export Image", "Bild exportieren"), systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -305,8 +352,24 @@ public struct CardDesignerRootView: View {
                 if let selectedId = selectedElementId,
                    let index = appState.activeTemplate.elements.firstIndex(where: { $0.id == selectedId }) {
                     ElementInspectorView(element: $appState.activeTemplate.elements[index])
+                    
+                    Divider()
+                    
+                    VStack {
+                        Button(role: .destructive, action: {
+                            deleteElement(selectedId)
+                        }) {
+                            Label(lang == .german ? "Element löschen" : "Delete Element", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red)
+                        .controlSize(.regular)
+                    }
+                    .padding(12)
+                    .background(Color(NSColor.controlBackgroundColor))
                 } else {
-                    BackgroundInspectorView(template: $appState.activeTemplate)
+                    BackgroundInspectorView(template: $appState.activeTemplate, lang: appState.settings.appLanguage)
                 }
             }
             .frame(minWidth: 260, maxWidth: 340)
@@ -333,6 +396,28 @@ public struct CardDesignerRootView: View {
         }
         .onAppear {
             previousTemplateSnapshot = appState.activeTemplate
+            if keyMonitor == nil {
+                keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    if event.keyCode == 51 || event.keyCode == 117 { // 51 = Backspace/Delete, 117 = Forward Delete
+                        if let window = NSApp.keyWindow,
+                           let responder = window.firstResponder,
+                           (responder is NSTextView || responder is NSTextField) {
+                            return event
+                        }
+                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
+                            deleteElement(selId)
+                            return nil
+                        }
+                    }
+                    return event
+                }
+            }
+        }
+        .onDisappear {
+            if let monitor = keyMonitor {
+                NSEvent.removeMonitor(monitor)
+                keyMonitor = nil
+            }
         }
         .onChange(of: appState.selectedTemplateId) { _, _ in
             undoStack.removeAll()
@@ -370,6 +455,17 @@ public struct CardDesignerRootView: View {
         isUndoRedoAction = true
         previousTemplateSnapshot = next
         appState.activeTemplate = next
+    }
+    
+    private func layerDisplayName(for element: CardElement) -> String {
+        if element.type == .text {
+            let trimmed = element.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                let firstLine = trimmed.components(separatedBy: .newlines).first ?? trimmed
+                return firstLine.count > 25 ? String(firstLine.prefix(25)) + "..." : firstLine
+            }
+        }
+        return element.name
     }
     
     private func iconForElement(_ type: ElementType) -> String {

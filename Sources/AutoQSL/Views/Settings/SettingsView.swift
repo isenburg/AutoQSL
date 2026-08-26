@@ -15,6 +15,7 @@ public struct SettingsView: View {
     @State private var migrationMessage: String? = nil
     
     enum SettingsTab: String, CaseIterable, Identifiable {
+        case language = "Language"
         case appearance = "Appearance"
         case station = "Station Profile"
         case automation = "Automation & Modes"
@@ -25,8 +26,23 @@ public struct SettingsView: View {
         case templates = "Email Templates"
         
         var id: String { rawValue }
+        
+        func localizedName(_ lang: AppLanguage) -> String {
+            switch self {
+            case .language: return L10n.tr(lang, "Language", "Sprache")
+            case .appearance: return L10n.tr(lang, "Appearance", "Erscheinungsbild")
+            case .station: return L10n.tr(lang, "Station Profile", "Stationsprofil")
+            case .automation: return L10n.tr(lang, "Automation & Modes", "Automation & Betriebsmodus")
+            case .storage: return L10n.tr(lang, "Storage & iCloud", "Speicher & iCloud")
+            case .udp: return L10n.tr(lang, "UDP Logging", "UDP-Logging")
+            case .callbook: return L10n.tr(lang, "Callbook Lookups", "Callbook-Abfragen")
+            case .email: return L10n.tr(lang, "Email Delivery", "E-Mail-Versand")
+            case .templates: return L10n.tr(lang, "Email Templates", "E-Mail-Vorlagen")
+            }
+        }
         var icon: String {
             switch self {
+            case .language: return "globe"
             case .appearance: return "circle.lefthalf.filled"
             case .station: return "antenna.radiowaves.left.and.right"
             case .automation: return "gearshape.2"
@@ -50,7 +66,7 @@ public struct SettingsView: View {
                     .padding(.bottom, 8)
                 
                 List(SettingsTab.allCases, selection: $selectedTab) { tab in
-                    Label(tab.rawValue, systemImage: tab.icon)
+                    Label(tab.localizedName(appState.settings.appLanguage), systemImage: tab.icon)
                         .tag(tab)
                 }
                 .listStyle(.sidebar)
@@ -64,6 +80,8 @@ public struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     switch selectedTab {
+                    case .language:
+                        languageSection
                     case .appearance:
                         appearanceSection
                     case .station:
@@ -90,21 +108,50 @@ public struct SettingsView: View {
         }
     }
     
-    // MARK: - Appearance Section
-    private var appearanceSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Appearance")
+    // MARK: - Language Section
+    private var languageSection: some View {
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Language", "Sprache"))
                 .font(.title2.bold())
-            Text("Choose how AutoQSL looks on your Mac.")
+            Text(L10n.tr(lang, "Choose your preferred interface language for AutoQSL.", "Wähle deine bevorzugte Sprache für die Benutzeroberfläche von AutoQSL."))
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Color Scheme & Theme").font(.headline)) {
+            GroupBox(label: Label(L10n.tr(lang, "Application Language", "Sprache der Anwendung"), systemImage: "globe").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    FormRow(label: "Theme Mode:", labelWidth: 120) {
+                    Picker("", selection: $appState.settings.appLanguage) {
+                        ForEach(AppLanguage.allCases, id: \.self) { l in
+                            Text(l.displayName).tag(l)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    
+                    Text(L10n.tr(lang, "Changes take effect immediately across all windows, menus, dialogs, and in-app help documentation.", "Änderungen werden sofort in allen Fenstern, Menüs, Dialogen und der integrierten Hilfe wirksam."))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(10)
+            }
+        }
+    }
+    
+    // MARK: - Appearance Section
+    private var appearanceSection: some View {
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Appearance", "Erscheinungsbild"))
+                .font(.title2.bold())
+            Text(L10n.tr(lang, "Choose how AutoQSL looks on your Mac.", "Wähle das Erscheinungsbild von AutoQSL auf deinem Mac."))
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            GroupBox(label: Text(L10n.tr(lang, "Color Scheme & Theme", "Farbschema & Design")).font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    FormRow(label: L10n.tr(lang, "Theme Mode:", "Design-Modus:"), labelWidth: 120) {
                         Picker("", selection: $appState.settings.appearance) {
                             ForEach(AppAppearance.allCases) { item in
-                                Text(item.rawValue).tag(item)
+                                Text(item.localizedName(lang)).tag(item)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -134,16 +181,17 @@ public struct SettingsView: View {
     
     // MARK: - Station Profile
     private var stationProfileSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Station Profile")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Station Profile", "Stationsprofil"))
                 .font(.title2.bold())
-            Text("Your amateur radio station details are displayed on the QSL card and email greetings.")
+            Text(L10n.tr(lang, "Your amateur radio station details are displayed on the QSL card and email greetings.", "Deine Stationsdaten werden auf der QSL-Karte und in den E-Mail-Grüßen verwendet."))
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Callsign & Operator").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Callsign & Operator", "Rufzeichen & Operator")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
-                    FormRow(label: "Callsign:") {
+                    FormRow(label: L10n.tr(lang, "Callsign:", "Rufzeichen:")) {
                         TextField("My Callsign", text: $appState.settings.myCallsign)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 140)
@@ -152,7 +200,7 @@ public struct SettingsView: View {
                             }
                     }
                     
-                    FormRow(label: "Operator:") {
+                    FormRow(label: L10n.tr(lang, "Operator:", "Name / Operator:")) {
                         TextField("Operator Name", text: $appState.settings.myName)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 240)
@@ -161,27 +209,27 @@ public struct SettingsView: View {
                 .padding(8)
             }
             
-            GroupBox(label: Text("QTH & Address").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "QTH & Address", "QTH & Adresse")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
-                    FormRow(label: "Street:") {
+                    FormRow(label: L10n.tr(lang, "Street:", "Straße:")) {
                         TextField("Street Address", text: $appState.settings.myStreet)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 280)
                     }
                     
-                    FormRow(label: "City:") {
+                    FormRow(label: L10n.tr(lang, "City:", "Stadt / QTH:")) {
                         TextField("City", text: $appState.settings.myCity)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 240)
                     }
                     
-                    FormRow(label: "State / Zip:") {
+                    FormRow(label: L10n.tr(lang, "State / Zip:", "Bundesland / PLZ:")) {
                         TextField("State / Province / Zip", text: $appState.settings.myState)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 200)
                     }
                     
-                    FormRow(label: "Country:") {
+                    FormRow(label: L10n.tr(lang, "Country:", "Land / DXCC:")) {
                         TextField("Country", text: $appState.settings.myCountry)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 200)
@@ -190,7 +238,7 @@ public struct SettingsView: View {
                 .padding(8)
             }
             
-            GroupBox(label: Text("Location & Zones").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Location & Zones", "Standort & Zonen")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
                     FormRow(label: "Maidenhead:") {
                         TextField("e.g. FM18iv", text: $appState.settings.myGrid)
@@ -214,7 +262,7 @@ public struct SettingsView: View {
                         }
                     }
                     
-                    FormRow(label: "County:") {
+                    FormRow(label: L10n.tr(lang, "County:", "Kreis / DOK:")) {
                         TextField("County / Region", text: $appState.settings.myCounty)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 200)
@@ -223,7 +271,7 @@ public struct SettingsView: View {
                     HStack {
                         Text("")
                             .frame(width: 110)
-                        Button("Auto-detect Country & Zones from Callsign") {
+                        Button(L10n.tr(lang, "Auto-detect Country & Zones from Callsign", "Land & Zonen automatisch aus Rufzeichen ermitteln")) {
                             appState.settings.autofillStationZonesAndCountry(for: appState.settings.myCallsign, overwriteNonEmpty: true)
                         }
                         .buttonStyle(.link)
@@ -233,15 +281,15 @@ public struct SettingsView: View {
                 .padding(8)
             }
             
-            GroupBox(label: Text("Default Greeting & Date Format").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Default Greeting & Date Format", "Standard-Grußtext & Datumsformat")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    FormRow(label: "Greeting:") {
+                    FormRow(label: L10n.tr(lang, "Greeting:", "Grußtext:")) {
                         TextField("Comment printed on QSL table", text: $appState.settings.defaultComment)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 380)
                     }
                     
-                    FormRow(label: "Date Order:") {
+                    FormRow(label: L10n.tr(lang, "Date Order:", "Datumsreihenfolge:")) {
                         Picker("", selection: $appState.settings.dateOrder) {
                             ForEach(DateOrder.allCases) { opt in
                                 Text(opt.rawValue).tag(opt)
@@ -251,7 +299,7 @@ public struct SettingsView: View {
                         .frame(width: 260)
                     }
                     
-                    FormRow(label: "Separator:") {
+                    FormRow(label: L10n.tr(lang, "Separator:", "Trennzeichen:")) {
                         Picker("", selection: $appState.settings.dateSeparator) {
                             ForEach(DateSeparator.allCases) { sep in
                                 Text(sep.rawValue).tag(sep)
@@ -261,7 +309,7 @@ public struct SettingsView: View {
                         .frame(width: 260)
                     }
                     
-                    FormRow(label: "Preview:") {
+                    FormRow(label: L10n.tr(lang, "Preview:", "Vorschau:")) {
                         Text(sampleDatePreview)
                             .font(.subheadline.monospaced().bold())
                             .foregroundColor(.accentColor)
@@ -274,14 +322,15 @@ public struct SettingsView: View {
     
     // MARK: - Automation & Modes
     private var automationSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Automation & Dispatch Modes")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Automation & Dispatch Modes", "Automation & Versand-Modi"))
                 .font(.title2.bold())
-            Text("Control how QSOs received over UDP network broadcasts are handled and dispatched.")
+            Text(L10n.tr(lang, "Control how QSOs received over UDP network broadcasts are handled and dispatched.", "Steuert, wie über das Netzwerk empfangene QSOs verarbeitet und versendet werden."))
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Sending Mode").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Sending Mode", "Betriebsmodus")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker("Mode", selection: $appState.settings.sendingMode) {
                         ForEach(SendingMode.allCases, id: \.self) { mode in
@@ -290,7 +339,7 @@ public struct SettingsView: View {
                     }
                     .pickerStyle(.radioGroup)
                     
-                    Text(appState.settings.sendingMode.description)
+                    Text(appState.settings.sendingMode.localizedDescription(appState.settings.appLanguage))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
@@ -302,22 +351,23 @@ public struct SettingsView: View {
     
     // MARK: - UDP Logging Settings
     private var udpSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("UDP Network Listeners")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "UDP Network Listeners", "UDP-Netzwerkempfänger"))
                 .font(.title2.bold())
-            Text("AutoQSL listens on local UDP ports to receive QSO logged broadcasts from WSJT-X etc. and RL (RUMlog). Each application can be configured with its own port and Multicast (MC) or Unicast (UC) IP address.")
+            Text(L10n.tr(lang, "AutoQSL listens on local UDP ports to receive QSO logged broadcasts from WSJT-X etc. and RL (RUMlog). Each application can be configured with its own port and Multicast (MC) or Unicast (UC) IP address.", "AutoQSL lauscht auf lokalen UDP-Ports auf QSO-Broadcasts von WSJT-X und RUMlog. Jede Anwendung kann mit eigenem Port und Multicast (MC) oder Unicast (UC) konfiguriert werden."))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 
             GroupBox(label: Label("Important Note on Duplicates", systemImage: "exclamationmark.triangle.fill").foregroundColor(.orange)) {
-                Text("If you have switched on UDP for WSJTX and RumLog in AutoQSL you will get duplicate QSLs depending on RumLog's configuration. It is recommended to use either or.")
+                Text(L10n.tr(lang, "If you have switched on UDP for WSJTX and RumLog in AutoQSL you will get duplicate QSLs depending on RumLog's configuration. It is recommended to use either or.", "Wenn UDP für WSJT-X und RUMlog gleichzeitig aktiv ist, können je nach RUMlog-Konfiguration doppelte QSLs entstehen. Es wird empfohlen, nur eine Quelle zu aktivieren."))
                     .font(.caption)
             }
             
             // Section 1: WSJT-X
             GroupBox(label: Text("WSJT-X etc.").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable WSJT-X etc. UDP Listener", isOn: $appState.settings.wsjtxEnabled)
+                    Toggle(L10n.tr(lang, "Enable WSJT-X etc. UDP Listener", "WSJT-X UDP-Empfänger aktivieren"), isOn: $appState.settings.wsjtxEnabled)
                     
                     FormRow(label: "IP Address:") {
                         TextField("", text: $appState.settings.wsjtxAddress)
@@ -353,7 +403,7 @@ public struct SettingsView: View {
             // Section 2: RL (RUMlog)
             GroupBox(label: Text("RL (RUMlog)").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable RL (RUMlog) UDP Listener", isOn: $appState.settings.rumlogEnabled)
+                    Toggle(L10n.tr(lang, "Enable RL (RUMlog) UDP Listener", "RUMlog UDP-Empfänger aktivieren"), isOn: $appState.settings.rumlogEnabled)
                     
                     FormRow(label: "IP Address:") {
                         TextField("", text: $appState.settings.rumlogAddress)
@@ -386,8 +436,44 @@ public struct SettingsView: View {
                 .padding(8)
             }
             
+            // Section 3: MacLoggerDX
+            GroupBox(label: Text("MacLoggerDX").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle(L10n.tr(lang, "Enable MacLoggerDX UDP Listener", "MacLoggerDX UDP-Empfänger aktivieren"), isOn: $appState.settings.macloggerEnabled)
+                    
+                    FormRow(label: "IP Address:") {
+                        TextField("", text: $appState.settings.macloggerAddress)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 140)
+                        
+                        let isMC = AppSettings.isMulticast(address: appState.settings.macloggerAddress)
+                        Text(isMC ? "Multicast (MC)" : "Unicast (UC)")
+                            .font(.system(size: 11, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(isMC ? Color.blue.opacity(0.15) : Color.orange.opacity(0.15))
+                            .foregroundColor(isMC ? .blue : .orange)
+                            .cornerRadius(4)
+                        
+                        Button("127.0.0.1 (UC)") { appState.settings.macloggerAddress = "127.0.0.1" }
+                            .buttonStyle(.link)
+                            .font(.caption2)
+                        Button("224.0.0.1 (MC)") { appState.settings.macloggerAddress = "224.0.0.1" }
+                            .buttonStyle(.link)
+                            .font(.caption2)
+                    }
+                    
+                    FormRow(label: "Port:") {
+                        TextField("", value: $appState.settings.macloggerPort, format: .number.grouping(.never))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 140)
+                    }
+                }
+                .padding(8)
+            }
+
             HStack {
-                Button("Restart Listeners") {
+                Button(L10n.tr(lang, "Restart Listeners", "Empfänger neu starten")) {
                     appState.startUDPListening()
                 }
                 .buttonStyle(.borderedProminent)
@@ -457,14 +543,15 @@ public struct SettingsView: View {
     
     // MARK: - Callbook Settings (QRZ.com & HamQTH)
     private var callbookSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Callbook Lookups (QRZ.com & HamQTH)")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Callbook Lookups (QRZ.com & HamQTH)", "Callbook-Abfragen (QRZ.com & HamQTH)"))
                 .font(.title2.bold())
-            Text("Retrieves recipient email addresses, QTH, names, and grid squares automatically from QRZ.com and/or HamQTH.com XML databases.")
+            Text(L10n.tr(lang, "Retrieves recipient email addresses, QTH, names, and grid squares automatically from QRZ.com and/or HamQTH.com XML databases.", "Ermittelt E-Mail-Adressen, QTH, Namen und Grid-Locators automatisch aus den XML-Datenbanken von QRZ.com und/oder HamQTH.com."))
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Lookup Provider & Priority").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Lookup Provider & Priority", "Callbook-Dienst & Priorität")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker("Provider:", selection: $appState.settings.callbookProvider) {
                         ForEach(CallbookProvider.allCases) { prov in
@@ -479,7 +566,7 @@ public struct SettingsView: View {
             // QRZ.com Configuration
             GroupBox(label: Label("QRZ.com XML Subscription", systemImage: "globe").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable QRZ.com Lookups", isOn: $appState.settings.qrzEnabled)
+                    Toggle(L10n.tr(lang, "Enable QRZ.com Lookups", "QRZ.com-Abfragen aktivieren"), isOn: $appState.settings.qrzEnabled)
                     
                     FormRow(label: "Username:") {
                         TextField("QRZ Callsign / Username", text: $appState.settings.qrzUsername)
@@ -494,7 +581,7 @@ public struct SettingsView: View {
                     }
                     
                     HStack {
-                        Button("Test QRZ Connection") {
+                        Button(L10n.tr(lang, "Test QRZ Connection", "QRZ-Verbindung testen")) {
                             testQRZ()
                         }
                         .buttonStyle(.bordered)
@@ -517,7 +604,7 @@ public struct SettingsView: View {
             // HamQTH.com Configuration
             GroupBox(label: Label("HamQTH.com XML API (Free)", systemImage: "antenna.radiowaves.left.and.right").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable HamQTH.com Lookups", isOn: $appState.settings.hamqthEnabled)
+                    Toggle(L10n.tr(lang, "Enable HamQTH.com Lookups", "HamQTH.com-Abfragen aktivieren"), isOn: $appState.settings.hamqthEnabled)
                     
                     FormRow(label: "Username / Call:", labelWidth: 120) {
                         TextField("HamQTH Callsign / Login", text: $appState.settings.hamqthUsername)
@@ -532,7 +619,7 @@ public struct SettingsView: View {
                     }
                     
                     HStack {
-                        Button("Test HamQTH Connection") {
+                        Button(L10n.tr(lang, "Test HamQTH Connection", "HamQTH-Verbindung testen")) {
                             testHamQTH()
                         }
                         .buttonStyle(.bordered)
@@ -556,14 +643,15 @@ public struct SettingsView: View {
     
     // MARK: - Email Delivery Settings
     private var emailDeliverySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Email Delivery")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Email Delivery", "E-Mail-Versand"))
                 .font(.title2.bold())
-            Text("Choose how outgoing QSL card emails are dispatched to contacts.")
+            Text(L10n.tr(lang, "Choose how outgoing QSL card emails are dispatched to contacts.", "Wähle, wie ausgehende QSL-Karten per E-Mail an Kontakte versendet werden."))
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            GroupBox(label: Text("Delivery Method").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Delivery Method", "Versandmethode")).font(.headline)) {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker("Method", selection: $appState.settings.emailDeliveryMethod) {
                         ForEach(EmailDeliveryMethod.allCases) { method in
@@ -572,7 +660,7 @@ public struct SettingsView: View {
                     }
                     .pickerStyle(.radioGroup)
                     
-                    Text(appState.settings.emailDeliveryMethod.description)
+                    Text(appState.settings.emailDeliveryMethod.localizedDescription(appState.settings.appLanguage))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 2)
@@ -581,11 +669,11 @@ public struct SettingsView: View {
             }
             
             if appState.settings.emailDeliveryMethod == .appleMail {
-                GroupBox(label: Text("Apple Mail Options").font(.headline)) {
+                GroupBox(label: Text(L10n.tr(lang, "Apple Mail Options", "Apple Mail Optionen")).font(.headline)) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Send silently in background without opening Mail compose window", isOn: $appState.settings.appleMailSendImmediately)
+                        Toggle(L10n.tr(lang, "Send silently in background without opening Mail compose window", "Lautlos im Hintergrund senden (ohne Mail-Fenster zu öffnen)"), isOn: $appState.settings.appleMailSendImmediately)
                         
-                        Text("Uses your existing accounts configured in macOS Mail. No SMTP server configuration or app passwords required.")
+                        Text(L10n.tr(lang, "Uses your existing accounts configured in macOS Mail. No SMTP server configuration or app passwords required.", "Verwendet deine in macOS Mail eingerichteten Konten. Keine SMTP-Server-Konfiguration nötig."))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -662,7 +750,7 @@ public struct SettingsView: View {
             
             HStack {
                 if appState.settings.emailDeliveryMethod == .appleMail {
-                    Button("Test Apple Mail Integration") {
+                    Button(L10n.tr(lang, "Test Apple Mail Integration", "Apple Mail Integration testen")) {
                         testAppleMail()
                     }
                     .buttonStyle(.bordered)
@@ -678,7 +766,7 @@ public struct SettingsView: View {
                             .foregroundColor(status.contains("ready") || status.contains("Success") ? .green : .red)
                     }
                 } else if appState.settings.emailDeliveryMethod == .directSMTP {
-                    Button("Test SMTP Connection") {
+                    Button(L10n.tr(lang, "Test SMTP Connection", "SMTP-Verbindung testen")) {
                         testSMTP()
                     }
                     .buttonStyle(.bordered)
@@ -700,12 +788,13 @@ public struct SettingsView: View {
     
     // MARK: - Email Templates
     private var emailTemplatesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Email Subject & Body Templates")
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.tr(lang, "Email Subject & Body Templates", "E-Mail-Betreff & Nachrichtenvorlagen"))
                 .font(.title2.bold())
             
-            GroupBox(label: Text("Subject Line Template").font(.headline)) {
-                FormRow(label: "Subject:") {
+            GroupBox(label: Text(L10n.tr(lang, "Subject Line Template", "Betreffzeilen-Vorlage")).font(.headline)) {
+                FormRow(label: L10n.tr(lang, "Subject:", "Betreff:")) {
                     TextField("Subject Line", text: $appState.settings.emailSubjectTemplate)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: .infinity)
@@ -713,7 +802,7 @@ public struct SettingsView: View {
                 .padding(8)
             }
             
-            GroupBox(label: Text("Body Message Template").font(.headline)) {
+            GroupBox(label: Text(L10n.tr(lang, "Body Message Template", "Nachrichtentext-Vorlage")).font(.headline)) {
                 TextEditor(text: $appState.settings.emailBodyTemplate)
                     .font(.system(size: 12, design: .monospaced))
                     .frame(height: 180)
@@ -721,7 +810,7 @@ public struct SettingsView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Available Placeholders:")
+                Text(L10n.tr(lang, "Available Placeholders:", "Verfügbare Platzhalter:"))
                     .font(.caption.bold())
                 Text("{DX_CALL}, {DX_NAME}, {DX_GRID}, {DX_COUNTRY}, {BAND}, {MODE}, {FREQ}, {DATE}, {TIME}, {RST_SENT}, {RST_RCVD}, {COMMENT}, {MY_CALL}, {MY_NAME}, {MY_GRID}, {MY_CQ}, {MY_ITU}")
                     .font(.caption.monospaced())
@@ -735,20 +824,21 @@ public struct SettingsView: View {
     
     // MARK: - Storage & iCloud Sync
     private var storageSettingsTab: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        let lang = appState.settings.appLanguage
+        return VStack(alignment: .leading, spacing: 18) {
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Storage & Synchronization Engine", systemImage: "icloud.and.arrow.up.fill")
+                    Label(L10n.tr(lang, "Storage & Synchronization Engine", "Speicher & iCloud-Synchronisation"), systemImage: "icloud.and.arrow.up.fill")
                         .font(.headline)
                         .foregroundColor(.accentColor)
                     
-                    Text("Choose whether AutoQSL stores all configuration, card templates, QSO queue items, and rendered cards locally on this Mac, or syncs them seamlessly across all your Macs via iCloud Drive.")
+                    Text(L10n.tr(lang, "Choose whether AutoQSL stores all configuration, card templates, QSO queue items, and rendered cards locally on this Mac, or syncs them seamlessly across all your Macs via iCloud Drive.", "Wähle, ob AutoQSL alle Einstellungen, Vorlagen, QSOs und gerenderten Karten lokal auf diesem Mac speichert oder nahtlos über iCloud Drive zwischen deinen Macs synchronisiert."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     Divider()
                     
-                    FormRow(label: "Storage Location:", labelWidth: 120) {
+                    FormRow(label: L10n.tr(lang, "Storage Location:", "Speicherort:"), labelWidth: 120) {
                         Picker("", selection: Binding(
                             get: { appState.settings.storageLocation },
                             set: { newLoc in
@@ -762,7 +852,7 @@ public struct SettingsView: View {
                         .pickerStyle(.segmented)
                     }
                     
-                    FormRow(label: "Active Path:", labelWidth: 120) {
+                    FormRow(label: L10n.tr(lang, "Active Path:", "Aktueller Pfad:"), labelWidth: 120) {
                         Text(PersistenceService.shared.storageDirectory(for: appState.settings.storageLocation).path)
                             .font(.caption.monospaced())
                             .foregroundColor(.secondary)
@@ -770,7 +860,7 @@ public struct SettingsView: View {
                             .textSelection(.enabled)
                     }
                     
-                    FormRow(label: "iCloud Status:", labelWidth: 120) {
+                    FormRow(label: L10n.tr(lang, "iCloud Status:", "iCloud-Status:"), labelWidth: 120) {
                         HStack(spacing: 8) {
                             if PersistenceService.shared.isICloudAvailable {
                                 Image(systemName: "checkmark.circle.fill")
@@ -800,10 +890,10 @@ public struct SettingsView: View {
             
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Data Migration & Finder Access", systemImage: "arrow.triangle.2.circlepath.circle.fill")
+                    Label(L10n.tr(lang, "Data Migration & Finder Access", "Datenmigration & Finder-Zugriff"), systemImage: "arrow.triangle.2.circlepath.circle.fill")
                         .font(.headline)
                     
-                    Text("Easily transfer your existing data between Local storage and iCloud Drive, or inspect the stored JSON data and rendered card images.")
+                    Text(L10n.tr(lang, "Easily transfer your existing data between Local storage and iCloud Drive, or inspect the stored JSON data and rendered card images.", "Übertrage vorhandene Daten einfach zwischen lokalem Speicher und iCloud Drive oder öffne das Datenverzeichnis im Finder."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -813,21 +903,21 @@ public struct SettingsView: View {
                         Button(action: {
                             migrateData(to: .iCloud)
                         }) {
-                            Label("Copy Local Data to iCloud", systemImage: "arrow.up.doc.fill")
+                            Label(L10n.tr(lang, "Copy Local Data to iCloud", "Lokale Daten nach iCloud kopieren"), systemImage: "arrow.up.doc.fill")
                         }
                         .buttonStyle(.bordered)
                         
                         Button(action: {
                             migrateData(to: .local)
                         }) {
-                            Label("Restore from iCloud to Local", systemImage: "arrow.down.doc.fill")
+                            Label(L10n.tr(lang, "Restore from iCloud to Local", "Aus iCloud lokal wiederherstellen"), systemImage: "arrow.down.doc.fill")
                         }
                         .buttonStyle(.bordered)
                         
                         Button(action: {
                             PersistenceService.shared.revealInFinder(location: appState.settings.storageLocation)
                         }) {
-                            Label("Reveal in Finder", systemImage: "folder.fill")
+                            Label(L10n.tr(lang, "Reveal in Finder", "Im Finder anzeigen"), systemImage: "folder.fill")
                         }
                         .buttonStyle(.bordered)
                     }

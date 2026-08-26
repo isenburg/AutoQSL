@@ -23,7 +23,9 @@
    - **Full Layer Management**: Callsign typography, custom text blocks, QSO data table grid, location footers, and badges/stickers.
    - **Opacity & Colors**: macOS native color picker with full alpha opacity channel support on all text, background tints, and element borders.
    - **Undo Support**: Full `⌘Z` keyboard shortcut and toolbar button for reversible design changes.
-   - **Badges & Stickers**: ARRL Diamond, POTA, IOTA, SOTA, CQ WPX, WAS, plus custom transparent PNG badge imports.
+   - **Badges & Stickers**: DARC Logo, ARRL Diamond, POTA, WWFF (Flora & Fauna), IOTA (official RSGB), SOTA, plus custom PNG logo imports.
+    - **Template Duplication & Memory**: 1-click template cloning (`doc.on.doc`), immutable template snapshotting on sent cards, and complete dispatch history on resend.
+    - **Independent Table Typography**: Separate font family, size, weight, and color controls for table headers vs. data rows.
 
 4. ✉️ **Review & Automation Modes**:
    - **Preview & Confirm (Recommended)**: Presents a high-resolution preview dialog with recipient email and editable message before sending (`⌘+Return` to send, `Esc` to skip).
@@ -96,6 +98,20 @@ open -a Xcode .
 ---
 
 ## Changelog
+
+### Version 2.0.0 (2026-08)
+- 📜 **Permanent Template Snapshotting & Resend History**: Dispatched QSOs permanently store a full snapshot of their rendered card template, guaranteeing that subsequent changes to global templates never alter already sent cards. Resending a card archives previous dispatches (send date, delivery method, template name, and preserved card image path) in a dedicated history section in the QSO detail pane.
+- 🛡️ **DARC & WWFF Badges + Official Emblems**: Added built-in official high-resolution badges for **DARC** (Deutscher Amateur-Radio-Club) and **WWFF** (World Wide Flora & Fauna in Amateur Radio); updated **IOTA** to the official RSGB emblem and **ARRL** to the official diamond emblem.
+- 🎨 **Card Designer Enhancements**:
+  - 1-Click **Template Duplication** (`doc.on.doc`) & in-inspector **Template Renaming** (`Template Name` / `Vorlagenname`).
+  - **Direct Element Deletion**: Press `⌫` (Backspace) or `⌦` (Delete) anywhere on the canvas, click the red *Delete Element* inspector button, or use the layer list action bar.
+  - **Dynamic Layer Text**: Text elements in the left layer list display their actual text content rather than generic "Text" labels.
+  - **Independent Table Header Typography**: Header font family, size, weight, italic style, and text color can now be styled separately from the table data rows.
+- 📡 **MacLoggerDX Integration**: Native AppleScript QSO grabber and UDP broadcast receiver on port `9932` Unicast for MacLoggerDX users.
+- 🌐 **Full Multilingual Support (German & English)**: Comprehensive, reactive bilingual user interface across all views, queues, inspectors, settings panels, and context menus.
+- 🔄 **Instant Live Language Switching**: Change interface language in Settings > Appearance & Language (`English 🇬🇧` / `Deutsch 🇩🇪`) with immediate UI update.
+- 📖 **Synchronized Bilingual Documentation**: In-app Help and manuals automatically follow the globally configured language.
+- 🛟 **Integrated Support & Diagnostics**: Built-in support page in Help (`13. Support & Feedback`) with one-click email generation to `gi@av8r.de` containing full macOS, hardware, and configuration diagnostics.
 
 ### Version 1.3.0 (2026-08)
 - ↔️ **Interactive Mouse Resizing**: Selected card elements display 6 corner and edge handles (`NW`, `NE`, `SW`, `SE`, `W`, `E`). Drag handles to scale stickers, adjust QSO table width, and resize typography/font sizes proportionally with live canvas preview.

@@ -11,6 +11,20 @@ public enum QSOStatus: String, Codable, CaseIterable {
     case failedEmailMissing = "Failed: Email missing"
     case skipped = "Skipped"
     
+    public func localizedName(_ lang: AppLanguage) -> String {
+        switch self {
+        case .pending: return L10n.tr(lang, "Pending", "Ausstehend")
+        case .lookingUpQRZ: return L10n.tr(lang, "Looking up QRZ", "QRZ-Abfrage...")
+        case .awaitingConfirmation: return L10n.tr(lang, "Awaiting Confirmation", "Wartet auf Bestätigung")
+        case .readyToSend: return L10n.tr(lang, "Ready to Send", "Bereit zum Senden")
+        case .sending: return L10n.tr(lang, "Sending...", "Wird gesendet...")
+        case .sent: return L10n.tr(lang, "Sent", "Gesendet")
+        case .failed: return L10n.tr(lang, "Failed", "Fehlgeschlagen")
+        case .failedEmailMissing: return L10n.tr(lang, "Failed: Email missing", "Fehlgeschlagen: E-Mail fehlt")
+        case .skipped: return L10n.tr(lang, "Skipped", "Übersprungen")
+        }
+    }
+    
     public var iconName: String {
         switch self {
         case .pending: return "clock"
@@ -29,8 +43,37 @@ public enum QSOStatus: String, Codable, CaseIterable {
 public enum QSOSource: String, Codable {
     case wsjtx = "WSJT-X"
     case rumlog = "RUMlogNG"
+    case macloggerdx = "MacLoggerDX"
     case manual = "Manual"
     case adifFile = "ADIF File"
+}
+
+public struct QSODispatchRecord: Identifiable, Codable, Hashable {
+    public var id: UUID
+    public var sentAt: Date
+    public var cardImagePath: String?
+    public var templateId: UUID?
+    public var templateName: String?
+    public var statusMessage: String?
+    public var deliveryMethod: String?
+    
+    public init(
+        id: UUID = UUID(),
+        sentAt: Date,
+        cardImagePath: String? = nil,
+        templateId: UUID? = nil,
+        templateName: String? = nil,
+        statusMessage: String? = nil,
+        deliveryMethod: String? = nil
+    ) {
+        self.id = id
+        self.sentAt = sentAt
+        self.cardImagePath = cardImagePath
+        self.templateId = templateId
+        self.templateName = templateName
+        self.statusMessage = statusMessage
+        self.deliveryMethod = deliveryMethod
+    }
 }
 
 public struct QSO: Identifiable, Codable, Hashable {
@@ -74,6 +117,7 @@ public struct QSO: Identifiable, Codable, Hashable {
     public var statusMessage: String?
     public var generatedCardPath: String?
     public var sentAt: Date?
+    public var dispatchHistory: [QSODispatchRecord]
     
     public init(
         id: UUID = UUID(),
@@ -105,7 +149,8 @@ public struct QSO: Identifiable, Codable, Hashable {
         status: QSOStatus = .pending,
         statusMessage: String? = nil,
         generatedCardPath: String? = nil,
-        sentAt: Date? = nil
+        sentAt: Date? = nil,
+        dispatchHistory: [QSODispatchRecord] = []
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -137,6 +182,7 @@ public struct QSO: Identifiable, Codable, Hashable {
         self.statusMessage = statusMessage
         self.generatedCardPath = generatedCardPath
         self.sentAt = sentAt
+        self.dispatchHistory = dispatchHistory
     }
     
     public var formattedDateYear: String {

@@ -2,11 +2,17 @@ import SwiftUI
 
 public struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var appState: AppState
     @State private var selectedTopic: HelpTopic = .overview
-    @State private var isGerman: Bool = false
     @State private var searchText: String = ""
+    
+    private var isGerman: Bool {
+        appState.settings.appLanguage == .german
+    }
 
-    public init() {}
+    public init(appState: AppState) {
+        self.appState = appState
+    }
 
     public enum HelpTopic: String, CaseIterable, Identifiable {
         case overview = "1. Introduction & Overview"
@@ -21,6 +27,7 @@ public struct HelpView: View {
         case disclaimer = "10. Disclaimer & Privacy"
         case copyright = "11. Copyright & Credits"
         case changelog = "12. Changelog & Versions"
+        case support = "13. Support & Feedback"
 
         public var id: String { rawValue }
         
@@ -38,6 +45,7 @@ public struct HelpView: View {
             case .disclaimer: return "exclamationmark.shield.fill"
             case .copyright: return "c.circle.fill"
             case .changelog: return "clock.arrow.circlepath"
+            case .support: return "lifepreserver.fill"
             }
         }
     }
@@ -50,12 +58,6 @@ public struct HelpView: View {
                     Text(isGerman ? "Hilfe & Doku" : "Help & Docs")
                         .font(.headline)
                     Spacer()
-                    Picker("", selection: $isGerman) {
-                        Text("EN").tag(false)
-                        Text("DE").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 75)
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 14)
@@ -123,7 +125,7 @@ public struct HelpView: View {
                     .listStyle(.sidebar)
                 }
             }
-            .frame(width: 250)
+            .frame(minWidth: 280, idealWidth: 305, maxWidth: 350)
             .background(Color(NSColor.controlBackgroundColor))
             .onChange(of: searchText) { _, newQuery in
                 let matches = HelpTopic.allCases.filter { $0.matches(query: newQuery, isGerman: isGerman) }
@@ -160,7 +162,8 @@ public struct HelpView: View {
         case .storageSync: return "9. iCloud-Speicher & Sync"
         case .disclaimer: return "10. Haftungsausschluss & Datenschutz"
         case .copyright: return "11. Urheberrecht & Credits"
-        case .changelog: return "12. Versionsgeschichte & Changelog"
+        case .changelog: return "12. Versionshistorie"
+        case .support: return "13. Support & Feedback"
         }
     }
 
@@ -191,6 +194,8 @@ public struct HelpView: View {
             copyrightSection
         case .changelog:
             changelogSection
+        case .support:
+            supportSection
         }
     }
 
@@ -237,10 +242,30 @@ public struct HelpView: View {
 
             GroupBox(label: Label(isGerman ? "Täglicher Betrieb: Wie funktioniert der Ablauf?" : "Daily Operating Workflow", systemImage: "arrow.triangle.2.circlepath")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(isGerman ?
-                        "• Automatischer Empfang: Sobald ein QSO in WSJT-X oder RUMlogNG geloggt wird, empfängt AutoQSL das Datenpaket via UDP, fragt QRZ.com ab und rendert die Karte.\n• Manuelles Loggen: Über die Schaltfläche 'Log QSO Manually' kannst du jederzeit QSOs nachträglich eingeben (mit automatischer Band/Frequenzerkennung und beliebigen Betriebsarten).\n• Letztes QSO holen: Klicke auf 'Grab RUMlog', um das letzte QSO direkt per AppleScript aus RUMlogNG zu importieren.\n• Massenversand: Wähle mehrere QSOs mit Shift + Pfeiltasten aus und klicke auf 'Send Selected'." :
-                        "• Automated Capture: When a QSO is logged in WSJT-X or RUMlogNG, AutoQSL captures it over UDP, fetches QRZ info, and renders the card.\n• Manual Logging: Click 'Log QSO Manually' to enter ad-hoc contacts (with dynamic Band/Freq synchronization and custom mode support).\n• One-Click Grab: Click 'Grab RUMlog' to pull the latest QSO directly from RUMlogNG via AppleScript.\n• Batch Processing: Select multiple QSOs with Shift + Arrow Keys and click 'Send Selected'.")
-                        .font(.callout)
+                    bulletRow(
+                        title: isGerman ? "Automatischer Empfang:" : "Automated Capture:",
+                        text: isGerman ?
+                            "Sobald ein QSO in WSJT-X oder RUMlogNG geloggt wird, empfängt AutoQSL das Datenpaket via UDP, fragt QRZ.com ab und rendert die Karte." :
+                            "When a QSO is logged in WSJT-X or RUMlogNG, AutoQSL captures it over UDP, fetches QRZ info, and renders the card."
+                    )
+                    bulletRow(
+                        title: isGerman ? "Manuelles Loggen:" : "Manual Logging:",
+                        text: isGerman ?
+                            "Über die Schaltfläche 'Manuell loggen' kannst du jederzeit QSOs nachträglich eingeben (mit automatischer Band/Frequenzerkennung und beliebigen Betriebsarten)." :
+                            "Click 'Add Manual' to enter ad-hoc contacts (with dynamic Band/Freq synchronization and custom mode support)."
+                    )
+                    bulletRow(
+                        title: isGerman ? "Letztes QSO holen:" : "One-Click Grab:",
+                        text: isGerman ?
+                            "Klicke auf 'RUMlog holen', um das letzte QSO direkt per AppleScript aus RUMlogNG zu importieren." :
+                            "Click 'Grab RUMlog' to pull the latest QSO directly from RUMlogNG via AppleScript."
+                    )
+                    bulletRow(
+                        title: isGerman ? "Massenversand:" : "Batch Processing:",
+                        text: isGerman ?
+                            "Wähle mehrere QSOs mit Shift + Pfeiltasten aus und klicke auf 'Ausgewählte senden'." :
+                            "Select multiple QSOs with Shift + Arrow Keys and click 'Send Selected'."
+                    )
                 }
                 .padding(.vertical, 4)
             }
@@ -269,8 +294,17 @@ public struct HelpView: View {
                             "✅ Direkt auf der Karte editierbar: Rufzeichen (Callsign), Adressblock (Address), Standort-Zeile und freier Text (Custom Text). Mit einem Doppelklick auf das Element öffnet sich die direkte Texteingabe auf der Leinwand." :
                             "✅ Directly editable on canvas: Callsign Block, Address Block, Location Line, and Custom Text. Double-click any element on the canvas to edit its text inline with live preview.")
                         featureRow(icon: "shield.lefthalf.filled", text: isGerman ?
-                            "🛡️ Sticker- & Badge-Sammlung: Integrierte Abzeichen (ARRL, POTA, IOTA, SOTA, CQ, WAS) und eigene PNG/SVG-Logos importieren, verwalten und mit einem Klick auf der Karte platzieren." :
-                            "🛡️ Badges & Stickers Collection: Built-in scalable badges (ARRL, POTA, IOTA, SOTA, CQ, WAS) plus custom PNG/SVG logo imports, collection management, and 1-click placement.")
+                            "🛡️ Sticker- & Badge-Sammlung: Integrierte hochauflösende Verbands- und Aktivitätsabzeichen (DARC Logo, ARRL Diamond, POTA, WWFF Flora & Fauna, IOTA, SOTA) sowie eigene PNG-Logos importieren, verwalten und mit einem Klick auf der Karte platzieren." :
+                            "🛡️ Badges & Stickers Collection: Built-in official high-resolution society and activity badges (DARC Logo, ARRL Diamond, POTA, WWFF Flora & Fauna, IOTA, SOTA) plus custom PNG logo imports and 1-click placement.")
+                        featureRow(icon: "doc.on.doc", text: isGerman ?
+                            "📋 Vorlagen duplizieren & umbenennen: Vorlagen können mit einem Klick dupliziert (doc.on.doc) und über das Feld 'Vorlagenname' im rechten Inspektor frei benannt werden." :
+                            "📋 Template Duplication & Renaming: Clone existing templates with 1-click ('doc.on.doc') and rename them freely via the 'Template Name' inspector field.")
+                        featureRow(icon: "textformat.size", text: isGerman ?
+                            "🔤 Getrennte Tabellen-Header Typografie: Tabellen-Spaltenüberschriften können unabhängig von den Datenzellen mit eigener Schriftart, Schriftgröße, Schnitt und Farbe formatiert werden." :
+                            "🔤 Independent Table Header Typography: Configure custom font family, size, weight, and color for table headers separately from QSO data cells.")
+                        featureRow(icon: "trash.circle.fill", text: isGerman ?
+                            "🗑️ Element-Löschung per Tastatur (⌫): Ausgewählte Elemente lassen sich direkt per Rückschritttaste (⌫/⌦), über die Ebenenleiste oder über den roten Lösch-Button im Inspektor entfernen." :
+                            "🗑️ Keyboard & Inspector Element Deletion: Delete any selected element directly with the Backspace/Delete key (⌫/⌦), the layers panel, or the inspector delete button.")
                         featureRow(icon: "magnifyingglass.circle.fill", text: isGerman ?
                             "🔍 Vollbild-Vorschau & Zoom (100%): Klick auf die Kartenvorschau (in der QSO-Detailansicht oder im Sendedialog) öffnet die Karte in Originalgröße (100%) mit stufenlosem Trackpad-Pinch-Zoom, Scroll-Panning und Zoom-Tasten." :
                             "🔍 Full-Size Card Inspection & Zoom (100%): Clicking the card preview in either the QSO Detail view or the Confirmation Dialog opens a floating 100% original size preview with smooth trackpad pinch zoom, pan scrolling, and toolbar controls.")
@@ -324,12 +358,12 @@ public struct HelpView: View {
             VStack(alignment: .leading, spacing: 10) {
                 GroupBox(label: Text("WSJT-X / JTDX Setup")) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(isGerman ?
-                            "1. Öffne in WSJT-X: Einstellungen > Reporting > UDP Server\n2. Aktiviere 'Accept UDP requests'\n3. Setze 'UDP Server' auf 224.0.0.1 und 'UDP Server Port' auf 2237" :
-                            "1. Open WSJT-X Settings > Reporting > UDP Server\n2. Enable 'Accept UDP requests'\n3. Set 'UDP Server' to 224.0.0.1 and 'UDP Server Port' to 2237")
-                            .font(.caption.monospaced())
+                        stepRow(number: "1.", text: isGerman ? "Öffne in WSJT-X: Einstellungen > Reporting > UDP Server" : "Open WSJT-X Settings > Reporting > UDP Server")
+                        stepRow(number: "2.", text: isGerman ? "Aktiviere 'Accept UDP requests'" : "Enable 'Accept UDP requests'")
+                        stepRow(number: "3.", text: isGerman ? "Setze 'UDP Server' auf 224.0.0.1 und 'UDP Server Port' auf 2237" : "Set 'UDP Server' to 224.0.0.1 and 'UDP Server Port' to 2237")
                     }
                 }
+
 
                 GroupBox(label: Text("RUMlogNG Setup")) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -338,10 +372,12 @@ public struct HelpView: View {
                             "RUMlogNG uses the 'Contact info N1MM' broadcast. Here is how to configure two separate broadcasts (e.g., for QSO Upload Utility on port 12063 and AutoQSL on port 12064 simultaneously):")
                             .font(.subheadline)
                             
-                        Text(isGerman ?
-                            "1. Öffne RUMlogNG > Einstellungen > UDP\n2. 'App Info' und 'DX Spot' Haken setzen (falls benötigt)\n3. Ersten 'Contact info N1MM' Broadcast auf Port 12063 setzen (z.B. für QSO Upload Utility)\n4. Zweiten 'Contact info N1MM' Broadcast auf Port 12064 (oder 2333) setzen (für AutoQSL)" :
-                            "1. Open RUMlogNG > Preferences > UDP\n2. Enable 'App Info' and 'DX Spot' (if needed)\n3. Set first 'Contact info N1MM' broadcast to Port 12063 (e.g. for QSO Upload Utility)\n4. Set second 'Contact info N1MM' broadcast to Port 12064 or 2333 (for AutoQSL)")
-                            .font(.caption.monospaced())
+                        VStack(alignment: .leading, spacing: 6) {
+                            stepRow(number: "1.", text: isGerman ? "Öffne RUMlogNG > Einstellungen > UDP" : "Open RUMlogNG > Preferences > UDP")
+                            stepRow(number: "2.", text: isGerman ? "'App Info' und 'DX Spot' Haken setzen (falls benötigt)" : "Enable 'App Info' and 'DX Spot' (if needed)")
+                            stepRow(number: "3.", text: isGerman ? "Ersten 'Contact info N1MM' Broadcast auf Port 12063 setzen (z. B. für QSO Upload Utility)" : "Set first 'Contact info N1MM' broadcast to Port 12063 (e.g. for QSO Upload Utility)")
+                            stepRow(number: "4.", text: isGerman ? "Zweiten 'Contact info N1MM' Broadcast auf Port 12064 (oder 2333) setzen (für AutoQSL)" : "Set second 'Contact info N1MM' broadcast to Port 12064 or 2333 (for AutoQSL)")
+                        }
                             
                         #if SWIFT_PACKAGE
                         if let path = Bundle.module.path(forResource: "rumlog_settings", ofType: "png"),
@@ -375,6 +411,29 @@ public struct HelpView: View {
                     Text(isGerman ?
                         "Über die Schaltfläche 'Grab RUMlog' in der Queue-Ansicht kann jederzeit das zuletzt geloggte QSO direkt über AppleScript aus RUMlogNG ausgelesen und als QSL-Karte generiert werden – ganz ohne UDP-Broadcast." :
                         "The 'Grab RUMlog' button in the Queue view allows you to instantly pull the most recent QSO from RUMlogNG via native AppleScript and generate a QSL card without requiring UDP broadcasts.")
+                        .font(.caption)
+                }
+
+                GroupBox(label: Text("MacLoggerDX Setup")) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(isGerman ?
+                            "MacLoggerDX (Dog Park Software) unterstützt sowohl den automatischen UDP-Broadcast als auch den direkten 1-Klick-Import per AppleScript:" :
+                            "MacLoggerDX (Dog Park Software) supports both automated background UDP broadcast reception and direct 1-click AppleScript import:")
+                            .font(.subheadline)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            stepRow(number: "1.", text: isGerman ? "Öffne MacLoggerDX > Einstellungen (Preferences) > UDP / Broadcasts" : "Open MacLoggerDX > Preferences > UDP / Broadcasts")
+                            stepRow(number: "2.", text: isGerman ? "Aktiviere UDP-Broadcast an IP 127.0.0.1 (Unicast UC) auf Port 9932 (Standard) oder 2333" : "Enable UDP broadcast to 127.0.0.1 (Unicast UC) on Port 9932 (default) or 2333")
+                            stepRow(number: "3.", text: isGerman ? "1-Klick AppleScript-Import: Klicke in AutoQSL unten auf 'Holen > MacLoggerDX (AppleScript)', um das zuletzt geloggte QSO sofort zu importieren." : "1-Click AppleScript Grab: Click 'Grab > MacLoggerDX (AppleScript)' in AutoQSL to fetch the latest logged QSO instantly.")
+                        }
+                    }
+                    .padding(8)
+                }
+
+                GroupBox(label: Label(isGerman ? "Direkter MacLoggerDX-Import (AppleScript)" : "Direct MacLoggerDX Import (AppleScript)", systemImage: "arrow.down.doc.fill")) {
+                    Text(isGerman ?
+                        "Über das Menü 'Holen > MacLoggerDX' in der Queue-Ansicht kann jederzeit das aktuell geloggte QSO direkt über AppleScript aus MacLoggerDX ausgelesen und als QSL-Karte generiert werden." :
+                        "The 'Grab > MacLoggerDX' menu in the Queue view allows you to instantly fetch the most recent contact from MacLoggerDX via native AppleScript and generate a QSL card.")
                         .font(.caption)
                 }
                 
@@ -808,7 +867,7 @@ public struct HelpView: View {
                     .font(.title)
                     .foregroundColor(.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isGerman ? "Versionsgeschichte & Changelog" : "Changelog & Version History")
+                    Text(isGerman ? "Versionshistorie" : "Changelog & Version History")
                         .font(.title2.bold())
                     Text("AutoQSL Updates & Release Notes")
                         .font(.subheadline)
@@ -817,6 +876,78 @@ public struct HelpView: View {
             }
 
             Divider()
+
+            GroupBox(label: Text("Version 2.0.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "globe",
+                        text: isGerman ?
+                            "Vollständige Mehrsprachigkeit (Deutsch & Englisch): Gesamte Benutzeroberfläche, Dialoge, Menüs, Tabellen und Hilfetexte sind vollständig zweisprachig (Deutsch 🇩🇪 und Englisch 🇬🇧)." :
+                            "Full Multilingual Support (German & English): Complete bilingual user interface across all views, dialogs, inspectors, settings, and documentation."
+                    )
+                    featureRow(
+                        icon: "arrow.triangle.2.circlepath",
+                        text: isGerman ?
+                            "Nahtloser Sprachwechsel in Echtzeit: Spracheinstellung in 'Einstellungen > Erscheinungsbild & Sprache' aktualisiert alle Fenster und Dialoge sofort ohne Neustart." :
+                            "Instant Live Language Switching: Changing language in 'Settings > Appearance & Language' updates all windows and dialogs immediately without restart."
+                    )
+                    featureRow(
+                        icon: "doc.badge.clock",
+                        text: isGerman ?
+                            "Permanente Vorlagenspeicherung: Jedes versendete QSO speichert einen vollständigen Snapshot der verwendeten Kartenvorlage, sodass spätere Änderungen an globalen Templates bestehende Karten niemals verfälschen." :
+                            "Permanent Template Snapshotting: Every dispatched QSO permanently stores a snapshot of its card template, ensuring future global template edits never alter previously sent cards."
+                    )
+                    featureRow(
+                        icon: "clock.arrow.circlepath",
+                        text: isGerman ?
+                            "Sichere Resend-Sendehistorie: Beim erneuten Senden einer QSL-Karte wird die vorherige Sendung mit Sendedatum, Versandmethode, Vorlage und Bildpfad in der Sendehistorie archiviert; alte Kartendateien bleiben auf der Festplatte erhalten." :
+                            "Safe Resend History: Resending a card archives previous dispatches (send date, delivery method, template name, and card image path) in a dedicated history section in the detail pane while preserving old image files."
+                    )
+                    featureRow(
+                        icon: "shield.lefthalf.filled",
+                        text: isGerman ?
+                            "Neue offizielle Badges (DARC & WWFF): Offizielles DARC-Logo und WWFF-Abzeichen (World Wide Flora & Fauna) fest integriert; IOTA- und ARRL-Logos auf die offiziellen Vektor- und Originalgrafiken aktualisiert." :
+                            "New Official Badges (DARC & WWFF): Added built-in official high-resolution badges for DARC and WWFF (Flora & Fauna); updated IOTA and ARRL graphics to official emblems."
+                    )
+                    featureRow(
+                        icon: "doc.on.doc",
+                        text: isGerman ?
+                            "Vorlagen-Duplizierung & Umbenennung: Vorlagen können per 1-Klick ('doc.on.doc') geklont und im rechten Inspektor über das Feld 'Vorlagenname' frei benannt werden." :
+                            "Template Duplication & Renaming: 1-click template cloning ('doc.on.doc') and free renaming via the 'Template Name' field in the right inspector."
+                    )
+                    featureRow(
+                        icon: "delete.left.fill",
+                        text: isGerman ?
+                            "Element-Löschung per Tastatur (⌫): Ausgewählte Elemente lassen sich direkt per Rückschritttaste (⌫/⌦), über die Ebenenleiste oder über den roten Lösch-Button im Inspektor entfernen." :
+                            "Keyboard & Inspector Element Deletion: Delete any selected element directly with the Backspace/Delete key (⌫/⌦), the layers panel, or the inspector delete button."
+                    )
+                    featureRow(
+                        icon: "textformat.size",
+                        text: isGerman ?
+                            "Getrennte Tabellen-Header Typografie: Tabellen-Spaltenüberschriften können unabhängig von den Datenzellen mit eigener Schriftart, Schriftgröße, Schnitt und Textfarbe formatiert werden." :
+                            "Independent Table Header Typography: Configure custom font family, size, weight, italic style, and text color for table headers separately from QSO data cells."
+                    )
+                    featureRow(
+                        icon: "text.alignleft",
+                        text: isGerman ?
+                            "Dynamische Textanzeige in der Ebenenliste: Text-Elemente zeigen in der linken Ebenenliste direkt ihren tatsächlichen Textinhalt anstelle des generischen Begriffs 'Text'." :
+                            "Dynamic Layer Text Labels: Text elements in the left layer list display their actual text content rather than generic 'Text' labels."
+                    )
+                    featureRow(
+                        icon: "antenna.radiowaves.left.and.right",
+                        text: isGerman ?
+                            "MacLoggerDX & RUMlogNG Anbindung: AppleScript-Direktabfrage ('Holen'-Menü) und UDP-Broadcast-Empfang für RUMlogNG und MacLoggerDX (Port 9932)." :
+                            "MacLoggerDX & RUMlogNG Integration: Direct AppleScript grab ('Grab' menu) and UDP broadcast listeners for both RUMlogNG and MacLoggerDX (Port 9932)."
+                    )
+                    featureRow(
+                        icon: "lifepreserver.fill",
+                        text: isGerman ?
+                            "Integrierter Support & Diagnosebericht (Punkt 13): Ausführliche Hardware- und Systemberichterstellung mit 1-Klick E-Mail-Übermittlung an gi@av8r.de." :
+                            "Integrated Support & Diagnostic Report (Topic 13): Comprehensive hardware and system diagnostic report generation with 1-click email composition to gi@av8r.de."
+                    )
+                }
+                .padding(8)
+            }
 
             GroupBox(label: Text("Version 1.3.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -1018,12 +1149,206 @@ public struct HelpView: View {
         }
     }
 
+
+    // MARK: - 13. Support & Feedback
+    @State private var isReportCopied: Bool = false
+
+    private var supportSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: "lifepreserver.fill")
+                    .font(.title)
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isGerman ? "Support & Diagnose" : "Support & Diagnostics")
+                        .font(.title2.bold())
+                    Text(isGerman ? "Direkter Kontakt zum Entwickler (DJ6GI) & Systembericht" : "Direct developer contact (DJ6GI) & system diagnostic report")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            Text(isGerman ?
+                "Bei Fragen, Anregungen oder Problemen kannst du direkt per E-Mail Kontakt aufnehmen. Klicke auf die Schaltfläche unten, um eine vorgefertigte E-Mail an gi@av8r.de mit allen relevanten System- und Versionsdaten zu öffnen." :
+                "For questions, feedback, or bug reports, feel free to reach out via email. Click the button below to compose a pre-filled email to gi@av8r.de containing relevant system and app diagnostics.")
+                .font(.body)
+
+            HStack(spacing: 12) {
+                Button(action: sendSupportEmail) {
+                    Label(isGerman ? "E-Mail an Support senden (gi@av8r.de)" : "Send Support Email (gi@av8r.de)", systemImage: "envelope.badge.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+
+                Button(action: copyDiagnosticReport) {
+                    Label(isReportCopied ? (isGerman ? "Kopiert!" : "Copied!") : (isGerman ? "Bericht kopieren" : "Copy Report"), systemImage: isReportCopied ? "checkmark" : "doc.on.doc")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
+            .padding(.vertical, 4)
+
+            GroupBox(label: Label(isGerman ? "System- und Anwendungsdiagnose" : "System & Application Diagnostics", systemImage: "macbook.and.iphone").font(.headline)) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(diagnosticReportText)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(6)
+                }
+                .padding(6)
+            }
+        }
+    }
+
+    private var diagnosticReportText: String {
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
+        let memGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024.0 * 1024.0 * 1024.0)
+
+        #if arch(arm64)
+        let archName = "Apple Silicon (arm64)"
+        #elseif arch(x86_64)
+        let archName = "Intel (x86_64)"
+        #else
+        let archName = "Unknown"
+        #endif
+
+        var modelName = "Mac"
+        var size: size_t = 0
+        sysctlbyname("hw.model", nil, &size, nil, 0)
+        if size > 0 {
+            var model = [CChar](repeating: 0, count: size)
+            sysctlbyname("hw.model", &model, &size, nil, 0)
+            modelName = String(cString: model)
+        }
+
+        let langStr = appState.settings.appLanguage == .german ? "Deutsch 🇩🇪" : "English 🇬🇧"
+
+        return """
+==================================================
+AutoQSL Diagnostic Report / Systembericht
+==================================================
+
+• Application:       AutoQSL
+• Version:           \(APP_VERSION) (Build \(APP_BUILD_NUMBER))
+• Configured Lang:   \(langStr)
+• UI Theme:          \(appState.settings.appearance.rawValue)
+• Storage Location:  \(appState.settings.storageLocation.rawValue)
+
+--- Mac Hardware & macOS ---
+• Mac Hardware:      \(modelName)
+• CPU Architecture:  \(archName)
+• OS Version:        macOS \(osVersion)
+• Physical Memory:   \(String(format: "%.1f", memGB)) GB
+• System Locale:     \(Locale.current.identifier)
+• Time Zone:         \(TimeZone.current.identifier)
+
+--- Station & Operation Setup ---
+• Station Callsign:  \(appState.settings.myCallsign)
+• Operator Name:     \(appState.settings.myName)
+• Maidenhead Grid:   \(appState.settings.myGrid)
+• Dispatch Mode:     \(appState.settings.sendingMode.rawValue)
+• Email Delivery:    \(appState.settings.emailDeliveryMethod.rawValue)
+• Callbook Provider: \(appState.settings.callbookProvider.rawValue)
+• WSJT-X Listener:   \(appState.settings.wsjtxEnabled ? "Enabled (\(appState.settings.wsjtxAddress):\(appState.settings.wsjtxPort))" : "Disabled")
+• RUMlog Listener:   \(appState.settings.rumlogEnabled ? "Enabled (\(appState.settings.rumlogAddress):\(appState.settings.rumlogPort))" : "Disabled")
+• Queue Total QSOs:  \(appState.qsoQueue.count)
+==================================================
+"""
+    }
+
+    private func copyDiagnosticReport() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(diagnosticReportText, forType: .string)
+        isReportCopied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            isReportCopied = false
+        }
+    }
+
+    private func sendSupportEmail() {
+        let recipient = "gi@av8r.de"
+        let subject = isGerman ?
+            "AutoQSL Support-Anfrage (v\(APP_VERSION) b\(APP_BUILD_NUMBER))" :
+            "AutoQSL Support Request (v\(APP_VERSION) b\(APP_BUILD_NUMBER))"
+        
+        let intro = isGerman ?
+            "Hallo Georg,\n\nhier ist meine Frage / Beschreibung des Problems:\n[Bitte beschreibe hier dein Anliegen]\n\n" :
+            "Hello Georg,\n\nhere is my question / description of the issue:\n[Please describe your question or issue here]\n\n"
+
+        let fullBody = intro + diagnosticReportText
+
+        // 1. Direct AppleScript compose (creates new draft directly in Apple Mail with full report body)
+        let escapedSubject = subject.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        let escapedBody = fullBody.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        
+        let appleScriptSource = """
+        tell application "Mail"
+            set newMessage to make new outgoing message with properties {subject:"\(escapedSubject)", content:"\(escapedBody)", visible:true}
+            tell newMessage
+                make new to recipient at end of to recipients with properties {address:"\(recipient)"}
+            end tell
+            activate
+        end tell
+        """
+        
+        var errorDict: NSDictionary?
+        if let script = NSAppleScript(source: appleScriptSource) {
+            _ = script.executeAndReturnError(&errorDict)
+            if errorDict == nil {
+                return
+            }
+        }
+
+        // 2. NSSharingService (.composeEmail) for third-party default mail clients
+        if let service = NSSharingService(named: .composeEmail), service.canPerform(withItems: [fullBody]) {
+            service.recipients = [recipient]
+            service.subject = subject
+            service.perform(withItems: [fullBody])
+            return
+        }
+
+        // 3. Fallback: mailto URL
+        if let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let encodedBody = fullBody.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let mailtoUrl = URL(string: "mailto:\(recipient)?subject=\(encodedSubject)&body=\(encodedBody)") {
+            NSWorkspace.shared.open(mailtoUrl)
+        }
+    }
+
     private func featureRow(icon: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .font(.body)
                 .foregroundColor(.accentColor)
                 .frame(width: 20)
+            Text(text)
+                .font(.callout)
+        }
+    }
+
+    private func bulletRow(title: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+                .font(.body.bold())
+                .foregroundColor(.secondary)
+                .frame(width: 12, alignment: .leading)
+            (Text(title).bold() + Text(" ") + Text(text))
+                .font(.callout)
+        }
+    }
+
+    private func stepRow(number: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(number)
+                .font(.caption.bold().monospaced())
+                .foregroundColor(.accentColor)
+                .frame(width: 20, alignment: .trailing)
             Text(text)
                 .font(.callout)
         }
@@ -1065,7 +1390,8 @@ extension HelpView.HelpTopic {
         case .storageSync: return "9. iCloud-Speicher & Sync"
         case .disclaimer: return "10. Haftungsausschluss & Datenschutz"
         case .copyright: return "11. Urheberrecht & Credits"
-        case .changelog: return "12. Versionsgeschichte & Changelog"
+        case .changelog: return "12. Versionshistorie"
+        case .support: return "13. Support & Feedback"
         }
     }
 
@@ -1095,6 +1421,8 @@ extension HelpView.HelpTopic {
             return "copyright credits author georg isenbuerger dj6gi amateur radio lizenz urheberrecht entwickler"
         case .changelog:
             return "changelog version history release notes updates 1.1.0 1.0.0 features bugfixes versionsgeschichte neuerung änderungen verlauf"
+        case .support:
+            return "support feedback email bug report hilfe kontakt problem anfrage gi@av8r.de diagnose system info meldung frage"
         }
     }
 }
