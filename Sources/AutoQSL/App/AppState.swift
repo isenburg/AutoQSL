@@ -386,7 +386,7 @@ public final class AppState: ObservableObject {
         }
         
         if qsoQueue[index].dxEmail.isEmpty {
-            qsoQueue[index].status = .failed
+            qsoQueue[index].status = .failedEmailMissing
             qsoQueue[index].statusMessage = "Email missing"
             lastLogMessage = "QSO with \(currentQSO.dxCall) failed: Email missing"
             return
@@ -522,10 +522,45 @@ public final class AppState: ObservableObject {
         }
     }
     
+    public func setQSOStatus(qsoId: UUID, status: QSOStatus) {
+        if let index = qsoQueue.firstIndex(where: { $0.id == qsoId }) {
+            qsoQueue[index].status = status
+            if status == .sent {
+                qsoQueue[index].sentAt = Date()
+                qsoQueue[index].statusMessage = "Manually marked as Sent"
+            } else {
+                qsoQueue[index].statusMessage = "Status set to \(status.rawValue)"
+            }
+            QSODatabaseService.shared.insertOrReplace(qsoQueue[index])
+            lastLogMessage = "Status for \(qsoQueue[index].dxCall) changed to \(status.rawValue)."
+        }
+        if qsoAwaitingConfirmation?.id == qsoId && (status == .sent || status == .skipped) {
+            isConfirmationSheetPresented = false
+            qsoAwaitingConfirmation = nil
+        }
+    }
+    
+    public func setBatchQSOStatus(qsoIds: Set<UUID>, status: QSOStatus) {
+        for id in qsoIds {
+            if let index = qsoQueue.firstIndex(where: { $0.id == id }) {
+                qsoQueue[index].status = status
+                if status == .sent {
+                    qsoQueue[index].sentAt = Date()
+                    qsoQueue[index].statusMessage = "Manually marked as Sent"
+                } else {
+                    qsoQueue[index].statusMessage = "Status set to \(status.rawValue)"
+                }
+                QSODatabaseService.shared.insertOrReplace(qsoQueue[index])
+            }
+        }
+        lastLogMessage = "Status for \(qsoIds.count) contacts changed to \(status.rawValue)."
+    }
+
     public func skipQSO(qsoId: UUID) {
         if let index = qsoQueue.firstIndex(where: { $0.id == qsoId }) {
             qsoQueue[index].status = .skipped
             qsoQueue[index].statusMessage = "Skipped by user"
+            QSODatabaseService.shared.insertOrReplace(qsoQueue[index])
         }
         if qsoAwaitingConfirmation?.id == qsoId {
             isConfirmationSheetPresented = false

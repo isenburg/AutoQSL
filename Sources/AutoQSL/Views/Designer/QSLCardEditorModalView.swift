@@ -9,6 +9,7 @@ public struct QSLCardEditorModalView: View {
     @State private var workingTemplate: QSLCardTemplate
     @State private var selectedElementId: UUID? = canvasBackgroundSelectionId
     @State private var zoomScale: CGFloat = 0.8
+    @GestureState private var pinchMagnification: CGFloat = 1.0
     @State private var isStickerPickerPresented: Bool = false
     
     public init(appState: AppState, qso: QSO, isPresented: Binding<Bool>) {
@@ -68,7 +69,7 @@ public struct QSLCardEditorModalView: View {
                     Button(action: { zoomScale = max(zoomScale - 0.1, 0.4) }) {
                         Image(systemName: "minus.magnifyingglass")
                     }
-                    Text("\(Int(zoomScale * 100))%")
+                    Text("\(Int((zoomScale * pinchMagnification) * 100))%")
                         .font(.caption.monospaced())
                         .frame(width: 44)
                     Button(action: { zoomScale = min(zoomScale + 0.1, 1.4) }) {
@@ -166,37 +167,63 @@ public struct QSLCardEditorModalView: View {
                 .frame(minWidth: 160, maxWidth: 220)
                 
                 // Center: Interactive Workspace Canvas
-                ScrollView([.horizontal, .vertical]) {
-                    ZStack {
-                        Color(NSColor.underPageBackgroundColor)
-                        
-                        let baseW = workingTemplate.aspectRatio.widthPoints
-                        let baseH = workingTemplate.aspectRatio.heightPoints
-                        
-                        CardCanvasView(
-                            template: workingTemplate,
-                            settings: appState.settings,
-                            qso: qso,
-                            isInteractive: true,
-                            selectedElementId: $selectedElementId,
-                            onElementMoved: { id, newNormX, newNormY in
-                                if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
-                                    workingTemplate.elements[idx].normalizedX = newNormX
-                                    workingTemplate.elements[idx].normalizedY = newNormY
+                GeometryReader { geo in
+                    let currentScale = zoomScale * pinchMagnification
+                    let baseW = workingTemplate.aspectRatio.widthPoints
+                    let baseH = workingTemplate.aspectRatio.heightPoints
+                    let scaledW = baseW * currentScale
+                    let scaledH = baseH * currentScale
+                    
+                    ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                        ZStack {
+                            Color(NSColor.underPageBackgroundColor)
+                            
+                            CardCanvasView(
+                                template: workingTemplate,
+                                settings: appState.settings,
+                                qso: qso,
+                                isInteractive: true,
+                                selectedElementId: $selectedElementId,
+                                onElementMoved: { id, newNormX, newNormY in
+                                    if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        workingTemplate.elements[idx].normalizedX = newNormX
+                                        workingTemplate.elements[idx].normalizedY = newNormY
+                                    }
+                                },
+                                onElementResized: { id, newNormW, newNormH, newFontSize in
+                                    if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        workingTemplate.elements[idx].normalizedWidth = newNormW
+                                        workingTemplate.elements[idx].normalizedHeight = newNormH
+                                        if let fs = newFontSize {
+                                            workingTemplate.elements[idx].fontSize = fs
+                                        }
+                                    }
+                                },
+                                onElementTextChanged: { id, newText in
+                                    if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        workingTemplate.elements[idx].textContent = newText
+                                    }
                                 }
-                            },
-                            onElementTextChanged: { id, newText in
-                                if let idx = workingTemplate.elements.firstIndex(where: { $0.id == id }) {
-                                    workingTemplate.elements[idx].textContent = newText
-                                }
-                            }
+                            )
+                            .frame(width: baseW, height: baseH)
+                            .scaleEffect(currentScale)
+                            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
+                            .padding(40)
+                        }
+                        .frame(
+                            width: max(geo.size.width, scaledW + 80),
+                            height: max(geo.size.height, scaledH + 80)
                         )
-                        .frame(width: baseW, height: baseH)
-                        .scaleEffect(zoomScale)
-                        .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
-                        .padding(40)
                     }
-                    .frame(minWidth: 500, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
+                    .gesture(
+                        MagnificationGesture()
+                            .updating($pinchMagnification) { val, state, _ in
+                                state = val
+                            }
+                            .onEnded { val in
+                                zoomScale = min(max(zoomScale * val, 0.3), 2.5)
+                            }
+                    )
                 }
                 
                 // Right: Inspector Panel

@@ -818,6 +818,54 @@ public struct HelpView: View {
 
             Divider()
 
+            GroupBox(label: Text("Version 1.3.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "arrow.up.left.and.arrow.down.right",
+                        text: isGerman ?
+                            "Maus-Größenänderung auf der Leinwand: Ausgewählte Elemente bieten 6 Anfasser-Punkte zum interaktiven Skalieren von Stickern, Tabellenbreiten und Schriftgrößen direkt mit der Maus." :
+                            "Interactive Mouse Resizing: Selected elements display 6 resize handles for intuitive mouse-driven scaling of stickers, table widths, and typography font sizes."
+                    )
+                    featureRow(
+                        icon: "hand.pinch.fill",
+                        text: isGerman ?
+                            "Trackpad Pinch-Zoom & Panning im Editor: Stufenloser Zwei-Finger-Pinch-Zoom und dynamisches Panning/Scrollen im Kartendesigner, im Bearbeitungsfenster und im Vollbild-Vorschaufenster." :
+                            "Trackpad Pinch-to-Zoom & Dynamic Panning: Fluid 2-finger pinch zoom and 2D pan scrolling across Card Designer, Customize Card modal, and Full-Size preview window."
+                    )
+                    featureRow(
+                        icon: "magnifyingglass.circle.fill",
+                        text: isGerman ?
+                            "Vollbild-Karteninspektion & Zoom (100%): Klick auf die Kartenvorschau (im Hauptfenster oder im Sendedialog) öffnet ein eigenständiges 100% Originalgröße-Fenster mit Trackpad-Pinch-Zoom." :
+                            "Full-Size Card Inspection & Zoom (100%): Clicking any card preview opens an independent 100% floating window with fluid trackpad pinch zoom."
+                    )
+                    featureRow(
+                        icon: "bubble.left.and.bubble.right.fill",
+                        text: isGerman ?
+                            "Standard-Grußtext & QSO-Überschreibung: Der im Designer eingestellte Tabellen-Grußtext gilt als Standard für alle Karten und kann im QSO-Bearbeitungsdialog individuell überschrieben werden." :
+                            "Template Table Remarks & Per-QSO Override: The greeting/remarks text set in the Designer serves as standard template default and can be overridden per individual QSO in Edit dialogs."
+                    )
+                    featureRow(
+                        icon: "cursorarrow.click.2",
+                        text: isGerman ?
+                            "Doppelklick-Direkteingabe: Doppelklick auf ein Textelement startet die Live-Bearbeitung direkt auf der Leinwand." :
+                            "Double-Click Inline Editing: Double-click any text element on canvas to trigger seamless inline text editing."
+                    )
+                    featureRow(
+                        icon: "tag.fill",
+                        text: isGerman ?
+                            "Manueller Status per Rechtsklick: Über das Kontextmenü kann der Status einzelner oder mehrerer ausgewählter QSOs direkt auf 'Ready to Send', 'Awaiting Confirmation', 'Sent', 'Pending', 'Skipped', 'Failed' oder 'Failed: Email missing' gesetzt werden." :
+                            "Manual Status via Right-Click: Context menu allows setting the status of single or batch selected QSOs directly to 'Ready to Send', 'Awaiting Confirmation', 'Sent', 'Pending', 'Skipped', 'Failed', or 'Failed: Email missing'."
+                    )
+                    featureRow(
+                        icon: "line.3.horizontal.decrease.circle",
+                        text: isGerman ?
+                            "Erweiterter 'Awaiting Action'-Filter: Der Filter 'Awaiting Action' erfasst zuverlässig alle anstehenden QSOs (Pending, Ready to Send, Awaiting Confirmation, Looking up QRZ)." :
+                            "Enhanced 'Awaiting Action' Filter: The Awaiting Action queue tab cleanly filters all actionable QSOs (Pending, Ready to Send, Awaiting Confirmation, Looking up QRZ)."
+                    )
+                }
+                .padding(8)
+            }
+
             GroupBox(label: Text("Version 1.2.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(
@@ -851,10 +899,22 @@ public struct HelpView: View {
                             "Scale-Compensated WYSIWYG Dragging: Scale-compensated mouse tracking with zero jump or lag when selecting and moving elements."
                     )
                     featureRow(
+                        icon: "bubble.left.and.bubble.right.fill",
+                        text: isGerman ?
+                            "Standard-Grußtext & QSO-Überschreibung: Der im Designer eingestellte Tabellen-Grußtext gilt als Standard für alle Karten und kann im QSO-Bearbeitungsdialog individuell überschrieben werden." :
+                            "Template Table Remarks & Per-QSO Override: The greeting/remarks text set in the Designer serves as standard template default and can be overridden per individual QSO in Edit dialogs."
+                    )
+                    featureRow(
                         icon: "cursorarrow.click.2",
                         text: isGerman ?
                             "Doppelklick-Direkteingabe: Doppelklick auf ein Textelement startet die Live-Bearbeitung direkt auf der Leinwand." :
                             "Double-Click Inline Editing: Double-click any text element on canvas to trigger seamless inline text editing."
+                    )
+                    featureRow(
+                        icon: "tag.fill",
+                        text: isGerman ?
+                            "Manueller Status per Rechtsklick: Über das Kontextmenü kann der Status einzelner oder mehrerer ausgewählter QSOs direkt auf 'Ready to Send', 'Awaiting Confirmation', 'Sent', 'Skipped', 'Failed' oder 'Pending' gesetzt werden." :
+                            "Manual Status via Right-Click: Context menu allows setting the status of single or batch selected QSOs directly to 'Ready to Send', 'Awaiting Confirmation', 'Sent', 'Skipped', 'Failed', or 'Pending'."
                     )
                 }
                 .padding(8)

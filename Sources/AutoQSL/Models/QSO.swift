@@ -8,6 +8,7 @@ public enum QSOStatus: String, Codable, CaseIterable {
     case sending = "Sending..."
     case sent = "Sent"
     case failed = "Failed"
+    case failedEmailMissing = "Failed: Email missing"
     case skipped = "Skipped"
     
     public var iconName: String {
@@ -19,6 +20,7 @@ public enum QSOStatus: String, Codable, CaseIterable {
         case .sending: return "arrow.up.circle.badge.clock"
         case .sent: return "checkmark.circle.fill"
         case .failed: return "xmark.octagon.fill"
+        case .failedEmailMissing: return "envelope.badge.shield.half.filled"
         case .skipped: return "slash.circle"
         }
     }
@@ -84,7 +86,7 @@ public struct QSO: Identifiable, Codable, Hashable {
         qsoDate: Date = Date(),
         rstSent: String = "-10",
         rstRcvd: String = "-12",
-        comment: String = "73, Thanks for the QSO. I hope to meet you further down the log.",
+        comment: String = "",
         txPowerWatts: Double? = nil,
         myCall: String = "",
         myGrid: String = "",

@@ -285,7 +285,7 @@ public struct StatusBadgeView: View {
         case .awaitingConfirmation: return .orange
         case .sending: return .indigo
         case .sent: return .green
-        case .failed: return .red
+        case .failed, .failedEmailMissing: return .red
         case .skipped: return .gray
         }
     }

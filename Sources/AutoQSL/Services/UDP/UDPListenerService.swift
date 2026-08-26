@@ -196,7 +196,7 @@ public final class UDPListenerService: ObservableObject {
                     qsoDate: wsjtx.dateOff,
                     rstSent: wsjtx.reportSent,
                     rstRcvd: wsjtx.reportRcvd,
-                    comment: wsjtx.comments.isEmpty ? "73, Thanks for the QSO. I hope to meet you further down the log." : wsjtx.comments,
+                    comment: wsjtx.comments,
                     txPowerWatts: Double(wsjtx.txPower) ?? nil,
                     myCall: wsjtx.myCall ?? "",
                     myGrid: wsjtx.myGrid ?? "",

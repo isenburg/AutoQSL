@@ -5,7 +5,8 @@ public struct CardDesignerRootView: View {
     @ObservedObject var appState: AppState
     
     @State private var selectedElementId: UUID? = canvasBackgroundSelectionId
-    @State private var zoomScale: CGFloat = 0.85
+    @State private var zoomScale: CGFloat = 0.8
+    @GestureState private var pinchMagnification: CGFloat = 1.05
     @State private var isStickerPickerPresented: Bool = false
     @State private var selectedPreviewQSOId: UUID? = nil
     @State private var isDeleteTemplateConfirmationPresented: Bool = false
@@ -212,7 +213,7 @@ public struct CardDesignerRootView: View {
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         
-                        Text("\(Int(zoomScale * 100))%")
+                        Text("\(Int((zoomScale * pinchMagnification) * 100))%")
                             .font(.caption.monospaced())
                             .frame(width: 38)
                         
@@ -238,39 +239,63 @@ public struct CardDesignerRootView: View {
                 Divider()
                 
                 // Canvas Area with Zoom & Centering
-                ScrollView([.horizontal, .vertical]) {
-                    ZStack {
-                        // Desktop workspace background
-                        Color(NSColor.underPageBackgroundColor)
-                        
-                        // Card Canvas
-                        let baseW = appState.activeTemplate.aspectRatio.widthPoints
-                        let baseH = appState.activeTemplate.aspectRatio.heightPoints
-                        
-                        CardCanvasView(
-                            template: appState.activeTemplate,
-                            settings: appState.settings,
-                            qso: activePreviewQSO,
-                            isInteractive: true,
-                            selectedElementId: $selectedElementId,
-                            onElementMoved: { id, newNormX, newNormY in
-                                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
-                                    appState.activeTemplate.elements[idx].normalizedX = newNormX
-                                    appState.activeTemplate.elements[idx].normalizedY = newNormY
+                GeometryReader { geo in
+                    let currentScale = zoomScale * pinchMagnification
+                    let baseW = appState.activeTemplate.aspectRatio.widthPoints
+                    let baseH = appState.activeTemplate.aspectRatio.heightPoints
+                    let scaledW = baseW * currentScale
+                    let scaledH = baseH * currentScale
+                    
+                    ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                        ZStack {
+                            Color(NSColor.underPageBackgroundColor)
+                            
+                            CardCanvasView(
+                                template: appState.activeTemplate,
+                                settings: appState.settings,
+                                qso: activePreviewQSO,
+                                isInteractive: true,
+                                selectedElementId: $selectedElementId,
+                                onElementMoved: { id, newNormX, newNormY in
+                                    if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        appState.activeTemplate.elements[idx].normalizedX = newNormX
+                                        appState.activeTemplate.elements[idx].normalizedY = newNormY
+                                    }
+                                },
+                                onElementResized: { id, newNormW, newNormH, newFontSize in
+                                    if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        appState.activeTemplate.elements[idx].normalizedWidth = newNormW
+                                        appState.activeTemplate.elements[idx].normalizedHeight = newNormH
+                                        if let fs = newFontSize {
+                                            appState.activeTemplate.elements[idx].fontSize = fs
+                                        }
+                                    }
+                                },
+                                onElementTextChanged: { id, newText in
+                                    if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                                        appState.activeTemplate.elements[idx].textContent = newText
+                                    }
                                 }
-                            },
-                            onElementTextChanged: { id, newText in
-                                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
-                                    appState.activeTemplate.elements[idx].textContent = newText
-                                }
-                            }
+                            )
+                            .frame(width: baseW, height: baseH)
+                            .scaleEffect(currentScale)
+                            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
+                            .padding(40)
+                        }
+                        .frame(
+                            width: max(geo.size.width, scaledW + 80),
+                            height: max(geo.size.height, scaledH + 80)
                         )
-                        .frame(width: baseW, height: baseH)
-                        .scaleEffect(zoomScale)
-                        .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
-                        .padding(40)
                     }
-                    .frame(minWidth: 900, minHeight: 650)
+                    .gesture(
+                        MagnificationGesture()
+                            .updating($pinchMagnification) { val, state, _ in
+                                state = val
+                            }
+                            .onEnded { val in
+                                zoomScale = min(max(zoomScale * val, 0.3), 2.5)
+                            }
+                    )
                 }
             }
             .frame(minWidth: 500)

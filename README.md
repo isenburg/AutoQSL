@@ -97,14 +97,22 @@ open -a Xcode .
 
 ## Changelog
 
+### Version 1.3.0 (2026-08)
+- ↔️ **Interactive Mouse Resizing**: Selected card elements display 6 corner and edge handles (`NW`, `NE`, `SW`, `SE`, `W`, `E`). Drag handles to scale stickers, adjust QSO table width, and resize typography/font sizes proportionally with live canvas preview.
+- 🔍 **Pinch-to-Zoom & Dynamic Panning**: Fluid 2-finger trackpad pinch zooming (30%–250%) and 2D pan scrolling supported in the Card Designer, Customize Card modal editor, and Full-Size Inspection window.
+- 🔎 **Full-Size Card Inspection & Floating Zoom**: Single-click on the card preview in either the QSO Detail view or the Confirmation Dialog opens an original size (100%) floating window (`1120×760 pt`) with trackpad pinch-to-zoom, pan scrolling, and zoom toolbar controls (`-`, `+`, `100%`, `Fit`, `Done`, `Esc`, `⌘+`, `⌘-`, `⌘0`).
+- 💬 **Template Table Remarks & Per-QSO Override**: The greeting/remarks text configured in the Card Designer inspector serves as the standard template default on cards, while Edit QSO and Customize Card dialogs allow per-QSO overrides.
+- ✏️ **Double-Click Inline Editing**: Direct on-canvas inline text editing activated via double-click without layout shift or position jumps.
+- 🏷️ **Manual Status Assignment**: Right-click any single or multi-selected QSO in the queue to directly set its status (`Ready to Send`, `Awaiting Confirmation`, `Sent`, `Pending`, `Skipped`, `Failed`, `Failed: Email missing`).
+- 🚫 **Failed: Email missing Status**: Dedicated status badge and icon for contacts where callbook lookup yielded no email address.
+- 🎯 **Refined Awaiting Action Filter**: The "Awaiting Action" queue tab accurately groups `Pending`, `Ready to Send`, `Awaiting Confirmation`, and `Looking up QRZ` contacts.
+
 ### Version 1.2.0 (2026-08)
-- 🔎 **Full-Size Card Inspection & Interactive Zoom**: Single-click on the card preview in either the QSO Detail view or the Confirmation Dialog opens an original size (100%) floating window with smooth trackpad pinch-to-zoom, pan scrolling, and zoom toolbar controls (`-`, `+`, `100%`, `Fit`, `Done`, `Esc`, `⌘+`, `⌘-`, `⌘0`).
 - 🛡️ **Badges & Stickers Collection**: Manageable collection of built-in (ARRL Diamond, POTA, IOTA, SOTA, CQ WPX/DX, WAS All States) and custom stickers with persistent storage in `stickers.json` and `Badges/`.
 - ➕ **Add & Delete Stickers**: Import custom PNG, JPG, SVG, and WebP logos with custom display names; delete unwanted stickers from the collection on hover or via context menu.
 - 📊 **Dynamic Confirmation Table**: Full real-time support for column visibility toggles (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`), custom column header labels, selectable frequency/band display modes (`MHz`, `Band`, `Band + Freq`), and greeting/remarks row.
 - 📐 **Proportional Vector Scaling**: Fully scalable geometry-based vector graphics for all built-in badges to eliminate text clipping or overlapping at any size.
 - 🎯 **True WYSIWYG Scale-Compensated Dragging**: Smooth, jump-free mouse dragging with exact canvas scale compensation.
-- ✏️ **Double-Click Inline Editing**: Direct on-canvas inline text editing activated via double-click without layout shift or position jumps.
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com Callbook Lookup**: Full integration for free HamQTH XML callbook lookups with customizable priority (QRZ Primary + HamQTH Fallback, HamQTH Primary, QRZ Only, HamQTH Only).

@@ -233,14 +233,23 @@ public struct TableElementView: View {
     }
     
     private var remarksText: String {
+        let qComment = activeQSO.comment.trimmingCharacters(in: .whitespacesAndNewlines)
         let elComment = element.tableComment.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If the QSO has an explicitly customized comment:
+        if !qComment.isEmpty && qComment != elComment && qComment != defaultComment && qComment != "73, Thanks for the QSO. I hope to meet you further down the log." {
+            return activeQSO.comment
+        }
+        
+        // Standard template setting from Card Designer:
         if !elComment.isEmpty {
             return element.tableComment
         }
-        let qComment = activeQSO.comment.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         if !qComment.isEmpty {
             return activeQSO.comment
         }
+        
         return defaultComment.isEmpty ? "73, Thanks for the QSO." : defaultComment
     }
 

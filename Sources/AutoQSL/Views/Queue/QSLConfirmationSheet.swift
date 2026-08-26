@@ -403,7 +403,12 @@ public struct QSLConfirmationSheet: View {
         mode = qso.mode
         rstSent = qso.rstSent
         rstRcvd = qso.rstRcvd
-        comment = qso.comment
+        if !qso.comment.isEmpty {
+            comment = qso.comment
+        } else {
+            let tblEl = activeCardTemplate.elements.first(where: { $0.type == .table })
+            comment = (tblEl?.tableComment.isEmpty == false) ? tblEl!.tableComment : appState.settings.defaultComment
+        }
         dxName = qso.dxName
         dxGrid = qso.dxGrid
         dxCountry = qso.dxCountry

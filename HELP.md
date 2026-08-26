@@ -77,7 +77,16 @@ The **QSO Queue** tab displays all incoming, pending, and sent contacts with liv
 - 🟡 **Awaiting Confirmation:** Ready for your review in Preview & Confirm mode.
 - 🟢 **Ready to Send:** Card rendered and recipient email verified.
 - 🚀 **Sent:** Successfully dispatched via email.
-- 🔴 **Failed / Email missing:** Recipient email was not found on QRZ; click "Edit QSO" to enter an email address manually.
+- 🔴 **Failed: Email missing:** Recipient email was not found on QRZ/HamQTH; click "Edit QSO" to enter an email address manually.
+- 🔴 **Failed:** Dispatch error (e.g. SMTP connection or Mail script failure).
+- ⚫ **Skipped / Pending:** Skipped without sending or pending capture.
+
+### Context Menu & Manual Status Assignment
+Right-click any single or multi-selected QSO in the queue to access quick actions:
+- **Confirm & Send Card:** Immediately opens the confirmation dialog.
+- **Lookup in Callbook:** Opens the callsign on QRZ.com or HamQTH.com.
+- **Set Status:** Manually change status to *Ready to Send*, *Awaiting Confirmation*, *Sent*, *Pending*, *Skipped*, *Failed*, or *Failed: Email missing*.
+- **Delete Record:** Permanently removes the contact from queue and SQLite database.
 
 ### Reviewing & Sending Cards (Preview & Confirm)
 1. When a QSO arrives, the **Confirmation Sheet** opens with a 300 DPI preview of the card.
@@ -165,20 +174,20 @@ Open the **Card Designer** tab to create, customize, and manage your QSL card te
 
 | Designer Element | How to Edit | Features & Options |
 | :--- | :--- | :--- |
-| **Callsign Block** | ✅ **Directly on Canvas** (Click and type) | Font family, size, bold/italic, gold 3D bevel extrusion, neon glow, drop shadows |
-| **Address Block** | ✅ **Directly on Canvas** (Click and type) | Multi-line text for station address, alignment (left/center/right), typography |
-| **Custom Text** | ✅ **Directly on Canvas** (Click and type) | Custom remarks, slogans, or template placeholders (e.g. `{MY_CALL}`, `{DX_CALL}`) |
-| **QSO Table** | ⚙️ **Right Sidebar Inspector** | Toggle columns (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`), custom column headers, selectable frequency/band format (`MHz`, `Band`, `Band + Freq`), remarks row, date format & separators, background/border colors & opacity |
-| **Location Line** | ⚙️ **Right Sidebar Inspector** | Automatic placeholders for `GRID`, `ITU`, `CQ`, and `COUNTY` zones |
-| **Stickers & Badges**| 🛡️ **Toolbar Badge Picker** | Badges & Stickers collection: Built-in ARRL Diamond, POTA, SOTA, IOTA, CQ, WAS badges + custom PNG/SVG logo imports, deletion, and 1-click placement |
+| **Callsign Block** | ✅ **Canvas & Mouse Resize** | Double-click to type, drag corner handles to scale font size dynamically, 3D gold extrusion, neon glow, drop shadows |
+| **Address Block** | ✅ **Canvas & Mouse Resize** | Double-click to type, drag corner handles to scale font size, multi-line station address, alignment, typography |
+| **Custom Text** | ✅ **Canvas & Mouse Resize** | Double-click to type, drag corner handles to scale font size, custom remarks or template tags (`{MY_CALL}`, `{DX_CALL}`) |
+| **QSO Table** | ⚙️ **Inspector & Mouse Resize** | Drag side/corner handles to adjust table width live; toggle columns (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`), custom headers, format (`MHz`, `Band`, `Band + Freq`), remarks row, background/border colors & opacity |
+| **Location Line** | ⚙️ **Inspector & Mouse Resize** | Double-click to edit, drag corner handles to scale font size; automatic `{GRID}`, `{ITU}`, `{CQ}`, `{COUNTY}` tags |
+| **Stickers & Badges**| 🛡️ **Badge Picker & Mouse Resize** | Drag corner handles to scale badge dimensions freely; built-in ARRL, POTA, SOTA, IOTA, CQ, WAS badges + custom PNG/SVG logo imports, deletion, and 1-click placement |
 | **Background & Size**| ⚙️ **Right Sidebar Inspector** | Card aspect ratio (Standard QSL `3.5" x 5.5" / 140x90mm`, `4" x 6"`, `16:9`), background image upload, and tint/darken overlays |
 
 ### Step-by-Step Designer Workflow
 1. **Choose or Create a Template:** Select a template from the top dropdown or click `+` to start a new design.
 2. **Set Background:** Click "Background Picture" in the layer list and choose a photo from your Mac (landscape orientation recommended). Adjust the darken slider for text readability.
 3. **Edit Your Callsign:** Double-click your callsign on the canvas (or edit in the sidebar inspector) to type your call. Use the right sidebar to apply 3D gold extrusion or neon glow.
-4. **Position Elements:** Single-click and drag any element smoothly across the canvas to reposition it (with true WYSIWYG scale compensation).
-5. **Add Badges & Stickers:** Click the **Badge** button in the toolbar to open the Badges Collection. Pick from built-in award badges or click **Add Sticker...** to import your club logo.
+4. **Position & Resize Elements:** Single-click and drag any element smoothly across the canvas to reposition it. Click on an element to reveal its **6 resize handles** (4 corners, 2 edges) and drag to resize stickers, adjust table widths, or scale font sizes directly with the mouse.
+5. **Add Badges & Stickers:** Click the **Badge** button in the toolbar to open the Badges Collection. Pick from built-in award badges or click **Add Sticker...** to import your club logo, then scale them with corner handles.
 6. **Format the QSO Table:** Click the table in the layer list. In the inspector, choose which columns to display and select your preferred date format (`DD.MM.YYYY` vs `YYYY.MM.DD`).
 7. **Undo Any Mistake:** Press `⌘Z` (or click the Undo arrow in the toolbar) to revert any design change.
 8. **Preview with Real Data:** Use the "Preview" dropdown in the toolbar to test how your card looks with real QSOs from your log.

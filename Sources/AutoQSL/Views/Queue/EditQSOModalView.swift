@@ -423,7 +423,13 @@ public struct EditQSOModalView: View {
             txPowerWattsText = String(format: "%.0f", pwr)
         }
         
-        comment = originalQSO.comment
+        if !originalQSO.comment.isEmpty {
+            comment = originalQSO.comment
+        } else {
+            let t = appState.template(for: originalQSO)
+            let tblEl = t.elements.first(where: { $0.type == .table })
+            comment = (tblEl?.tableComment.isEmpty == false) ? tblEl!.tableComment : appState.settings.defaultComment
+        }
         selectedTemplateId = originalQSO.templateId
     }
     

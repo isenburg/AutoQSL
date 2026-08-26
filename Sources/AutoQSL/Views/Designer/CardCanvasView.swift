@@ -10,6 +10,7 @@ public struct CardCanvasView: View {
     public let isInteractive: Bool
     @Binding public var selectedElementId: UUID?
     public var onElementMoved: ((UUID, Double, Double) -> Void)?
+    public var onElementResized: ((UUID, Double, Double, Double?) -> Void)?
     public var onElementTextChanged: ((UUID, String) -> Void)?
     
     public init(
@@ -19,6 +20,7 @@ public struct CardCanvasView: View {
         isInteractive: Bool = false,
         selectedElementId: Binding<UUID?> = .constant(nil),
         onElementMoved: ((UUID, Double, Double) -> Void)? = nil,
+        onElementResized: ((UUID, Double, Double, Double?) -> Void)? = nil,
         onElementTextChanged: ((UUID, String) -> Void)? = nil
     ) {
         self.template = template
@@ -27,6 +29,7 @@ public struct CardCanvasView: View {
         self.isInteractive = isInteractive
         self._selectedElementId = selectedElementId
         self.onElementMoved = onElementMoved
+        self.onElementResized = onElementResized
         self.onElementTextChanged = onElementTextChanged
     }
     
@@ -60,6 +63,9 @@ public struct CardCanvasView: View {
                             },
                             onMove: { newNormX, newNormY in
                                 onElementMoved?(element.id, newNormX, newNormY)
+                            },
+                            onResize: { newNormW, newNormH, newFontSize in
+                                onElementResized?(element.id, newNormW, newNormH, newFontSize)
                             },
                             onTextChanged: { newText in
                                 onElementTextChanged?(element.id, newText)
@@ -123,6 +129,7 @@ public struct DraggableElementWrapperView: View {
     public let isSelected: Bool
     public let onSelect: () -> Void
     public let onMove: (Double, Double) -> Void
+    public let onResize: ((Double, Double, Double?) -> Void)?
     public let onTextChanged: (String) -> Void
     
     @State private var dragStartNormX: Double? = nil
@@ -132,17 +139,45 @@ public struct DraggableElementWrapperView: View {
     @State private var isInlineEditing: Bool = false
     @FocusState private var isInlineFieldFocused: Bool
     
+    // Live Resize State
+    @State private var isResizing: Bool = false
+    @State private var resizeStartNormW: Double? = nil
+    @State private var resizeStartNormH: Double? = nil
+    @State private var resizeStartFontSize: Double? = nil
+    @State private var liveResizeDelta: CGSize = .zero
+    
     public var body: some View {
         let posX = (CGFloat(element.normalizedX) * cardWidth) + currentDragOffset.width
         let posY = (CGFloat(element.normalizedY) * cardHeight) + currentDragOffset.height
-        let elWidth = CGFloat(element.normalizedWidth) * cardWidth
-        let elHeight = CGFloat(element.normalizedHeight) * cardHeight
+        
+        let baseElW = CGFloat(element.normalizedWidth) * cardWidth
+        let baseElH = CGFloat(element.normalizedHeight) * cardHeight
+        
+        let elWidth = max(baseElW + liveResizeDelta.width, 24)
+        let elHeight = max(baseElH + liveResizeDelta.height, 16)
+        
+        let currentFontSize: Double = {
+            if isResizing, let startFS = resizeStartFontSize, baseElW > 0 {
+                let factor = Double(elWidth / max(baseElW, 10))
+                return min(max(startFS * factor, 8), 160)
+            }
+            return element.fontSize
+        }()
+        
+        let effectiveElement: CardElement = {
+            var el = element
+            el.fontSize = currentFontSize
+            return el
+        }()
+        
+        let boundingW = max(elWidth, 40)
+        let boundingH = max(elHeight, 24)
         
         ZStack {
             if isInlineEditing && isInteractive && !element.isLocked {
-                inlineEditorView(elWidth: elWidth, elHeight: elHeight)
+                inlineEditorView(element: effectiveElement, elWidth: elWidth, elHeight: elHeight)
             } else {
-                renderElementView(elWidth: elWidth, elHeight: elHeight)
+                renderElementView(element: effectiveElement, elWidth: elWidth, elHeight: elHeight)
             }
         }
         .frame(width: elWidth > 0 ? elWidth : nil, height: elHeight > 0 ? elHeight : nil)
@@ -152,14 +187,11 @@ public struct DraggableElementWrapperView: View {
         .overlay(
             Group {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
-                        .frame(width: max(elWidth, 40) + 12, height: max(elHeight, 24) + 12)
-                        .position(x: posX, y: posY)
+                    selectionAndResizeHandles(posX: posX, posY: posY, w: boundingW, h: boundingH)
                 } else if isHovering && isInteractive && !element.isLocked {
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
-                        .frame(width: max(elWidth, 40) + 8, height: max(elHeight, 24) + 8)
+                        .frame(width: boundingW + 8, height: boundingH + 8)
                         .position(x: posX, y: posY)
                 }
             }
@@ -175,7 +207,7 @@ public struct DraggableElementWrapperView: View {
             }
         }
         .gesture(
-            isInteractive && !element.isLocked && !isInlineEditing ?
+            isInteractive && !element.isLocked && !isInlineEditing && !isResizing ?
             DragGesture(minimumDistance: 1, coordinateSpace: .global)
                 .onChanged { value in
                     if dragStartNormX == nil {
@@ -221,12 +253,121 @@ public struct DraggableElementWrapperView: View {
         )
     }
     
+    @ViewBuilder
+    private func selectionAndResizeHandles(posX: CGFloat, posY: CGFloat, w: CGFloat, h: CGFloat) -> some View {
+        let halfW = (w + 12) / 2.0
+        let halfH = (h + 12) / 2.0
+        
+        ZStack {
+            // Bounding Box
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                .frame(width: w + 12, height: h + 12)
+                .position(x: posX, y: posY)
+            
+            if !element.isLocked {
+                // 1. Bottom-Right (SE) Resize Handle
+                resizeHandleView()
+                    .position(x: posX + halfW, y: posY + halfH)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: 1))
+                
+                // 2. Bottom-Left (SW) Resize Handle
+                resizeHandleView()
+                    .position(x: posX - halfW, y: posY + halfH)
+                    .gesture(makeResizeGesture(axisX: -1, axisY: 1))
+                
+                // 3. Top-Right (NE) Resize Handle
+                resizeHandleView()
+                    .position(x: posX + halfW, y: posY - halfH)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: -1))
+                
+                // 4. Top-Left (NW) Resize Handle
+                resizeHandleView()
+                    .position(x: posX - halfW, y: posY - halfH)
+                    .gesture(makeResizeGesture(axisX: -1, axisY: -1))
+                
+                // 5. Middle-Right (E) Handle (horizontal resize)
+                resizeHandleView(isCircle: false)
+                    .position(x: posX + halfW, y: posY)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: 0))
+                
+                // 6. Middle-Left (W) Handle (horizontal resize)
+                resizeHandleView(isCircle: false)
+                    .position(x: posX - halfW, y: posY)
+                    .gesture(makeResizeGesture(axisX: -1, axisY: 0))
+            }
+        }
+    }
+    
+    private func resizeHandleView(isCircle: Bool = true) -> some View {
+        Group {
+            if isCircle {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 8, height: 8)
+                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 1.5))
+            } else {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.white)
+                    .frame(width: 6, height: 10)
+                    .overlay(RoundedRectangle(cornerRadius: 1.5).stroke(Color.accentColor, lineWidth: 1.5))
+            }
+        }
+        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
+        .contentShape(Rectangle().size(width: 18, height: 18))
+    }
+    
+    private func makeResizeGesture(axisX: CGFloat, axisY: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 1, coordinateSpace: .global)
+            .onChanged { value in
+                if resizeStartNormW == nil {
+                    resizeStartNormW = element.normalizedWidth
+                    resizeStartNormH = element.normalizedHeight
+                    resizeStartFontSize = element.fontSize
+                    isResizing = true
+                }
+                let effectiveScale = max(scale, 0.05)
+                let deltaX = (value.translation.width / effectiveScale) * axisX
+                let deltaY = (value.translation.height / effectiveScale) * (axisY == 0 ? 0 : axisY)
+                
+                liveResizeDelta = CGSize(width: deltaX, height: deltaY)
+            }
+            .onEnded { value in
+                let effectiveScale = max(scale, 0.05)
+                let unscaledW = (value.translation.width / effectiveScale) * axisX
+                let unscaledH = (value.translation.height / effectiveScale) * (axisY == 0 ? 0 : axisY)
+                
+                if let startW = resizeStartNormW, let startH = resizeStartNormH {
+                    let finalNormW = min(max(startW + Double(unscaledW / cardWidth), 0.04), 0.98)
+                    let finalNormH = min(max(startH + Double(unscaledH / cardHeight), 0.03), 0.98)
+                    
+                    var newFontSize: Double? = nil
+                    if isFontScalable(element.type), let startFS = resizeStartFontSize, startW > 0 {
+                        let factor = max((CGFloat(startW) * cardWidth + unscaledW) / max(CGFloat(startW) * cardWidth, 20.0), 0.2)
+                        newFontSize = min(max(startFS * Double(factor), 8.0), 160.0)
+                    }
+                    
+                    onResize?(finalNormW, finalNormH, newFontSize)
+                }
+                
+                liveResizeDelta = .zero
+                resizeStartNormW = nil
+                resizeStartNormH = nil
+                resizeStartFontSize = nil
+                isResizing = false
+            }
+    }
+    
+    private func isFontScalable(_ type: ElementType) -> Bool {
+        return type == .callsign || type == .address || type == .text || type == .locationFooter
+    }
+    
     private func isDirectlyEditable(_ type: ElementType) -> Bool {
         return type == .callsign || type == .address || type == .text || type == .locationFooter
     }
     
     @ViewBuilder
-    private func inlineEditorView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
+    private func inlineEditorView(element: CardElement, elWidth: CGFloat, elHeight: CGFloat) -> some View {
         switch element.type {
         case .callsign:
             TextField("", text: Binding(
@@ -293,12 +434,12 @@ public struct DraggableElementWrapperView: View {
             .onAppear { isInlineFieldFocused = true }
             
         default:
-            renderElementView(elWidth: elWidth, elHeight: elHeight)
+            renderElementView(element: element, elWidth: elWidth, elHeight: elHeight)
         }
     }
     
     @ViewBuilder
-    private func renderElementView(elWidth: CGFloat, elHeight: CGFloat) -> some View {
+    private func renderElementView(element: CardElement, elWidth: CGFloat, elHeight: CGFloat) -> some View {
         switch element.type {
         case .callsign:
             CallsignElementView(element: element, myCallsign: settings.myCallsign)

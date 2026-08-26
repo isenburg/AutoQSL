@@ -27,9 +27,9 @@ public struct QSOQueueView: View {
             
             switch filterMode {
             case .all: return true
-            case .awaiting: return qso.status == .awaitingConfirmation || qso.status == .readyToSend || qso.status == .lookingUpQRZ
+            case .awaiting: return qso.status == .pending || qso.status == .readyToSend || qso.status == .awaitingConfirmation || qso.status == .lookingUpQRZ
             case .sent: return qso.status == .sent
-            case .failed: return qso.status == .failed || qso.status == .skipped
+            case .failed: return qso.status == .failed || qso.status == .failedEmailMissing || qso.status == .skipped
             }
         }
     }
@@ -106,6 +106,47 @@ public struct QSOQueueView: View {
                                         Button("Send \(appState.selectedQSOIds.count) Selected") {
                                             sendSelectedQSOs()
                                         }
+                                        
+                                        Menu("Set Status for \(appState.selectedQSOIds.count) Selected") {
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .readyToSend)
+                                            } label: {
+                                                Label("Ready to Send", systemImage: QSOStatus.readyToSend.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .awaitingConfirmation)
+                                            } label: {
+                                                Label("Awaiting Confirmation", systemImage: QSOStatus.awaitingConfirmation.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .sent)
+                                            } label: {
+                                                Label("Sent", systemImage: QSOStatus.sent.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .pending)
+                                            } label: {
+                                                Label("Pending", systemImage: QSOStatus.pending.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .skipped)
+                                            } label: {
+                                                Label("Skipped", systemImage: QSOStatus.skipped.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .failedEmailMissing)
+                                            } label: {
+                                                Label("Failed: Email missing", systemImage: QSOStatus.failedEmailMissing.iconName)
+                                            }
+                                            Button {
+                                                appState.setBatchQSOStatus(qsoIds: appState.selectedQSOIds, status: .failed)
+                                            } label: {
+                                                Label("Failed", systemImage: QSOStatus.failed.iconName)
+                                            }
+                                        }
+                                        
+                                        Divider()
+                                        
                                         Button("Delete \(appState.selectedQSOIds.count) Selected", role: .destructive) {
                                             appState.deleteQSOs(qsoIds: appState.selectedQSOIds)
                                         }
@@ -117,6 +158,68 @@ public struct QSOQueueView: View {
                                         Button("Lookup in Callbook (\(callbookProviderName))") {
                                             openCallbook(for: qso.dxCall)
                                         }
+                                        
+                                        Menu("Set Status") {
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .readyToSend)
+                                            } label: {
+                                                HStack {
+                                                    Label("Ready to Send", systemImage: QSOStatus.readyToSend.iconName)
+                                                    if qso.status == .readyToSend { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .awaitingConfirmation)
+                                            } label: {
+                                                HStack {
+                                                    Label("Awaiting Confirmation", systemImage: QSOStatus.awaitingConfirmation.iconName)
+                                                    if qso.status == .awaitingConfirmation { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .sent)
+                                            } label: {
+                                                HStack {
+                                                    Label("Sent", systemImage: QSOStatus.sent.iconName)
+                                                    if qso.status == .sent { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .pending)
+                                            } label: {
+                                                HStack {
+                                                    Label("Pending", systemImage: QSOStatus.pending.iconName)
+                                                    if qso.status == .pending { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .skipped)
+                                            } label: {
+                                                HStack {
+                                                    Label("Skipped", systemImage: QSOStatus.skipped.iconName)
+                                                    if qso.status == .skipped { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .failedEmailMissing)
+                                            } label: {
+                                                HStack {
+                                                    Label("Failed: Email missing", systemImage: QSOStatus.failedEmailMissing.iconName)
+                                                    if qso.status == .failedEmailMissing { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                            Button {
+                                                appState.setQSOStatus(qsoId: qso.id, status: .failed)
+                                            } label: {
+                                                HStack {
+                                                    Label("Failed", systemImage: QSOStatus.failed.iconName)
+                                                    if qso.status == .failed { Image(systemName: "checkmark") }
+                                                }
+                                            }
+                                        }
+                                        
+                                        Divider()
+                                        
                                         Button("Delete Record", role: .destructive) {
                                             appState.deleteQSO(qsoId: qso.id)
                                         }
@@ -260,7 +363,7 @@ public struct QSOQueueView: View {
                     
                     Spacer()
                     
-                    Text(qso.status.rawValue)
+                    Text(qso.status == .failedEmailMissing ? "Failed" : qso.status.rawValue)
                         .font(.caption2.bold())
                         .foregroundColor(statusColor(qso.status))
                 }
@@ -273,7 +376,15 @@ public struct QSOQueueView: View {
                     
                     Spacer()
                     
-                    if qso.status == .failed, let msg = qso.statusMessage {
+                    if qso.status == .failedEmailMissing {
+                        Text("Email missing")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.red)
+                            .cornerRadius(4)
+                    } else if qso.status == .failed, let msg = qso.statusMessage {
                         Text(msg)
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
@@ -319,7 +430,7 @@ public struct QSOQueueView: View {
         case .awaitingConfirmation: return .orange
         case .sending: return .indigo
         case .sent: return .green
-        case .failed: return .red
+        case .failed, .failedEmailMissing: return .red
         case .skipped: return .gray
         }
     }
