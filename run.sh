@@ -49,6 +49,12 @@ if [ $? -eq 0 ]; then
     if [ -f "Resources/AppIcon.icns" ]; then
         cp "Resources/AppIcon.icns" "$RESOURCES_DIR/"
     fi
+    # Copy any SPM resource bundles if present
+    for b in .build/debug/*.bundle; do
+        if [ -d "$b" ]; then
+            cp -R "$b" "$RESOURCES_DIR/"
+        fi
+    done
     
     cat > "$CONTENTS_DIR/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -81,6 +87,13 @@ EOF
 
     echo "Signiere App-Bundle ad-hoc..."
     codesign --force --deep --sign - "$BUNDLE_DIR"
+
+    # If /Applications/AFU exists, update the installed copy too
+    if [ -d "/Applications/AFU" ]; then
+        echo "Aktualisiere /Applications/AFU/AutoQSL.app..."
+        rm -rf "/Applications/AFU/AutoQSL.app"
+        cp -R "$BUNDLE_DIR" "/Applications/AFU/"
+    fi
 
     echo "Starte ${BUNDLE_DIR}..."
     open "$BUNDLE_DIR"

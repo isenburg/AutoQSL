@@ -128,11 +128,22 @@ public final class PersistenceService {
     ) -> [QSLCardTemplate] {
         let loc = location ?? currentStorageLocation()
         let targetURL = storageDirectory(for: loc).appendingPathComponent("templates.json")
+        let builtins = QSLCardTemplate.defaultBuiltinTemplates(myCall: myCall, myAddress: myAddress)
         
         if let data = try? Data(contentsOf: targetURL),
            let templates = try? decoder.decode([QSLCardTemplate].self, from: data),
            !templates.isEmpty {
-            return templates
+            var result = templates
+            // Ensure built-in templates (Sonnenuntergang, Bonanza, Standard) are never lost
+            for b in builtins {
+                if !result.contains(where: { $0.name == b.name }) {
+                    result.append(b)
+                }
+            }
+            if result.count > templates.count {
+                saveTemplates(result, to: loc)
+            }
+            return result
         }
         
         // Fallback to local if iCloud templates not yet populated
@@ -141,14 +152,19 @@ public final class PersistenceService {
             if let data = try? Data(contentsOf: localURL),
                let templates = try? decoder.decode([QSLCardTemplate].self, from: data),
                !templates.isEmpty {
-                saveTemplates(templates, to: .iCloud)
-                return templates
+                var result = templates
+                for b in builtins {
+                    if !result.contains(where: { $0.name == b.name }) {
+                        result.append(b)
+                    }
+                }
+                saveTemplates(result, to: .iCloud)
+                return result
             }
         }
         
-        let defaultTemplate = QSLCardTemplate.createDefaultTemplate(myCall: myCall, myAddress: myAddress)
-        saveTemplates([defaultTemplate], to: loc)
-        return [defaultTemplate]
+        saveTemplates(builtins, to: loc)
+        return builtins
     }
     
     public func saveTemplates(_ templates: [QSLCardTemplate], to location: StorageLocation? = nil) {

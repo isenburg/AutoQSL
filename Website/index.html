@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoQSL – Die automatische QSL-Karten Software für macOS | GLOMATEC GmbH</title>
+  <meta name="description" content="AutoQSL für macOS: Vollautomatische Erstellung und Zustellung von elektronischen 300-DPI QSL-Karten via UDP aus WSJT-X, JTDX, RUMlogNG und MacLoggerDX mit QRZ.com-Abfrage und Direktdruck.">
+  <meta name="keywords" content="AutoQSL, QSL-Karte, Amateurfunk, WSJT-X, JTDX, RUMlogNG, MacLoggerDX, QRZ.com, HamQTH, macOS, DARC, ARRL, POTA, WWFF">
+  <meta name="author" content="GLOMATEC GmbH, 22765 Hamburg">
+  
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:title" content="AutoQSL – Elektronische QSL-Karten in Sekunden. Vollautomatisch.">
+  <meta property="og:description" content="Die moderne macOS-App für Funkamateure: QSL-Karten per UDP empfangen, im 300-DPI Designer gestalten, per Mail versenden oder direkt drucken.">
+  <meta property="og:image" content="https://www.vecando.com/Software/AutoQSL/assets/app-screenshot-designer.png">
+  <meta property="og:url" content="https://www.vecando.com/Software/AutoQSL/">
+  <meta property="og:type" content="website">
+
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+  <!-- Favicon & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="nav-brand">
+        <img src="assets/app-icon.svg" alt="AutoQSL Icon" class="app-icon-img">
+        <span>AutoQSL</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features" data-i18n="navFeatures">Funktionen</a></li>
+        <li><a href="#designer" data-i18n="navDesigner">QSL-Designer</a></li>
+        <li><a href="#workflow" data-i18n="navWorkflow">Ablauf</a></li>
+        <li><a href="#gallery" data-i18n="navGallery">Screenshots</a></li>
+        <li><a href="#pricing" data-i18n="navPricing">Preise</a></li>
+        <li><a href="#faq" data-i18n="navFaq">FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="lang-btn" onclick="toggleLanguage()" id="langToggle">
+          <i class="fa-solid fa-globe"></i>
+          <span id="langBtnText">🇩🇪 Deutsch</span>
+        </button>
+        <a href="#pricing" class="btn btn-primary btn-sm" data-i18n="ctaAppStore">Im Mac App Store</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <i class="fa-brands fa-apple"></i>
+        <span data-i18n="heroTag">Version 2.0 für macOS</span>
+      </div>
+
+      <h1 class="hero-title">
+        <span class="gradient-text" data-i18n="heroTitle">Elektronische QSL-Karten in Sekunden. Vollautomatisch.</span>
+      </h1>
+
+      <p class="hero-subtitle" data-i18n="heroSubtitle">
+        Die moderne macOS-App für Funkamateure. Lauscht per UDP auf WSJT-X, JTDX & Logger, gestaltet 300-DPI Druckkarten, fragt QRZ.com ab und versendet fertige QSL-Karten per E-Mail oder druckt direkt auf Postkarten.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="#pricing" class="btn btn-primary">
+          <i class="fa-brands fa-apple"></i>
+          <span data-i18n="ctaAppStore">Im Mac App Store laden</span>
+        </a>
+        <a href="#features" class="btn btn-secondary">
+          <i class="fa-solid fa-compass"></i>
+          <span data-i18n="ctaFeatures">Funktionen entdecken</span>
+        </a>
+      </div>
+
+      <!-- Hero Card Showcase -->
+      <div class="hero-preview-wrapper" onclick="openLightbox('assets/app-screenshot-designer.png', 'AutoQSL 300-DPI QSL Card Designer')">
+        <img src="assets/app-screenshot-designer.png" alt="AutoQSL Live Canvas Designer Preview" class="hero-preview-img">
+      </div>
+
+      <!-- Quick Feature Pill Tags -->
+      <div class="pill-grid">
+        <div class="pill-chip"><i class="fa-solid fa-bolt"></i> <span>UDP Listener</span> (Port 2237 / 2333)</div>
+        <div class="pill-chip"><i class="fa-solid fa-palette"></i> <span>300 DPI Designer</span> (macOS Font Panel)</div>
+        <div class="pill-chip"><i class="fa-solid fa-address-book"></i> <span>QRZ.com & HamQTH</span> XML Lookup</div>
+        <div class="pill-chip"><i class="fa-solid fa-paper-plane"></i> <span>SMTP & Apple Mail</span> Automation</div>
+        <div class="pill-chip"><i class="fa-solid fa-print"></i> <span>Direktdruck</span> (⌘P Postkarten)</div>
+        <div class="pill-chip"><i class="fa-solid fa-shield-halved"></i> <span>100% DSGVO & iCloud</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento Grid Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" data-i18n="bentoHeaderTag">Leistungsmerkmale</div>
+        <h2 class="section-title" data-i18n="bentoHeaderTitle">Alles, was der moderne Funkamateur braucht.</h2>
+        <p class="section-desc" data-i18n="bentoHeaderDesc">Keine manuellen Exporte, keine mühsame Bildbearbeitung. AutoQSL integriert sich nahtlos in dein macOS-Shack.</p>
+      </div>
+
+      <div class="bento-grid">
+        <!-- Feature 1: UDP Broadcast Listener -->
+        <div class="bento-card span-2">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-network-wired"></i></div>
+            <h3 class="card-title" data-i18n="bento1Title">Zero-Click UDP Listener</h3>
+            <p class="card-desc" data-i18n="bento1Desc">Lauscht im Hintergrund auf Port 2237 / 2333. Sobald du ein QSO in WSJT-X, JTDX, RUMlogNG oder MacLoggerDX loggst, übernimmt AutoQSL alle Daten sofort.</p>
+          </div>
+          <ul class="card-feature-list">
+            <li><i class="fa-solid fa-check"></i> WSJT-X & JTDX Broadcast Decoding</li>
+            <li><i class="fa-solid fa-check"></i> RUMlogNG & MacLoggerDX Logging Trigger</li>
+            <li><i class="fa-solid fa-check"></i> ADIF & Manuelle QSO-Eingabe</li>
+          </ul>
+        </div>
+
+        <!-- Feature 2: Callbook Lookups -->
+        <div class="bento-card">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-magnifyingglass"></i></div>
+            <h3 class="card-title" data-i18n="bento3Title">Automatische Callbook-Abfragen</h3>
+            <p class="card-desc" data-i18n="bento3Desc">Echtzeit-Abfrage von QRZ.com (XML API) und HamQTH.com für E-Mail-Adressen, Namen, QTH und Zonen-Daten.</p>
+          </div>
+          <ul class="card-feature-list">
+            <li><i class="fa-solid fa-check"></i> QRZ.com XML API Abfrage</li>
+            <li><i class="fa-solid fa-check"></i> Kostenloser HamQTH.com Support</li>
+          </ul>
+        </div>
+
+        <!-- Feature 3: Visual 300-DPI Designer -->
+        <div id="designer" class="bento-card span-2">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <h3 class="card-title" data-i18n="bento2Title">Visueller 300-DPI QSL Designer</h3>
+            <p class="card-desc" data-i18n="bento2Desc">Echte Gestaltungsfreiheit: Drag & Drop, 6 interaktive Anfasser, macOS System-Schriften, Gold- & 3D-Effekte, transparente Hintergründe und offizielle Verbands-Badges (DARC, ARRL, POTA, WWFF, IOTA, SOTA).</p>
+          </div>
+          <ul class="card-feature-list">
+            <li><i class="fa-solid fa-check"></i> Standard QSL (3.5×5.5" / 140×90mm), 4×6" und 16:9</li>
+            <li><i class="fa-solid fa-check"></i> Integrierte Badges: DARC, ARRL, POTA, WWFF, IOTA, SOTA</li>
+            <li><i class="fa-solid fa-check"></i> Eigene PNG-Logos & Flugzeug-/Stations-Fotos</li>
+          </ul>
+        </div>
+
+        <!-- Feature 4: Delivery Options -->
+        <div class="bento-card">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+            <h3 class="card-title" data-i18n="bento4Title">Multi-Kanal E-Mail-Versand</h3>
+            <p class="card-desc" data-i18n="bento4Desc">Versende QSL-Karten direkt per integriertem SMTP oder vollautomatisch über Apple Mail mit personalisiertem Text.</p>
+          </div>
+          <ul class="card-feature-list">
+            <li><i class="fa-solid fa-check"></i> Direkter SMTP-Versand</li>
+            <li><i class="fa-solid fa-check"></i> Apple Mail Automation</li>
+          </ul>
+        </div>
+
+        <!-- Feature 5: Direct Printing -->
+        <div class="bento-card">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-print"></i></div>
+            <h3 class="card-title" data-i18n="bento5Title">Direkter Postkarten-Druck (⌘P)</h3>
+            <p class="card-desc" data-i18n="bento5Desc">Drucke hochauflösende QSL-Karten direkt auf deinen Fotodrucker oder Postkartenkarton im macOS-Druckerdialog.</p>
+          </div>
+        </div>
+
+        <!-- Feature 6: Privacy & iCloud -->
+        <div class="bento-card span-2">
+          <div>
+            <div class="card-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <h3 class="card-title" data-i18n="bento6Title">100% Private iCloud Synchronisation</h3>
+            <p class="card-desc" data-i18n="bento6Desc">Keine Drittanbieter-Server. Alle Einstellungen, Vorlagen und Logs verbleiben verschlüsselt auf deinem Mac und im persönlichen iCloud Drive.</p>
+          </div>
+          <ul class="card-feature-list">
+            <li><i class="fa-solid fa-check"></i> Nahtloser Sync zwischen iMac & MacBook</li>
+            <li><i class="fa-solid fa-check"></i> Keine Nutzer-Telemetrie oder Werbe-Tracker</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workflow Section -->
+  <section id="workflow" class="section" style="background: rgba(18, 22, 31, 0.4);">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" data-i18n="workflowTag">Workflow</div>
+        <h2 class="section-title" data-i18n="workflowTitle">In 4 Schritten zur perfekten QSL-Karte</h2>
+      </div>
+
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="step-number">1</div>
+          <h4 data-i18n="step1Title">1. QSO loggen</h4>
+          <p data-i18n="step1Desc">QSO wie gewohnt in WSJT-X, JTDX oder deinem Logger speichern.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="step-number">2</div>
+          <h4 data-i18n="step2Title">2. Auto-Erkennung</h4>
+          <p data-i18n="step2Desc">AutoQSL empfängt die Daten per UDP und ermittelt Mail & Name via QRZ.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="step-number">3</div>
+          <h4 data-i18n="step3Title">3. Karte generieren</h4>
+          <p data-i18n="step3Desc">Deine individuelle Kartenvorlage wird mit echten QSO-Daten gerendert.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="step-number">4</div>
+          <h4 data-i18n="step4Title">4. Senden oder Drucken</h4>
+          <p data-i18n="step4Desc">Automatischer Versand per E-Mail oder 1-Klick Papier-Druck (⌘P).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section id="gallery" class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Screenshots</div>
+        <h2 class="section-title">Elegantes macOS Interface</h2>
+      </div>
+
+      <div class="gallery-grid">
+        <div class="gallery-item" onclick="openLightbox('assets/app-screenshot-designer.png', 'Visueller QSL-Karten Designer mit Live-Canvas')">
+          <img src="assets/app-screenshot-designer.png" alt="Card Designer" class="gallery-img">
+          <div class="gallery-caption">300-DPI QSL-Karten Designer mit Live-Inspektor</div>
+        </div>
+
+        <div class="gallery-item" onclick="openLightbox('assets/app-screenshot-detail.png', 'QSO-Queue & Detailansicht mit Sendehistorie')">
+          <img src="assets/app-screenshot-detail.png" alt="QSO Detail Pane" class="gallery-img">
+          <div class="gallery-caption">QSO-Detailansicht, Callbook-Lookup & Druckfunktion</div>
+        </div>
+
+        <div class="gallery-item" onclick="openLightbox('assets/hero-card.png', 'Generierte QSL-Karte DJ6GI Beech Bonanza')">
+          <img src="assets/hero-card.png" alt="Bonanza QSL Card" class="gallery-img">
+          <div class="gallery-caption">Generierte QSL-Karte (300 DPI Druckqualität)</div>
+        </div>
+
+        <div class="gallery-item" onclick="openLightbox('assets/app-screenshot-main.png', 'AutoQSL Warteschlange & Übersicht')">
+          <img src="assets/app-screenshot-main.png" alt="AutoQSL Main Queue" class="gallery-img">
+          <div class="gallery-caption">Echtzeit-Warteschlange mit Bestätigungs-Status</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="section" style="background: rgba(18, 22, 31, 0.4);">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" data-i18n="pricingTag">Faires Preismodell</div>
+        <h2 class="section-title" data-i18n="pricingTitle">Voller Funktionsumfang. Ein transparenter Preis.</h2>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-badge">MAC APP STORE</div>
+        <div class="price-val">4,99 €</div>
+        <div class="price-sub" data-i18n="priceSub">4,99 € / Jahr (inkl. gesetzl. MwSt.)</div>
+
+        <ul class="pricing-features">
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF1">Unbegrenzte QSL-Karten & Vorlagen</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF2">UDP Listener für WSJT-X, JTDX, RUMlogNG, MacLoggerDX</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF3">QRZ.com & HamQTH.com XML-Schnittstellen</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF4">SMTP-Versand & Apple Mail Automation</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF5">300 DPI QSL-Designer & Direktdruck (⌘P)</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF6">iCloud Sync zwischen mehreren Macs</span></li>
+          <li><i class="fa-solid fa-check"></i> <span data-i18n="priceF7">Alle zukünftigen Updates & neue Badges inklusive</span></li>
+        </ul>
+
+        <a href="#" class="btn btn-primary" style="width: 100%;">
+          <i class="fa-brands fa-apple"></i>
+          <span data-i18n="ctaAppStore">Im Mac App Store laden</span>
+        </a>
+
+        <div class="pricing-legal-notice" data-i18n="priceNote">
+          Abrechnung jährlich über deine Apple-ID im Mac App Store. Jederzeit mit einem Klick in den macOS-Account-Einstellungen kündbar. Preisangabe inkl. der jeweils gültigen gesetzlichen Mehrwertsteuer.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" data-i18n="faqTag">Häufige Fragen</div>
+        <h2 class="section-title" data-i18n="faqTitle">Fragen & Antworten</h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Wie funktioniert die Einbindung mit WSJT-X oder JTDX?</span>
+            <i class="fa-solid fa-chevron-down faq-icon"></i>
+          </div>
+          <div class="faq-answer">
+            AutoQSL lauscht automatisch auf dem Standard-UDP-Port 2237. In den WSJT-X-Einstellungen unter „Reporting“ muss lediglich das Häkchen bei „Enable logged ADIF broadcast“ gesetzt sein. Sobald du ein QSO mit „OK“ abschließt, erscheint es sofort in AutoQSL.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Benötige ich ein kostenpflichtiges QRZ.com-Abonnement?</span>
+            <i class="fa-solid fa-chevron-down faq-icon"></i>
+          </div>
+          <div class="faq-answer">
+            Für die direkte XML-API-Abfrage von QRZ.com wird ein QRZ XML-Datenabonnement benötigt. Alternativ unterstützt AutoQSL auch das kostenlose HamQTH.com-Callbook, das ebenfalls E-Mail-Adressen und Operator-Namen liefert.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Kann ich fertige Karten auf Postkartenkarton drucken?</span>
+            <i class="fa-solid fa-chevron-down faq-icon"></i>
+          </div>
+          <div class="faq-answer">
+            Ja! Mit dem Tastaturkürzel ⌘P oder der Schaltfläche „Drucken...“ öffnet sich der Standard macOS-Druckdialog. Die Karte wird in hochauflösender 300-DPI-Qualität an deinen Drucker übergeben (Standard-QSL 3.5×5.5 Zoll oder 4×6 Zoll).
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Wo erhalte ich Support bei Fragen?</span>
+            <i class="fa-solid fa-chevron-down faq-icon"></i>
+          </div>
+          <div class="faq-answer">
+            Technischer Support erfolgt direkt aus der App heraus über den E-Mail-Support-Button unter <em>Hilfe > Support & Feedback</em>. Dabei kann optional ein anonymer Systembericht zur schnellen Diagnose beigefügt werden.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>AutoQSL</h4>
+          <p>Die moderne Mac-Software für elektronische QSL-Karten.</p>
+          <p style="margin-top: 12px; font-size: 0.85rem;">
+            Anbieter: <strong>GLOMATEC GmbH</strong><br>
+            22765 Hamburg, Deutschland
+          </p>
+        </div>
+
+        <div class="footer-links">
+          <h5>Produkt</h5>
+          <ul>
+            <li><a href="#features">Funktionen</a></li>
+            <li><a href="#designer">QSL-Designer</a></li>
+            <li><a href="#workflow">Workflow</a></li>
+            <li><a href="#pricing">Preise</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links">
+          <h5>Support</h5>
+          <ul>
+            <li><a href="#faq">FAQ</a></li>
+            <li><span style="color: var(--text-dim);">Support via App (Hilfe-Button)</span></li>
+          </ul>
+        </div>
+
+        <div class="footer-links">
+          <h5>Rechtliches</h5>
+          <ul>
+            <li><a href="javascript:void(0)" onclick="openModal('impressumModal')">Impressum (§ 5 DDG)</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('datenschutzModal')">Datenschutz (DSGVO)</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('disclaimerModal')">Haftungsausschluss & Marken</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div data-i18n="footerCopyright">© 2024–2026 GLOMATEC GmbH, 22765 Hamburg. Entwickelt von Georg Isenbürger (DJ6GI).</div>
+        <div style="display: flex; gap: 16px;">
+          <a href="javascript:void(0)" onclick="openModal('impressumModal')" style="color: var(--text-dim); text-decoration: none;">Impressum</a>
+          <a href="javascript:void(0)" onclick="openModal('datenschutzModal')" style="color: var(--text-dim); text-decoration: none;">Datenschutz</a>
+          <a href="javascript:void(0)" onclick="openModal('disclaimerModal')" style="color: var(--text-dim); text-decoration: none;">Markenrechte</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox Modal -->
+  <div id="lightboxModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('lightboxModal')">&times;</button>
+      <img id="lightboxImg" src="" alt="Enlarged screenshot">
+      <div id="lightboxCaption" style="margin-top: 16px; color: var(--text-main); font-weight: 600;"></div>
+    </div>
+  </div>
+
+  <!-- Impressum Modal -->
+  <div id="impressumModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('impressumModal')">&times;</button>
+      <h2>Impressum</h2>
+      <p style="margin-top: 8px; color: var(--text-muted);">Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG) / ehem. TMG:</p>
+      <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+      
+      <h4>Diensteanbieter:</h4>
+      <p>
+        <strong>GLOMATEC GmbH</strong><br>
+        22765 Hamburg<br>
+        Deutschland
+      </p>
+      
+      <h4 style="margin-top: 16px;">Vertretungsberechtigter Geschäftsführer:</h4>
+      <p>Georg Isenbürger</p>
+
+      <h4 style="margin-top: 16px;">Kontakt:</h4>
+      <p>
+        E-Mail: info@vecando.com / gi@av8r.de<br>
+        Webseite: www.vecando.com/Software/AutoQSL
+      </p>
+
+      <h4 style="margin-top: 16px;">Support-Hinweis:</h4>
+      <p style="color: var(--text-muted);">
+        Der technische Support für AutoQSL erfolgt ausschließlich direkt über die Anwendung über den Menüpunkt <em>Hilfe & Doku &gt; Support & Feedback &gt; E-Mail an Entwickler</em>.
+      </p>
+
+      <h4 style="margin-top: 16px;">EU-Streitschlichtung:</h4>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" style="color: var(--accent-cyan);">https://ec.europa.eu/consumers/odr/</a>.<br>
+        Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+      </p>
+    </div>
+  </div>
+
+  <!-- Datenschutz Modal -->
+  <div id="datenschutzModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('datenschutzModal')">&times;</button>
+      <h2>Datenschutzerklärung</h2>
+      <p style="margin-top: 8px; color: var(--text-muted);">Informationen zur Datenverarbeitung nach Art. 13 DSGVO</p>
+      <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+      
+      <h4>1. Grundsatz der lokalen Datenverarbeitung:</h4>
+      <p>
+        Die Software <strong>AutoQSL</strong> speichert alle Zugangsdaten, Passwörter, Logbuch-Einträge und Kartenvorlagen ausschließlich lokal auf Ihrem Endgerät bzw. in Ihrem persönlichen, verschlüsselten Apple iCloud Drive. Es werden keinerlei Benutzerdaten an Server von GLOMATEC übertragen.
+      </p>
+
+      <h4 style="margin-top: 16px;">2. Keine Tracking-Cookies auf dieser Webseite:</h4>
+      <p>
+        Diese Produkt-Webseite verwendet keinerlei Tracking-Cookies, Werbe-Pixel oder Analyse-Frameworks (kein Google Analytics, keine Facebook-Pixel).
+      </p>
+
+      <h4 style="margin-top: 16px;">3. Server-Logfiles:</h4>
+      <p>
+        Beim Aufruf dieser Webseite werden durch den Webserver technisch notwendige Zugriffsdaten erhoben (IP-Adresse in anonymisierter Form, Browsertyp, Betriebssystem, Referrer URL und Uhrzeit des Abrufs), um die Betriebssicherheit der Webseite nach Art. 6 Abs. 1 lit. f DSGVO zu gewährleisten.
+      </p>
+
+      <h4 style="margin-top: 16px;">4. Externe Dienste in der App:</h4>
+      <p>
+        Verbindungen zu externen Diensten (z.B. QRZ.com, HamQTH.com, eigene SMTP-Mailserver) werden von der App ausschließlich auf Ihre direkte Anweisung hin aufgebaut, um Callbook-Daten abzufragen oder QSL-Karten zu versenden.
+      </p>
+    </div>
+  </div>
+
+  <!-- Disclaimer & Marken Modal -->
+  <div id="disclaimerModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('disclaimerModal')">&times;</button>
+      <h2>Rechtlicher Disclaimer & Markenschutz</h2>
+      <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+      
+      <h4>Haftungsausschluss (Limitation of Liability):</h4>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">
+        Die Software AutoQSL wird „WIE BESEHEN“ („AS IS“) und ohne Gewährleistung jeglicher Art bereitgestellt. Der Anbieter übernimmt keine Haftung für direkte oder indirekte Schäden, Datenverluste, E-Mail-Fehlzustellungen, Spam-Filterung oder Logbuch-Inkonsistenzen, die aus der Nutzung der Software resultieren. Die Nutzung erfolgt auf eigene Verantwortung des Funkamateurs.
+      </p>
+
+      <h4 style="margin-top: 16px;">Drittanbieter-Marken & Urheberrechte:</h4>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">
+        AutoQSL ist ein eigenständiges Softwareprodukt der GLOMATEC GmbH. Alle genannten Produktnamen, Marken und Logos sind Eigentum der jeweiligen Inhaber und dienen ausschließlich der technischen Kompatibilitätsbeschreibung:
+      </p>
+      <ul style="margin: 12px 0 0 20px; font-size: 0.85rem; color: var(--text-muted);">
+        <li><strong>RUMlogNG / RUMlog:</strong> Copyright © Thomas Lindner (DL2RUM). Eigenständiges Produkt.</li>
+        <li><strong>MacLoggerDX:</strong> Copyright © Dog Park Software Ltd. / Don Agro (VE3VRW). Eigenständiges Produkt.</li>
+        <li><strong>WSJT-X / JTDX:</strong> Copyright © Joe Taylor (K1JT), Steve Franke (K9AN), Bill Somerville (G4WJS) et al.</li>
+        <li><strong>QRZ.com:</strong> Eingetragene Marke der QRZ LLC (Fred Lloyd, AA7BQ).</li>
+        <li><strong>HamQTH.com:</strong> Callbook-Dienst von Petr Hlozek (OK2CQR).</li>
+        <li><strong>DARC / ARRL / POTA / WWFF / IOTA / SOTA:</strong> Embleme und Aktivitätsabzeichen sind Eigentum der jeweiligen Amateurfunkorganisationen (DARC e.V., ARRL Inc., RSGB IOTA Ltd., POTA, WWFF, SOTA).</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
