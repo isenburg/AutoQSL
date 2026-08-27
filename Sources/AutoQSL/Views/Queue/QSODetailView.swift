@@ -12,6 +12,33 @@ public struct QSODetailView: View {
         appState.template(for: qso)
     }
     
+    private var renderedCardImage: NSImage? {
+        if let path = qso.generatedCardPath, FileManager.default.fileExists(atPath: path) {
+            if let img = NSImage(contentsOfFile: path) {
+                return img
+            }
+        }
+        // Search in RenderedCards directory for matching image
+        let cleanCall = qso.dxCall.replacingOccurrences(of: "/", with: "_")
+        let dirs = [
+            PersistenceService.shared.renderedCardsDirectory,
+            PersistenceService.shared.iCloudRenderedCardsDirectory,
+            PersistenceService.shared.localRenderedCardsDirectory
+        ]
+        for dir in dirs {
+            if let files = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
+                let matches = files.filter { $0.contains("QSL_\(cleanCall)") || $0.contains("QSL_\(cleanCall)_") }
+                if let bestMatch = matches.sorted().last {
+                    let fullPath = dir.appendingPathComponent(bestMatch).path
+                    if let img = NSImage(contentsOfFile: fullPath) {
+                        return img
+                    }
+                }
+            }
+        }
+        return nil
+    }
+    
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -138,34 +165,64 @@ public struct QSODetailView: View {
                     
                     let previewWidth: CGFloat = 520
                     let previewHeight: CGFloat = previewWidth / CGFloat(cardTemplate.aspectRatio.aspectRatio)
+                    let isAlreadySent = (qso.status == .sent)
+                    let sentImage = (isAlreadySent ? renderedCardImage : nil)
                     
                     Button(action: {
                         CardZoomWindowManager.shared.present(template: cardTemplate, settings: appState.settings, qso: qso)
                     }) {
                         ZStack(alignment: .bottomTrailing) {
-                            CardCanvasView(
-                                template: cardTemplate,
-                                settings: appState.settings,
-                                qso: qso,
-                                isInteractive: false
-                            )
-                            .frame(width: previewWidth, height: previewHeight)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                            )
-                            .shadow(radius: 4)
+                            if let img = sentImage {
+                                Image(nsImage: img)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: previewWidth, height: previewHeight)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.green.opacity(0.4), lineWidth: 1.5)
+                                    )
+                                    .shadow(radius: 4)
+                            } else {
+                                CardCanvasView(
+                                    template: cardTemplate,
+                                    settings: appState.settings,
+                                    qso: qso,
+                                    isInteractive: false
+                                )
+                                .frame(width: previewWidth, height: previewHeight)
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                )
+                                .shadow(radius: 4)
+                            }
                             
-                            HStack(spacing: 4) {
-                                Image(systemName: "magnifyingglass")
-                                Text(L10n.Detail.clickToZoom(appState.settings.appLanguage))
+                            HStack(spacing: 6) {
+                                if sentImage != nil {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .foregroundColor(.green)
+                                        Text(appState.settings.appLanguage == .german ? "Gesendetes Original" : "Sent Original")
+                                            .foregroundColor(.primary)
+                                    }
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(.ultraThinMaterial)
+                                    .cornerRadius(5)
+                                }
+                                
+                                HStack(spacing: 4) {
+                                    Image(systemName: "magnifyingglass")
+                                    Text(L10n.Detail.clickToZoom(appState.settings.appLanguage))
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(6)
                             }
                             .font(.caption2.bold())
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(6)
                             .padding(8)
                         }
                     }

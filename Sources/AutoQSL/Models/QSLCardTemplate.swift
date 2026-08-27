@@ -71,110 +71,120 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
     
     public static func createDefaultTemplate(myCall: String = "DJ6GI", myAddress: String? = nil) -> QSLCardTemplate {
         var template = QSLCardTemplate(name: "Standard Landscape QSL", isDefault: true)
-        template.backgroundColorHex = "#E8E8E8"
+        template.backgroundColorHex = "#EDEDED"
         template.backgroundImagePath = nil
         
-        // 1. Callsign (Gold 3D Extruded)
-        let callsignElement = CardElement(
-            type: .callsign,
-            name: "My Callsign",
-            normalizedX: 0.32,
-            normalizedY: 0.12,
-            normalizedWidth: 0.40,
-            normalizedHeight: 0.14,
-            zIndex: 10,
-            textContent: myCall.isEmpty ? "DJ6GI" : myCall,
-            fontName: "Impact",
-            fontSize: 68,
-            isBold: true,
-            textColorHex: "#F2BB05",
-            secondaryColorHex: "#D4A373",
-            effectType: .metallicGold,
-            shadowRadius: 6,
-            shadowX: 4,
-            shadowY: 5,
-            shadowColorHex: "#000000",
-            shadowOpacity: 0.85
-        )
-        
-        // 2. ARRL Badge
+        // 1. Top-Left ARRL Badge
         let arrlBadge = CardElement(
             type: .sticker,
             name: "ARRL Badge",
-            normalizedX: 0.46,
-            normalizedY: 0.15,
-            normalizedWidth: 0.10,
-            normalizedHeight: 0.20,
-            zIndex: 11,
+            normalizedX: 0.12,
+            normalizedY: 0.18,
+            normalizedWidth: 0.08,
+            normalizedHeight: 0.22,
+            zIndex: 10,
             stickerType: .arrl
         )
         
-        // 3. Address Block
+        // 2. Callsign (Gold 3D Extruded, Centered Top)
+        let callsignElement = CardElement(
+            type: .callsign,
+            name: "My Callsign",
+            normalizedX: 0.52,
+            normalizedY: 0.18,
+            normalizedWidth: 0.38,
+            normalizedHeight: 0.15,
+            zIndex: 12,
+            textContent: myCall.isEmpty ? "DJ6GI" : myCall,
+            fontName: "Helvetica",
+            fontSize: 76,
+            isBold: true,
+            textColorHex: "#FFB800",
+            secondaryColorHex: "#DDAA00",
+            effectType: .metallicGold,
+            shadowRadius: 5,
+            shadowX: 3,
+            shadowY: 4,
+            shadowColorHex: "#000000",
+            shadowOpacity: 0.8,
+            isShadowEnabled: true
+        )
+        
+        // 3. Address Block (Centered Middle below Callsign)
         let addressText = (myAddress != nil && !myAddress!.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             ? myAddress!
-            : "Max Mustermann\nMusterstraße 123\n12345 Musterstadt\nGermany"
+            : "Max Hamradioop\nAntennenstrasse 5\n12345 Mastdorf\nGermany"
             
         let addressElement = CardElement(
             type: .address,
             name: "Address Block",
-            normalizedX: 0.28,
-            normalizedY: 0.28,
-            normalizedWidth: 0.36,
+            normalizedX: 0.52,
+            normalizedY: 0.38,
+            normalizedWidth: 0.39,
             normalizedHeight: 0.20,
-            zIndex: 9,
+            zIndex: 11,
             textContent: addressText,
             fontName: "Helvetica",
             fontSize: 20,
             isBold: false,
             textAlignment: "left",
             textColorHex: "#000000",
-            effectType: .bevel3D,
+            effectType: .standard,
             shadowRadius: 2,
-            shadowX: 1,
+            shadowX: 0,
             shadowY: 1,
             shadowColorHex: "#FFFFFF",
-            shadowOpacity: 0.7
+            shadowOpacity: 0.7,
+            isShadowEnabled: true
         )
         
-        // 4. QSO Confirmation Table
-        let tableElement = CardElement(
+        // 4. QSO Confirmation Table (Centered Bottom)
+        var tableElement = CardElement(
             type: .table,
             name: "Confirmation Table",
             normalizedX: 0.50,
-            normalizedY: 0.85,
-            normalizedWidth: 0.85,
-            normalizedHeight: 0.18,
+            normalizedY: 0.72,
+            normalizedWidth: 0.82,
+            normalizedHeight: 0.20,
             zIndex: 20,
-            fontSize: 16,
+            fontSize: 15,
             textColorHex: "#000000",
-            tableBorderColorHex: "#111111",
+            isShadowEnabled: true,
+            tableBorderColorHex: "#000000",
             tableBorderWidth: 1.5,
             tableBackgroundColorHex: "#FFFFFF",
-            tableBackgroundOpacity: 0.98,
+            tableBackgroundOpacity: 1.0,
+            tableHeaderBackgroundHex: "#D8D8D8",
+            tableHeaderBackgroundOpacity: 1.0,
             tableComment: "73, Thanks for the QSO. I hope to meet you further down the log."
         )
+        tableElement.tableHeaderTextColorHex = "#000000"
+        tableElement.tableHeaderFontName = "Helvetica"
+        tableElement.tableHeaderFontSize = 15
+        tableElement.tableHeaderIsBold = true
+        tableElement.shadowRadius = 10
+        tableElement.shadowX = 0
+        tableElement.shadowY = 6
+        tableElement.shadowColorHex = "#000000"
+        tableElement.shadowOpacity = 0.7
         
-        // 5. Location Footer
+        // 5. Location Footer (Centered Below Table)
         let footerElement = CardElement(
             type: .locationFooter,
             name: "Location / Zones Line",
             normalizedX: 0.50,
-            normalizedY: 0.96,
-            normalizedWidth: 0.75,
+            normalizedY: 0.84,
+            normalizedWidth: 0.70,
             normalizedHeight: 0.05,
             zIndex: 15,
-            textContent: "ITU: {MY_ITU} CQ: {MY_CQ} Grid: {MY_GRID} {MY_COUNTY}",
+            textContent: "ITU: {MY_ITU} CQ: {MY_CQ} Grid: {MY_GRID}",
             fontName: "Helvetica",
-            fontSize: 16,
+            fontSize: 14,
             isBold: true,
             textAlignment: "center",
-            textColorHex: "#111111",
-            effectType: .bevel3D,
-            shadowRadius: 1,
-            shadowX: 1,
-            shadowY: 1,
-            shadowColorHex: "#FFFFFF",
-            shadowOpacity: 0.8
+            textColorHex: "#000000",
+            effectType: .standard,
+            isShadowEnabled: false
         )
         
         template.elements = [callsignElement, arrlBadge, addressElement, tableElement, footerElement]

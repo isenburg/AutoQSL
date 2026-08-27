@@ -5,7 +5,8 @@ public struct CardDesignerRootView: View {
     @ObservedObject var appState: AppState
     
     @State private var selectedElementId: UUID? = canvasBackgroundSelectionId
-    @State private var zoomScale: CGFloat = 0.8
+    @State private var zoomScale: CGFloat? = nil
+    @State private var isAutoFit: Bool = true
     @GestureState private var pinchMagnification: CGFloat = 1.05
     @State private var isStickerPickerPresented: Bool = false
     @State private var selectedPreviewQSOId: UUID? = nil
@@ -166,15 +167,15 @@ public struct CardDesignerRootView: View {
             
             // Center: Interactive Workspace Canvas
             VStack(spacing: 0) {
-                // Top Action Toolbar
-                HStack(alignment: .bottom, spacing: 14) {
-                    // Template Selector (Label above picker)
-                    VStack(alignment: .leading, spacing: 3) {
+                // Top Action Toolbar (Compact Space-Optimized Layout)
+                HStack(alignment: .bottom, spacing: 8) {
+                    // Template Selector
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(L10n.tr(lang, "Template:", "Vorlage:"))
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.secondary)
                         
-                        HStack(spacing: 4) {
+                        HStack(spacing: 3) {
                             Picker("", selection: $appState.selectedTemplateId) {
                                 ForEach(appState.templates) { template in
                                     Text(template.name).tag(template.id)
@@ -182,7 +183,7 @@ public struct CardDesignerRootView: View {
                             }
                             .labelsHidden()
                             .controlSize(.regular)
-                            .frame(width: 260)
+                            .frame(minWidth: 150, idealWidth: 185, maxWidth: 220)
                             
                             Button(action: { appState.duplicateTemplate(id: appState.selectedTemplateId) }) {
                                 Image(systemName: "doc.on.doc")
@@ -208,12 +209,12 @@ public struct CardDesignerRootView: View {
                         }
                     }
                     
-                    Divider().frame(height: 22)
+                    Divider().frame(height: 20).padding(.horizontal, 1)
                     
-                    // Preview QSO Selector (Label above picker)
-                    VStack(alignment: .leading, spacing: 3) {
+                    // Preview QSO Selector
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(L10n.tr(lang, "Preview QSO:", "Vorschau-QSO:"))
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.secondary)
                         
                         Picker("", selection: $selectedPreviewQSOId) {
@@ -224,13 +225,13 @@ public struct CardDesignerRootView: View {
                         }
                         .labelsHidden()
                         .controlSize(.regular)
-                        .frame(width: 240)
+                        .frame(minWidth: 130, idealWidth: 165, maxWidth: 195)
                     }
                     
-                    Divider().frame(height: 22)
+                    Divider().frame(height: 20).padding(.horizontal, 1)
                     
-                    // Undo / Redo (Same height and bottom-aligned with pickers)
-                    HStack(spacing: 4) {
+                    // Undo / Redo
+                    HStack(spacing: 3) {
                         Button(action: performUndo) {
                             Image(systemName: "arrow.uturn.backward")
                         }
@@ -250,55 +251,94 @@ public struct CardDesignerRootView: View {
                         .keyboardShortcut("z", modifiers: [.command, .shift])
                     }
                     
-                    Spacer()
+                    Divider().frame(height: 20).padding(.horizontal, 1)
                     
-                    // Zoom Controls (Same regular height)
-                    HStack(spacing: 4) {
-                        Button(action: { zoomScale = max(zoomScale - 0.1, 0.4) }) {
+                    // Dynamic Auto-Fit Zoom Controls
+                    HStack(spacing: 3) {
+                        Button(action: {
+                            isAutoFit = false
+                            let cur = zoomScale ?? 0.8
+                            zoomScale = max(cur - 0.1, 0.3)
+                        }) {
                             Image(systemName: "minus.magnifyingglass")
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.regular)
                         
-                        Text("\(Int((zoomScale * pinchMagnification) * 100))%")
+                        Text("\(Int((isAutoFit ? (zoomScale ?? 1.0) : (zoomScale ?? 1.0)) * pinchMagnification * 100))%")
                             .font(.caption.monospaced())
-                            .frame(width: 38)
+                            .frame(width: 40)
                         
-                        Button(action: { zoomScale = min(zoomScale + 0.1, 1.5) }) {
+                        Button(action: {
+                            isAutoFit = false
+                            let cur = zoomScale ?? 0.8
+                            zoomScale = min(cur + 0.1, 2.5)
+                        }) {
                             Image(systemName: "plus.magnifyingglass")
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.regular)
+                        
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isAutoFit = true
+                                zoomScale = nil
+                            }
+                        }) {
+                            HStack(spacing: 3) {
+                                if isAutoFit {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 8, weight: .bold))
+                                }
+                                Text(lang == .german ? "Anpassen" : "Fit")
+                                    .font(.caption2.bold())
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .help(lang == .german ? "Karte immer vollflächig an den verfügbaren Platz anpassen" : "Fit card to available workspace")
                     }
                     
-                    Divider().frame(height: 22)
+                    Spacer(minLength: 4)
                     
-                    Button(action: exportCardImage) {
-                        Label(L10n.tr(lang, "Export Image", "Bild exportieren"), systemImage: "square.and.arrow.up")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
+                    Divider().frame(height: 20).padding(.horizontal, 1)
                     
-                    Button(action: {
-                        CardRenderer.shared.printCard(template: appState.activeTemplate, settings: appState.settings, qso: activePreviewQSO)
-                    }) {
-                        Label(L10n.tr(lang, "Print...", "Drucken..."), systemImage: "printer")
+                    // Output & Actions
+                    HStack(spacing: 3) {
+                        Button(action: exportCardImage) {
+                            Label(L10n.tr(lang, "Export Image", "Bild exportieren"), systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        
+                        Button(action: {
+                            CardRenderer.shared.printCard(template: appState.activeTemplate, settings: appState.settings, qso: activePreviewQSO)
+                        }) {
+                            Label(L10n.tr(lang, "Print...", "Drucken..."), systemImage: "printer")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .help(L10n.tr(lang, "Print QSL card (⌘P)", "QSL-Karte drucken (⌘P)"))
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-                    .help(L10n.tr(lang, "Print QSL card (⌘P)", "QSL-Karte drucken (⌘P)"))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
                 .background(Color(NSColor.windowBackgroundColor))
                 
                 Divider()
                 
-                // Canvas Area with Zoom & Centering
+                // Canvas Area with Dynamic Auto-Fit & Space Filling
                 GeometryReader { geo in
-                    let currentScale = zoomScale * pinchMagnification
                     let baseW = appState.activeTemplate.aspectRatio.widthPoints
                     let baseH = appState.activeTemplate.aspectRatio.heightPoints
+                    
+                    // Compute optimal scale to always fill the available area (with comfortable 48pt margin)
+                    let availW = max(geo.size.width - 48, 200)
+                    let availH = max(geo.size.height - 48, 200)
+                    let autoFitScale = min(availW / baseW, availH / baseH)
+                    
+                    let activeScale = isAutoFit ? autoFitScale : (zoomScale ?? autoFitScale)
+                    let currentScale = activeScale * pinchMagnification
                     let scaledW = baseW * currentScale
                     let scaledH = baseH * currentScale
                     
@@ -335,12 +375,12 @@ public struct CardDesignerRootView: View {
                             )
                             .frame(width: baseW, height: baseH)
                             .scaleEffect(currentScale)
-                            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
-                            .padding(40)
+                            .shadow(color: .black.opacity(0.35), radius: 14, x: 0, y: 7)
+                            .padding(24)
                         }
                         .frame(
-                            width: max(geo.size.width, scaledW + 80),
-                            height: max(geo.size.height, scaledH + 80)
+                            width: max(geo.size.width, scaledW + 48),
+                            height: max(geo.size.height, scaledH + 48)
                         )
                     }
                     .gesture(
@@ -349,7 +389,9 @@ public struct CardDesignerRootView: View {
                                 state = val
                             }
                             .onEnded { val in
-                                zoomScale = min(max(zoomScale * val, 0.3), 2.5)
+                                isAutoFit = false
+                                let cur = zoomScale ?? autoFitScale
+                                zoomScale = min(max(cur * val, 0.3), 2.5)
                             }
                     )
                 }

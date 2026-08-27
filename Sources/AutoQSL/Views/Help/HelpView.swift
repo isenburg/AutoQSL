@@ -379,8 +379,7 @@ public struct HelpView: View {
                             stepRow(number: "4.", text: isGerman ? "Zweiten 'Contact info N1MM' Broadcast auf Port 12064 (oder 2333) setzen (für AutoQSL)" : "Set second 'Contact info N1MM' broadcast to Port 12064 or 2333 (for AutoQSL)")
                         }
                             
-                        #if SWIFT_PACKAGE
-                        if let path = Bundle.module.path(forResource: "rumlog_settings", ofType: "png"),
+                        if let path = Bundle.main.path(forResource: "rumlog_settings", ofType: "png"),
                            let nsImage = NSImage(contentsOfFile: path) {
                             Image(nsImage: nsImage)
                                 .resizable()
@@ -388,22 +387,7 @@ public struct HelpView: View {
                                 .frame(maxWidth: 600)
                                 .cornerRadius(8)
                                 .shadow(radius: 3)
-                        } else {
-                            Image("rumlog_settings")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: 600)
-                                .cornerRadius(8)
-                                .shadow(radius: 3)
                         }
-                        #else
-                        Image("rumlog_settings")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: 600)
-                            .cornerRadius(8)
-                            .shadow(radius: 3)
-                        #endif
                     }
                 }
                 
