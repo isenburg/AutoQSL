@@ -19,6 +19,15 @@ public struct StickerPickerView: View {
     @State private var importedImageURL: URL? = nil
     @State private var importedBadgeName: String = ""
     
+        private func localizedCategoryName(_ cat: String, lang: AppLanguage) -> String {
+        switch cat {
+        case "All": return L10n.tr(lang, "All", "Alle")
+        case "Badges": return L10n.tr(lang, "Badges", "Abzeichen")
+        case "Activities": return L10n.tr(lang, "Activities", "Aktivitäten")
+        case "Custom": return L10n.tr(lang, "Custom", "Eigene")
+        default: return cat
+        }
+    }
     private var categories: [String] {
         var set = Set<String>()
         set.insert("All")
@@ -49,9 +58,9 @@ public struct StickerPickerView: View {
             // Header
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Badges & Stickers Collection")
+                    Text(L10n.tr(appState.settings.appLanguage, "Badges & Stickers Collection", "Sticker- & Badge-Sammlung"))
                         .font(.title3.bold())
-                    Text("Select a sticker to place on the QSL card, or manage your collection.")
+                    Text(L10n.tr(appState.settings.appLanguage, "Select a sticker to place on the QSL card, or manage your collection.", "Wähle einen Sticker für die QSL-Karte oder verwalte die Sammlung."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -63,7 +72,7 @@ public struct StickerPickerView: View {
                     Button(action: {
                         promptImportCustomBadge()
                     }) {
-                        Label("Add Sticker...", systemImage: "plus.circle.fill")
+                        Label(L10n.tr(appState.settings.appLanguage, "Add Sticker...", "Sticker hinzufügen..."), systemImage: "plus.circle.fill")
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
@@ -72,13 +81,13 @@ public struct StickerPickerView: View {
                         Button(action: {
                             promptImportCustomBadge()
                         }) {
-                            Label("Import Custom PNG / Image...", systemImage: "photo.badge.plus")
+                            Label(L10n.tr(appState.settings.appLanguage, "Import Custom PNG / Image...", "Eigenes PNG- / Bild-Logo importieren..."), systemImage: "photo.badge.plus")
                         }
                         
                         Button(action: {
                             openBadgesFolderInFinder()
                         }) {
-                            Label("Open Badges Folder in Finder", systemImage: "folder")
+                            Label(L10n.tr(appState.settings.appLanguage, "Open Badges Folder in Finder", "Badge-Ordner im Finder öffnen"), systemImage: "folder")
                         }
                         
                         Divider()
@@ -86,7 +95,7 @@ public struct StickerPickerView: View {
                         Button(role: .destructive, action: {
                             appState.restoreDefaultStickers()
                         }) {
-                            Label("Restore Built-in Badges", systemImage: "arrow.counterclockwise")
+                            Label(L10n.tr(appState.settings.appLanguage, "Restore Built-in Badges", "Standard-Badges wiederherstellen"), systemImage: "arrow.counterclockwise")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -104,7 +113,7 @@ public struct StickerPickerView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    TextField("Search badges...", text: $searchText)
+                    TextField(L10n.tr(appState.settings.appLanguage, "Search badges...", "Badges durchsuchen..."), text: $searchText)
                         .textFieldStyle(.plain)
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
@@ -127,7 +136,7 @@ public struct StickerPickerView: View {
                             Button(action: {
                                 selectedCategory = cat
                             }) {
-                                Text(cat)
+                                Text(localizedCategoryName(cat, lang: appState.settings.appLanguage))
                                     .font(.caption.weight(selectedCategory == cat ? .semibold : .regular))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
@@ -157,10 +166,10 @@ public struct StickerPickerView: View {
                             .font(.system(size: 40))
                             .foregroundColor(.secondary.opacity(0.6))
                             .padding(.top, 40)
-                        Text("No badges found")
+                        Text(L10n.tr(appState.settings.appLanguage, "No badges found", "Keine Badges gefunden"))
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        Button("Import Custom Badge...") {
+                        Button(L10n.tr(appState.settings.appLanguage, "Import Custom Badge...", "Eigenes Logo importieren...")) {
                             promptImportCustomBadge()
                         }
                         .buttonStyle(.bordered)
@@ -181,13 +190,13 @@ public struct StickerPickerView: View {
             
             // Footer
             HStack {
-                Text("\(appState.stickerCollection.count) Badges in collection")
+                Text(L10n.tr(appState.settings.appLanguage, "\(appState.stickerCollection.count) Badges in collection", "\(appState.stickerCollection.count) Badges in der Sammlung"))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Button("Done") {
+                Button(L10n.tr(appState.settings.appLanguage, "Done", "Fertig")) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
@@ -203,12 +212,12 @@ public struct StickerPickerView: View {
             isPresented: $isDeleteConfirmationPresented,
             titleVisibility: .visible
         ) {
-            Button("Delete from Collection", role: .destructive) {
+            Button(L10n.tr(appState.settings.appLanguage, "Delete from Collection", "Aus Sammlung löschen"), role: .destructive) {
                 if let toDelete = stickerToDelete {
                     appState.deleteSticker(id: toDelete.id)
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.tr(appState.settings.appLanguage, "Cancel", "Abbrechen"), role: .cancel) {}
         } message: {
             Text("This will remove this badge from your collection. Existing QSL templates that already use this badge will not be modified.")
         }
@@ -267,14 +276,14 @@ public struct StickerPickerView: View {
                 Button {
                     onSelectSticker(item)
                 } label: {
-                    Label("Place on QSL Card", systemImage: "plus.rectangle.on.rectangle")
+                    Label(L10n.tr(appState.settings.appLanguage, "Place on QSL Card", "Auf QSL-Karte platzieren"), systemImage: "plus.rectangle.on.rectangle")
                 }
                 
                 if let customPath = item.customImagePath {
                     Button {
                         NSWorkspace.shared.selectFile(customPath, inFileViewerRootedAtPath: "")
                     } label: {
-                        Label("Show in Finder", systemImage: "folder")
+                        Label(L10n.tr(appState.settings.appLanguage, "Show in Finder", "Im Finder anzeigen"), systemImage: "folder")
                     }
                 }
                 
@@ -284,7 +293,7 @@ public struct StickerPickerView: View {
                     stickerToDelete = item
                     isDeleteConfirmationPresented = true
                 } label: {
-                    Label("Delete from Collection", systemImage: "trash")
+                    Label(L10n.tr(appState.settings.appLanguage, "Delete from Collection", "Aus Sammlung löschen"), systemImage: "trash")
                 }
             }
             

@@ -278,6 +278,15 @@ public struct CardDesignerRootView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
+                    
+                    Button(action: {
+                        CardRenderer.shared.printCard(template: appState.activeTemplate, settings: appState.settings, qso: activePreviewQSO)
+                    }) {
+                        Label(L10n.tr(lang, "Print...", "Drucken..."), systemImage: "printer")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .help(L10n.tr(lang, "Print QSL card (⌘P)", "QSL-Karte drucken (⌘P)"))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -351,7 +360,7 @@ public struct CardDesignerRootView: View {
             VStack(spacing: 0) {
                 if let selectedId = selectedElementId,
                    let index = appState.activeTemplate.elements.firstIndex(where: { $0.id == selectedId }) {
-                    ElementInspectorView(element: $appState.activeTemplate.elements[index])
+                    ElementInspectorView(element: $appState.activeTemplate.elements[index], lang: appState.settings.appLanguage)
                     
                     Divider()
                     
@@ -398,17 +407,49 @@ public struct CardDesignerRootView: View {
             previousTemplateSnapshot = appState.activeTemplate
             if keyMonitor == nil {
                 keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    if event.keyCode == 51 || event.keyCode == 117 { // 51 = Backspace/Delete, 117 = Forward Delete
-                        if let window = NSApp.keyWindow,
-                           let responder = window.firstResponder,
-                           (responder is NSTextView || responder is NSTextField) {
-                            return event
-                        }
-                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
-                            deleteElement(selId)
-                            return nil
-                        }
+                    // Prevent stealing keys when user is typing in a text field / inspector
+                    if let window = NSApp.keyWindow,
+                       let responder = window.firstResponder,
+                       (responder is NSTextView || responder is NSTextField) {
+                        return event
                     }
+                    
+                    guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else {
+                        return event
+                    }
+                    
+                    // 1. Delete element with Backspace / Forward Delete
+                    if event.keyCode == 51 || event.keyCode == 117 {
+                        deleteElement(selId)
+                        return nil
+                    }
+                    
+                    // 2. Move element with Arrow Keys (123: Left, 124: Right, 125: Down, 126: Up)
+                    if event.keyCode >= 123 && event.keyCode <= 126 {
+                        let isShift = event.modifierFlags.contains(.shift)
+                        let isOption = event.modifierFlags.contains(.option)
+                        let pts: Double = isShift ? 10.0 : (isOption ? 5.0 : 1.0)
+                        
+                        let baseW = max(appState.activeTemplate.aspectRatio.widthPoints, 100.0)
+                        let baseH = max(appState.activeTemplate.aspectRatio.heightPoints, 100.0)
+                        let stepX = pts / baseW
+                        let stepY = pts / baseH
+                        
+                        switch event.keyCode {
+                        case 123: // Left
+                            nudgeSelectedElement(dx: -stepX, dy: 0)
+                        case 124: // Right
+                            nudgeSelectedElement(dx: stepX, dy: 0)
+                        case 125: // Down
+                            nudgeSelectedElement(dx: 0, dy: stepY)
+                        case 126: // Up
+                            nudgeSelectedElement(dx: 0, dy: -stepY)
+                        default:
+                            break
+                        }
+                        return nil
+                    }
+                    
                     return event
                 }
             }
@@ -533,6 +574,17 @@ public struct CardDesignerRootView: View {
         }
     }
     
+    private func nudgeSelectedElement(dx: Double, dy: Double) {
+        guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else { return }
+        guard let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == selId }) else { return }
+        guard !appState.activeTemplate.elements[idx].isLocked else { return }
+        
+        var el = appState.activeTemplate.elements[idx]
+        el.normalizedX = min(max(el.normalizedX + dx, 0.01), 0.99)
+        el.normalizedY = min(max(el.normalizedY + dy, 0.01), 0.99)
+        appState.activeTemplate.elements[idx] = el
+    }
+
     private func deleteElement(_ id: UUID) {
         appState.activeTemplate.elements.removeAll(where: { $0.id == id })
         if selectedElementId == id {

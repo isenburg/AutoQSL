@@ -36,6 +36,11 @@ public final class AppState: ObservableObject {
     }
     
     @Published public var selectedQSOIds: Set<UUID> = []
+    
+    public var selectedQSO: QSO? {
+        guard let firstId = selectedQSOIds.first else { return nil }
+        return qsoQueue.first(where: { $0.id == firstId })
+    }
     @Published public var navigationSection: NavigationSection = .queue
     
     // Confirmation Dialog / Modal State

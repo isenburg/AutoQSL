@@ -319,8 +319,8 @@ public struct HelpView: View {
             GroupBox(label: Label(isGerman ? "Bedienung & Gestaltungs-Optionen" : "Controls & Formatting Features", systemImage: "hand.draw.fill")) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(icon: "arrow.uturn.backward.circle.fill", text: isGerman ?
-                        "Rückgängig-Funktion (Undo ⌘Z): Alle Änderungen an Elementen, Positionen, Farben und Schriftarten lassen sich jederzeit mit ⌘Z oder der Undo-Schaltfläche schrittweise zurücknehmen." :
-                        "Undo Support (⌘Z): Revert design changes, movements, font edits, and color adjustments step-by-step using ⌘Z or the toolbar Undo button.")
+                        "Drucken & Papier-Ausgabe (⌘P): Drucke fertige QSL-Karten im 300 DPI Original-Druckformat direkt über jeden macOS-kompatiblen Drucker auf Postkartenkarton oder Papier.\n• Rückgängig-Funktion (Undo ⌘Z): Alle Änderungen an Elementen, Positionen, Farben und Schriftarten lassen sich jederzeit mit ⌘Z oder der Undo-Schaltfläche schrittweise zurücknehmen." :
+                        "Direct Printing & Postcard Output (⌘P): Print finished cards in 300 DPI original print quality directly via any macOS-compatible printer.\n• Undo Support (⌘Z): Revert design changes, movements, font edits, and color adjustments step-by-step using ⌘Z or the toolbar Undo button.")
                     featureRow(icon: "cursorarrow.motionlines", text: isGerman ?
                         "Direktes Maus-Dragging: Klicke und ziehe beliebige Elemente direkt auf der Leinwand an ihre Wunschposition." :
                         "Direct Mouse Dragging: Click and drag any element directly on the canvas to reposition it smoothly.")
@@ -796,28 +796,56 @@ public struct HelpView: View {
     // MARK: - 8. Disclaimer & Privacy
     private var disclaimerSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Image(systemName: "exclamationmark.shield.fill")
                     .font(.title)
                     .foregroundColor(.orange)
-                Text(isGerman ? "Haftungsausschluss & Datenschutz" : "Disclaimer & Privacy Notice")
-                    .font(.title2.bold())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isGerman ? "Rechtlicher Hinweis & Datenschutz" : "Legal Disclaimer & Privacy Notice")
+                        .font(.title2.bold())
+                    Text(isGerman ? "Haftungsausschluss, DSGVO & Nutzungsbedingungen" : "Liability limitation, GDPR & terms of use")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
             
-            GroupBox(label: Text(isGerman ? "Haftungsausschluss (Disclaimer)" : "Warranty & Liability Disclaimer")) {
-                Text(isGerman ?
-                    "Die Software AutoQSL wird 'WIE BESEHEN' ('AS IS') und ohne Gewährleistung jeglicher Art bereitgestellt. Der Entwickler übernimmt keine Haftung für etwaige direkte oder indirekte Schäden, Datenverlust, Zustellfehler von E-Mails oder fehlerhafte Logbuch-Synchronisierungen, die aus der Nutzung der Software entstehen. Die Nutzung erfolgt auf eigenes Risiko des Funkamateurs." :
-                    "AutoQSL is provided 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            GroupBox(label: Text(isGerman ? "Rechtlicher Haftungsausschluss (Limitation of Liability)" : "Warranty & Liability Disclaimer").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(isGerman ?
+                        "Die Software AutoQSL wird 'WIE BESEHEN' ('AS IS') und ohne Gewährleistung jeglicher Art (weder ausdrücklich noch stillschweigend) bereitgestellt. Der Autor übernimmt keinerlei Haftung für direkte, indirekte, zufällige, besondere oder Folgeschäden (einschließlich, aber nicht beschränkt auf: Datenverluste, E-Mail-Fehlzustellungen, Spam-Einstufungen durch E-Mail-Provider, Logbuch-Inkonsistenzen, Betriebsstörungen oder Verbindungskosten), die aus der Installation oder Nutzung dieser Software entstehen." :
+                        "AutoQSL is provided 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY (INCLUDING DATA LOSS, EMAIL DISPATCH FAILURES, SPAM FILTERING, OR LOG INCONSISTENCIES) ARISING FROM THE USE OF THIS SOFTWARE.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text(isGerman ?
+                        "Jeder Funkamateur ist selbst dafür verantwortlich, die geltenden Gesetze (insbesondere Amateurfunkgesetz, Telekommunikationsgesetz und Datenschutz-Grundverordnung / DSGVO) einzuhalten und vor dem automatisierten E-Mail-Versand die Empfängerdaten sorgfältig zu prüfen." :
+                        "The amateur radio operator is solely responsible for compliance with applicable telecommunications, radio amateur, and data privacy regulations (e.g. GDPR) when dispatching automated emails.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(4)
             }
 
-            GroupBox(label: Text(isGerman ? "Datenschutz & Lokale Speicherung" : "Privacy & Data Storage")) {
-                Text(isGerman ?
-                    "AutoQSL speichert alle Einstellungen, Vorlagen, Adressdaten und Logbücher ausschließlich lokal auf Ihrem Mac bzw. in Ihrem persönlichen, verschlüsselten iCloud Drive. Es werden keine Telemetriedaten, Zugangsdaten oder persönliche Informationen an Server Dritter übermittelt, mit Ausnahme der von Ihnen konfigurierten QRZ.com-Abfragen und E-Mail-Empfänger." :
-                    "AutoQSL stores all credentials, settings, templates, and logs exclusively locally on your Mac or inside your private encrypted iCloud Drive. No telemetry or tracking data is collected or transmitted to third-party servers, except your direct queries to QRZ.com and outgoing email dispatches.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            GroupBox(label: Text(isGerman ? "Datenschutz & Lokale Datenhoheit" : "Privacy & Data Sovereignity").font(.headline)) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(isGerman ?
+                        "AutoQSL respektiert Ihre Privatsphäre:" :
+                        "AutoQSL respects your privacy:")
+                        .font(.caption.bold())
+                    
+                    bulletRow(title: isGerman ? "Lokale Datenspeicherung:" : "Local Storage:", text: isGerman ?
+                        "Alle Einstellungen, Passwörter, Kartenvorlagen und QSO-Datenbanken werden ausschließlich lokal auf Ihrem Mac bzw. in Ihrem persönlichen iCloud Drive gespeichert." :
+                        "All settings, passwords, card templates, and SQLite databases remain strictly local on your Mac or your personal iCloud Drive.")
+                    
+                    bulletRow(title: isGerman ? "Keine Telemetrie / Kein Tracking:" : "No Telemetry / No Analytics:", text: isGerman ?
+                        "AutoQSL enthält keinerlei Analyse-Tracker, Werbe-Frameworks oder versteckte Telemetrie-Dienste." :
+                        "AutoQSL contains zero tracking, analytics frameworks, or telemetry.")
+                    
+                    bulletRow(title: isGerman ? "Ausschließliche Drittverbindungen:" : "Direct Queries Only:", text: isGerman ?
+                        "Netzwerkverbindungen erfolgen ausschließlich direkt zu den von Ihnen konfigurierten Diensten (QRZ.com, HamQTH.com, Ihr eigener SMTP-Mailserver oder Apple Mail)." :
+                        "Network traffic is strictly limited to your configured callbook providers (QRZ, HamQTH) and your email server / Apple Mail.")
+                }
+                .padding(4)
             }
         }
     }
@@ -840,17 +868,52 @@ public struct HelpView: View {
             
             Divider()
 
-            Text(isGerman ?
-                "Entwickelt für die weltweite Amateurfunk-Community als modernes, effizientes und elegantes macOS-Werkzeug für die elektronische QSL-Karten-Zustellung." :
-                "Crafted for the global amateur radio community as a modern, high-speed, and elegant macOS utility for electronic QSL card delivery.")
-                .font(.body)
+            GroupBox(label: Text(isGerman ? "Urheberrecht & Drittanbieter-Marken (Third-Party Trademarks)" : "Copyright & Third-Party Trademarks").font(.headline)) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(isGerman ?
+                        "AutoQSL ist ein eigenständiges, unabhängiges Softwareprojekt von Georg Isenbürger (DJ6GI). Alle in dieser Anwendung, Dokumentation oder Benutzeroberfläche genannten Produktnamen, Logos, Marken und eingetragenen Warenzeichen sind Eigentum der jeweiligen Inhaber. Die Nennung dient ausschließlich der Beschreibung von Schnittstellen, Protokoll-Kompatibilität und Amateurfunk-Aktivitäten:" :
+                        "AutoQSL is an independent software project created by Georg Isenbürger (DJ6GI). All product names, logos, brands, and registered trademarks mentioned within the app and documentation belong to their respective owners and are used strictly for identification, interoperability, and compatibility purposes:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        bulletRow(
+                            title: "RUMlogNG / RUMlog:",
+                            text: isGerman ? "Copyright © Thomas Lindner (DL2RUM). RUMlogNG ist ein eigenständiges Produkt." : "Copyright © Thomas Lindner (DL2RUM). Independent logging software."
+                        )
+                        bulletRow(
+                            title: "MacLoggerDX:",
+                            text: isGerman ? "Copyright © Dog Park Software Ltd. / Don Agro (VE3VRW). MacLoggerDX ist ein eigenständiges Produkt." : "Copyright © Dog Park Software Ltd. / Don Agro (VE3VRW). Independent software."
+                        )
+                        bulletRow(
+                            title: "WSJT-X / JTDX:",
+                            text: isGerman ? "Copyright © Joe Taylor (K1JT), Steve Franke (K9AN), Bill Somerville (G4WJS) et al. Open-Source-Projekt unter GNU General Public License." : "Copyright © Joe Taylor (K1JT), Steve Franke (K9AN), Bill Somerville (G4WJS) et al."
+                        )
+                        bulletRow(
+                            title: "QRZ.com:",
+                            text: isGerman ? "QRZ.com und das QRZ-Logo sind Marken und Dienstleistungen von QRZ LLC (Fred Lloyd, AA7BQ)." : "QRZ.com is a registered trademark of QRZ LLC (Fred Lloyd, AA7BQ)."
+                        )
+                        bulletRow(
+                            title: "HamQTH.com:",
+                            text: isGerman ? "HamQTH.com ist ein kostenloser Callbook-Dienst von Petr Hlozek (OK2CQR)." : "HamQTH.com is a free callbook service operated by Petr Hlozek (OK2CQR)."
+                        )
+                        bulletRow(
+                            title: "DARC / ARRL / POTA / WWFF / IOTA / SOTA:",
+                            text: isGerman ? "Alle Verbands- und Aktivitätsabzeichen (DARC e.V., ARRL Inc., Parks on the Air, World Wide Flora & Fauna, Islands on the Air / RSGB, Summits on the Air) sind Eigentum der jeweiligen Amateurfunk-Organisationen." : "Emblems of DARC e.V., ARRL Inc., Parks on the Air, WWFF, IOTA (RSGB), and SOTA are property of their respective amateur radio organisations."
+                        )
+                    }
+                }
+                .padding(4)
+            }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(isGerman ? "Autor & Funkstation:" : "Author & Amateur Station:")
                     .font(.caption.bold())
                 Text("Georg Isenbürger (DJ6GI)")
                     .font(.subheadline)
-                
+                Text("E-Mail: gi@av8r.de  •  Web: https://github.com/isenburg/AutoQSL")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -880,10 +943,16 @@ public struct HelpView: View {
             GroupBox(label: Text("Version 2.0.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(
+                        icon: "printer.fill",
+                        text: isGerman ?
+                            "Direkte QSL-Karten Druckfunktion (⌘P): Drucke fertige QSL-Karten im 300 DPI Original-Druckformat direkt über jeden macOS-kompatiblen Drucker auf Postkartenkarton oder Papier (verfügbar in der QSO-Detailansicht, im Designer und im 100%-Zoom-Fenster)." :
+                            "Direct QSL Card Printing (⌘P): Print finished cards in 300 DPI original print quality directly via any macOS-compatible printer on paper or postcards (accessible from QSO Detail, Designer, and Full-size Zoom window)."
+                    )
+                    featureRow(
                         icon: "globe",
                         text: isGerman ?
-                            "Vollständige Mehrsprachigkeit (Deutsch & Englisch): Gesamte Benutzeroberfläche, Dialoge, Menüs, Tabellen und Hilfetexte sind vollständig zweisprachig (Deutsch 🇩🇪 und Englisch 🇬🇧)." :
-                            "Full Multilingual Support (German & English): Complete bilingual user interface across all views, dialogs, inspectors, settings, and documentation."
+                            "Vollständige Mehrsprachigkeit (Deutsch & Englisch): Gesamte Benutzeroberfläche, Dialoge, Menüs, Tabellen, Designer-Inspektoren und Hilfetexte sind vollständig zweisprachig (Deutsch 🇩🇪 und Englisch 🇬🇧)." :
+                            "Full Multilingual Support (German & English): Complete bilingual user interface across all views, dialogs, inspectors, designer sidebars, settings, and documentation."
                     )
                     featureRow(
                         icon: "arrow.triangle.2.circlepath",

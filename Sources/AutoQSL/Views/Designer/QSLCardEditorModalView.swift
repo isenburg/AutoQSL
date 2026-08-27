@@ -232,7 +232,7 @@ public struct QSLCardEditorModalView: View {
                 VStack(spacing: 0) {
                     if let selectedId = selectedElementId,
                        let index = workingTemplate.elements.firstIndex(where: { $0.id == selectedId }) {
-                        ElementInspectorView(element: $workingTemplate.elements[index])
+                        ElementInspectorView(element: $workingTemplate.elements[index], lang: appState.settings.appLanguage)
                         
                         Divider()
                         
@@ -269,17 +269,46 @@ public struct QSLCardEditorModalView: View {
         .onAppear {
             if keyMonitor == nil {
                 keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    if event.keyCode == 51 || event.keyCode == 117 {
-                        if let window = NSApp.keyWindow,
-                           let responder = window.firstResponder,
-                           (responder is NSTextView || responder is NSTextField) {
-                            return event
-                        }
-                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
-                            deleteElement(selId)
-                            return nil
-                        }
+                    if let window = NSApp.keyWindow,
+                       let responder = window.firstResponder,
+                       (responder is NSTextView || responder is NSTextField) {
+                        return event
                     }
+                    
+                    guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else {
+                        return event
+                    }
+                    
+                    if event.keyCode == 51 || event.keyCode == 117 {
+                        deleteElement(selId)
+                        return nil
+                    }
+                    
+                    if event.keyCode >= 123 && event.keyCode <= 126 {
+                        let isShift = event.modifierFlags.contains(.shift)
+                        let isOption = event.modifierFlags.contains(.option)
+                        let pts: Double = isShift ? 10.0 : (isOption ? 5.0 : 1.0)
+                        
+                        let baseW = max(workingTemplate.aspectRatio.widthPoints, 100.0)
+                        let baseH = max(workingTemplate.aspectRatio.heightPoints, 100.0)
+                        let stepX = pts / baseW
+                        let stepY = pts / baseH
+                        
+                        switch event.keyCode {
+                        case 123: // Left
+                            nudgeSelectedElement(dx: -stepX, dy: 0)
+                        case 124: // Right
+                            nudgeSelectedElement(dx: stepX, dy: 0)
+                        case 125: // Down
+                            nudgeSelectedElement(dx: 0, dy: stepY)
+                        case 126: // Up
+                            nudgeSelectedElement(dx: 0, dy: -stepY)
+                        default:
+                            break
+                        }
+                        return nil
+                    }
+                    
                     return event
                 }
             }
@@ -368,6 +397,17 @@ public struct QSLCardEditorModalView: View {
         }
     }
     
+    private func nudgeSelectedElement(dx: Double, dy: Double) {
+        guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else { return }
+        guard let idx = workingTemplate.elements.firstIndex(where: { $0.id == selId }) else { return }
+        guard !workingTemplate.elements[idx].isLocked else { return }
+        
+        var el = workingTemplate.elements[idx]
+        el.normalizedX = min(max(el.normalizedX + dx, 0.01), 0.99)
+        el.normalizedY = min(max(el.normalizedY + dy, 0.01), 0.99)
+        workingTemplate.elements[idx] = el
+    }
+
     private func deleteElement(_ id: UUID) {
         workingTemplate.elements.removeAll(where: { $0.id == id })
         if selectedElementId == id {

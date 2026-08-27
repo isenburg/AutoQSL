@@ -72,4 +72,39 @@ public final class CardRenderer {
             return nil
         }
     }
+
+    public func printCard(
+        template: QSLCardTemplate,
+        settings: AppSettings,
+        qso: QSO?,
+        window: NSWindow? = nil
+    ) {
+        guard let nsImage = renderCardToImage(template: template, settings: settings, qso: qso, scale: 3.0) else {
+            return
+        }
+        
+        let printInfo = NSPrintInfo.shared.copy() as! NSPrintInfo
+        printInfo.horizontalPagination = .fit
+        printInfo.verticalPagination = .fit
+        printInfo.isHorizontallyCentered = true
+        printInfo.isVerticallyCentered = true
+        printInfo.orientation = (template.aspectRatio.widthPoints < template.aspectRatio.heightPoints) ? .portrait : .landscape
+        
+        let baseW = template.aspectRatio.widthPoints
+        let baseH = template.aspectRatio.heightPoints
+        
+        let imageView = NSImageView(frame: NSRect(x: 0, y: 0, width: baseW, height: baseH))
+        imageView.image = nsImage
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        
+        let printOp = NSPrintOperation(view: imageView, printInfo: printInfo)
+        printOp.showsPrintPanel = true
+        printOp.showsProgressPanel = true
+        
+        if let win = window ?? NSApp.keyWindow {
+            printOp.runModal(for: win, delegate: nil, didRun: nil, contextInfo: nil)
+        } else {
+            printOp.run()
+        }
+    }
 }

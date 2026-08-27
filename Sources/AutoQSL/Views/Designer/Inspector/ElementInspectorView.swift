@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct ElementInspectorView: View {
     @Binding var element: CardElement
+    public var lang: AppLanguage = .english
     
     private var textColorBinding: Binding<Color> {
         Binding(
@@ -67,11 +68,19 @@ public struct ElementInspectorView: View {
                         .font(.headline)
                     Spacer()
                     Button(action: { element.isLocked.toggle() }) {
-                        Image(systemName: element.isLocked ? "lock.fill" : "lock.open")
-                            .foregroundColor(element.isLocked ? .orange : .secondary)
+                        HStack(spacing: 4) {
+                            Image(systemName: element.isLocked ? "lock.fill" : "lock.open")
+                            Text(element.isLocked ? (lang == .german ? "Gesperrt" : "Locked") : (lang == .german ? "Frei beweglich" : "Unlocked"))
+                                .font(.caption2)
+                        }
+                        .foregroundColor(element.isLocked ? .orange : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(element.isLocked ? Color.orange.opacity(0.12) : Color.secondary.opacity(0.1))
+                        .cornerRadius(5)
                     }
                     .buttonStyle(.plain)
-                    .help(element.isLocked ? "Locked - Position is fixed" : "Unlocked - Can drag on canvas")
+                    .help(element.isLocked ? (lang == .german ? "Element ist gesperrt – Klicke zum Entsperren" : "Element is locked – Click to unlock") : (lang == .german ? "Element ist frei beweglich" : "Element can be moved and resized"))
                 }
                 
                 Divider()
@@ -95,30 +104,30 @@ public struct ElementInspectorView: View {
                 Divider()
                 
                 // Position & Dimensions (Geometry)
-                Section("Position & Size") {
+                Section(L10n.tr(lang, "Position & Size", "Position & Größe")) {
                     VStack(spacing: 8) {
                         HStack {
-                            Text("X Position: \(Int(element.normalizedX * 100))%")
+                            Text(L10n.tr(lang, "X Position: \(Int(element.normalizedX * 100))%", "X-Position: \(Int(element.normalizedX * 100))%"))
                                 .font(.caption)
                             Slider(value: $element.normalizedX, in: 0...1)
                         }
                         HStack {
-                            Text("Y Position: \(Int(element.normalizedY * 100))%")
+                            Text(L10n.tr(lang, "Y Position: \(Int(element.normalizedY * 100))%", "Y-Position: \(Int(element.normalizedY * 100))%"))
                                 .font(.caption)
                             Slider(value: $element.normalizedY, in: 0...1)
                         }
                         HStack {
-                            Text("Width: \(Int(element.normalizedWidth * 100))%")
+                            Text(L10n.tr(lang, "Width: \(Int(element.normalizedWidth * 100))%", "Breite: \(Int(element.normalizedWidth * 100))%"))
                                 .font(.caption)
                             Slider(value: $element.normalizedWidth, in: 0.05...1.0)
                         }
                         HStack {
-                            Text("Height: \(Int(element.normalizedHeight * 100))%")
+                            Text(L10n.tr(lang, "Height: \(Int(element.normalizedHeight * 100))%", "Höhe: \(Int(element.normalizedHeight * 100))%"))
                                 .font(.caption)
                             Slider(value: $element.normalizedHeight, in: 0.05...1.0)
                         }
                         HStack {
-                            Text("Layer (Z):")
+                            Text(L10n.tr(lang, "Layer (Z):", "Ebene (Z):"))
                                 .font(.caption)
                             Stepper("\(element.zIndex)", value: $element.zIndex, in: 0...100)
                         }
@@ -133,7 +142,7 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var fontSelectionGroup: some View {
         Group {
-            Text("Typography")
+            Text(L10n.tr(lang, "Typography", "Typografie"))
                 .font(.caption.bold())
                 .foregroundColor(.secondary)
             
@@ -149,7 +158,7 @@ public struct ElementInspectorView: View {
                 Spacer()
                 
                 Button(action: openMacOSFontPicker) {
-                    Label("Choose Font…", systemImage: "textformat")
+                    Label(L10n.tr(lang, "Choose Font…", "Schrift wählen…"), systemImage: "textformat")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -159,14 +168,14 @@ public struct ElementInspectorView: View {
             .cornerRadius(6)
             
             HStack {
-                Text("Quick Size: \(Int(element.fontSize)) pt")
+                Text(L10n.tr(lang, "Quick Size: \(Int(element.fontSize)) pt", "Schriftgröße: \(Int(element.fontSize)) pt"))
                     .font(.caption)
                 Slider(value: $element.fontSize, in: 8...120, step: 1)
             }
             
             HStack(spacing: 16) {
-                Toggle("Bold", isOn: $element.isBold)
-                Toggle("Italic", isOn: $element.isItalic)
+                Toggle(L10n.tr(lang, "Bold", "Fett"), isOn: $element.isBold)
+                Toggle(L10n.tr(lang, "Italic", "Kursiv"), isOn: $element.isItalic)
                 Spacer()
             }
         }
@@ -189,7 +198,7 @@ public struct ElementInspectorView: View {
     private var shadowControlSection: some View {
         Group {
             HStack {
-                Text("Drop Shadow")
+                Text(L10n.tr(lang, "Drop Shadow", "Schattenwurf"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 Spacer()
@@ -198,21 +207,21 @@ public struct ElementInspectorView: View {
             }
             
             if element.isShadowEnabled {
-                colorRow(title: "Shadow Color", selection: shadowColorBinding)
+                colorRow(title: L10n.tr(lang, "Shadow Color", "Schattenfarbe"), selection: shadowColorBinding)
                 
                 HStack {
-                    Text("Blur: \(Int(element.shadowRadius)) pt")
+                    Text(L10n.tr(lang, "Blur: \(Int(element.shadowRadius)) pt", "Weichzeichnung: \(Int(element.shadowRadius)) pt"))
                         .font(.caption)
                     Slider(value: $element.shadowRadius, in: 0...20, step: 1)
                 }
                 HStack {
-                    Text("Offset X / Y:")
+                    Text(L10n.tr(lang, "Offset X / Y:", "Versatz X / Y:"))
                         .font(.caption)
                     Slider(value: $element.shadowX, in: -15...15, step: 1)
                     Slider(value: $element.shadowY, in: -15...15, step: 1)
                 }
                 HStack {
-                    Text("Opacity: \(Int(element.shadowOpacity * 100))%")
+                    Text(L10n.tr(lang, "Opacity: \(Int(element.shadowOpacity * 100))%", "Deckkraft: \(Int(element.shadowOpacity * 100))%"))
                         .font(.caption)
                     Slider(value: $element.shadowOpacity, in: 0.0...1.0)
                 }
@@ -237,7 +246,7 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var headerFontSelectionGroup: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Header Typography")
+            Text(L10n.tr(lang, "Header Typography", "Header-Typografie"))
                 .font(.caption.bold())
                 .foregroundColor(.secondary)
             
@@ -253,7 +262,7 @@ public struct ElementInspectorView: View {
                 Spacer()
                 
                 Button(action: openMacOSHeaderFontPicker) {
-                    Label("Choose Header Font…", systemImage: "textformat")
+                    Label(L10n.tr(lang, "Choose Header Font…", "Header-Schrift wählen…"), systemImage: "textformat")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -263,7 +272,7 @@ public struct ElementInspectorView: View {
             .cornerRadius(6)
             
             HStack {
-                Text("Header Size: \(Int(element.effectiveHeaderFontSize)) pt")
+                Text(L10n.tr(lang, "Header Size: \(Int(element.effectiveHeaderFontSize)) pt", "Header-Größe: \(Int(element.effectiveHeaderFontSize)) pt"))
                     .font(.caption)
                 Slider(value: Binding(
                     get: { element.effectiveHeaderFontSize },
@@ -272,11 +281,11 @@ public struct ElementInspectorView: View {
             }
             
             HStack(spacing: 16) {
-                Toggle("Bold", isOn: Binding(
+                Toggle(L10n.tr(lang, "Bold", "Fett"), isOn: Binding(
                     get: { element.effectiveHeaderIsBold },
                     set: { element.effectiveHeaderIsBold = $0 }
                 ))
-                Toggle("Italic", isOn: Binding(
+                Toggle(L10n.tr(lang, "Italic", "Kursiv"), isOn: Binding(
                     get: { element.effectiveHeaderIsItalic },
                     set: { element.effectiveHeaderIsItalic = $0 }
                 ))
@@ -303,15 +312,15 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var callsignInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Callsign Typography & Style")
+            Text(L10n.tr(lang, "Callsign Typography & Style", "Rufzeichen-Typografie & Stil"))
                 .font(.subheadline.bold())
             
-            TextField("Callsign Override", text: $element.textContent)
+            TextField(L10n.tr(lang, "Callsign Override", "Rufzeichen überschreiben"), text: $element.textContent)
                 .textFieldStyle(.roundedBorder)
             
             fontSelectionGroup
             
-            Picker("Visual Style Effect", selection: $element.effectType) {
+            Picker(L10n.tr(lang, "Visual Style Effect", "Visueller Stileffekt"), selection: $element.effectType) {
                 ForEach(TextEffectType.allCases, id: \.self) { effect in
                     Text(effect.rawValue).tag(effect)
                 }
@@ -321,12 +330,12 @@ public struct ElementInspectorView: View {
             Divider()
             
             Group {
-                Text("Colors (macOS Color Picker)")
+                Text(L10n.tr(lang, "Colors (macOS Color Picker)", "Farben (macOS Farbwähler)"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Face / Text Color", selection: textColorBinding)
-                colorRow(title: "Secondary / Accent Color", selection: secondaryColorBinding)
+                colorRow(title: L10n.tr(lang, "Face / Text Color", "Vordergrund- / Textfarbe"), selection: textColorBinding)
+                colorRow(title: L10n.tr(lang, "Secondary / Accent Color", "Akzent- / 3D-Farbe"), selection: secondaryColorBinding)
             }
             
             Divider()
@@ -339,10 +348,10 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var addressInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Address Text & Style")
+            Text(L10n.tr(lang, "Address Text & Style", "Adresstext & Stil"))
                 .font(.subheadline.bold())
             
-            Text("Content (Multi-line):")
+            Text(L10n.tr(lang, "Content (Multi-line):", "Inhalt (mehrzeilig):"))
                 .font(.caption)
             TextEditor(text: $element.textContent)
                 .font(.caption.monospaced())
@@ -351,21 +360,21 @@ public struct ElementInspectorView: View {
             
             fontSelectionGroup
             
-            Picker("Alignment", selection: $element.textAlignment) {
-                Text("Left").tag("left")
-                Text("Center").tag("center")
-                Text("Right").tag("right")
+            Picker(L10n.tr(lang, "Alignment", "Ausrichtung"), selection: $element.textAlignment) {
+                Text(L10n.tr(lang, "Left", "Links")).tag("left")
+                Text(L10n.tr(lang, "Center", "Zentriert")).tag("center")
+                Text(L10n.tr(lang, "Right", "Rechts")).tag("right")
             }
             .pickerStyle(.segmented)
             
             Divider()
             
             Group {
-                Text("Colors (macOS Color Picker)")
+                Text(L10n.tr(lang, "Colors (macOS Color Picker)", "Farben (macOS Farbwähler)"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Text Color", selection: textColorBinding)
+                colorRow(title: L10n.tr(lang, "Text Color", "Textfarbe"), selection: textColorBinding)
             }
             
             Divider()
@@ -378,48 +387,48 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var tableInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("QSO Confirmation Table")
+            Text(L10n.tr(lang, "QSO Confirmation Table", "QSO-Bestätigungstabelle"))
                 .font(.subheadline.bold())
             
             Group {
-                Text("Table Columns & Headers")
+                Text(L10n.tr(lang, "Table Columns & Headers", "Tabellenspalten & Überschriften"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
                 // 1. QSO With
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("QSO With Column", isOn: $element.tableShowCallsign)
+                    Toggle(L10n.tr(lang, "QSO With Column", "Spalte: QSO With"), isOn: $element.tableShowCallsign)
                     if element.tableShowCallsign {
-                        TextField("Header Label", text: $element.tableCallsignHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableCallsignHeader)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
                 
                 // 2. Date
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Date Column", isOn: $element.tableShowDate)
+                    Toggle(L10n.tr(lang, "Date Column", "Spalte: Date"), isOn: $element.tableShowDate)
                     if element.tableShowDate {
-                        TextField("Header Label", text: $element.tableDateHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableDateHeader)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
                 
                 // 3. UTC Time
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("UTC Time Column", isOn: $element.tableShowTime)
+                    Toggle(L10n.tr(lang, "UTC Time Column", "Spalte: UTC Time"), isOn: $element.tableShowTime)
                     if element.tableShowTime {
-                        TextField("Header Label", text: $element.tableTimeHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableTimeHeader)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
                 
                 // 4. Frequency / Band
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Frequency / Band Column", isOn: $element.tableShowFreq)
+                    Toggle(L10n.tr(lang, "Frequency / Band Column", "Spalte: Frequency / Band"), isOn: $element.tableShowFreq)
                     if element.tableShowFreq {
-                        TextField("Header Label", text: $element.tableFreqHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableFreqHeader)
                             .textFieldStyle(.roundedBorder)
-                        Picker("Data Format", selection: $element.tableFreqDisplayMode) {
+                        Picker(L10n.tr(lang, "Data Format", "Datenformat"), selection: $element.tableFreqDisplayMode) {
                             ForEach(TableFreqDisplayMode.allCases) { mode in
                                 Text(mode.rawValue).tag(mode)
                             }
@@ -429,27 +438,27 @@ public struct ElementInspectorView: View {
                 
                 // 5. RST / Report
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("RST / Report Column", isOn: $element.tableShowRST)
+                    Toggle(L10n.tr(lang, "RST / Report Column", "Spalte: RST / Report"), isOn: $element.tableShowRST)
                     if element.tableShowRST {
-                        TextField("Header Label", text: $element.tableRSTHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableRSTHeader)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
                 
                 // 6. Mode
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Mode Column", isOn: $element.tableShowMode)
+                    Toggle(L10n.tr(lang, "Mode Column", "Spalte: Mode"), isOn: $element.tableShowMode)
                     if element.tableShowMode {
-                        TextField("Header Label", text: $element.tableModeHeader)
+                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableModeHeader)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
                 
                 // 7. Remarks / Greeting Row
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Remarks / Greeting Row", isOn: $element.tableShowCommentRow)
+                    Toggle(L10n.tr(lang, "Remarks / Greeting Row", "Gruß- / Bemerkungszeile"), isOn: $element.tableShowCommentRow)
                     if element.tableShowCommentRow {
-                        TextField("Greeting / Remarks Text", text: $element.tableComment)
+                        TextField(L10n.tr(lang, "Greeting / Remarks Text", "Gruß- / Bemerkungstext"), text: $element.tableComment)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
@@ -462,7 +471,7 @@ public struct ElementInspectorView: View {
             Divider()
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Table Data Typography")
+                Text(L10n.tr(lang, "Table Data Typography", "Tabellendaten-Typografie"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 fontSelectionGroup
@@ -471,31 +480,32 @@ public struct ElementInspectorView: View {
             Divider()
             
             Group {
-                Text("Colors (macOS Color Picker)")
+                Text(L10n.tr(lang, "Colors (macOS Color Picker)", "Farben (macOS Farbwähler)"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Header Text Color", selection: tableHeaderTextColorBinding)
-                colorRow(title: "Data Text Color", selection: textColorBinding)
-                colorRow(title: "Header Background Color", selection: tableHeaderBackgroundColorBinding)
-                colorRow(title: "Table Background Color", selection: tableBackgroundColorBinding)
-                colorRow(title: "Grid Border Color", selection: tableBorderColorBinding)
+                colorRow(title: L10n.tr(lang, "Header Text Color", "Kopfzeilen-Textfarbe"), selection: tableHeaderTextColorBinding)
+                colorRow(title: L10n.tr(lang, "Data Text Color", "Datenzellen-Textfarbe"), selection: textColorBinding)
+                colorRow(title: L10n.tr(lang, "Header Background Color", "Kopfzeilen-Hintergrundfarbe"), selection: tableHeaderBackgroundColorBinding)
+                colorRow(title: L10n.tr(lang, "Table Background Color", "Tabellen-Hintergrundfarbe"), selection: tableBackgroundColorBinding)
+                colorRow(title: L10n.tr(lang, "Grid Border Color", "Rahmenfarbe"), selection: tableBorderColorBinding)
             }
             
             Divider()
             
             Group {
-                Text("Grid Layout & Opacity")
+                Text(L10n.tr(lang, "Grid Layout & Opacity", "Gitter-Layout & Deckkraft"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
                 HStack {
-                    Text("Border Width: \(String(format: "%.1f", element.tableBorderWidth)) pt")
+                    let widthStr = String(format: "%.1f", element.tableBorderWidth)
+Text(L10n.tr(lang, "Border Width: \(widthStr) pt", "Rahmenbreite: \(widthStr) pt"))
                     Slider(value: $element.tableBorderWidth, in: 0.5...5.0, step: 0.5)
                 }
                 
                 HStack {
-                    Text("Background Opacity: \(Int(element.tableBackgroundOpacity * 100))%")
+                    Text(L10n.tr(lang, "Background Opacity: \(Int(element.tableBackgroundOpacity * 100))%", "Hintergrund-Deckkraft: \(Int(element.tableBackgroundOpacity * 100))%"))
                     Slider(value: $element.tableBackgroundOpacity, in: 0.0...1.0)
                 }
             }
@@ -510,13 +520,13 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var locationInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Location Line")
+            Text(L10n.tr(lang, "Location Line", "Standortzeile"))
                 .font(.subheadline.bold())
             
-            TextField("Template", text: $element.textContent)
+            TextField(L10n.tr(lang, "Template", "Vorlage"), text: $element.textContent)
                 .textFieldStyle(.roundedBorder)
             
-            Text("Placeholders: {MY_ITU}, {MY_CQ}, {MY_GRID}, {MY_COUNTY}")
+            Text(L10n.tr(lang, "Placeholders: {MY_ITU}, {MY_CQ}, {MY_GRID}, {MY_COUNTY}", "Platzhalter: {MY_ITU}, {MY_CQ}, {MY_GRID}, {MY_COUNTY}"))
                 .font(.caption2)
                 .foregroundColor(.secondary)
             
@@ -525,11 +535,11 @@ public struct ElementInspectorView: View {
             Divider()
             
             Group {
-                Text("Colors (macOS Color Picker)")
+                Text(L10n.tr(lang, "Colors (macOS Color Picker)", "Farben (macOS Farbwähler)"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Text Color", selection: textColorBinding)
+                colorRow(title: L10n.tr(lang, "Text Color", "Textfarbe"), selection: textColorBinding)
             }
             
             Divider()
@@ -542,17 +552,17 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var stickerInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Sticker / Badge")
+            Text(L10n.tr(lang, "Sticker / Badge", "Sticker / Abzeichen"))
                 .font(.subheadline.bold())
             
-            Picker("Badge Type", selection: $element.stickerType) {
+            Picker(L10n.tr(lang, "Badge Type", "Abzeichentyp"), selection: $element.stickerType) {
                 ForEach(StickerType.allCases, id: \.self) { type in
                     Text(type.rawValue).tag(type)
                 }
             }
             
             HStack {
-                Text("Rotation: \(Int(element.rotationDegrees))°")
+                Text(L10n.tr(lang, "Rotation: \(Int(element.rotationDegrees))°", "Drehung: \(Int(element.rotationDegrees))°"))
                 Slider(value: $element.rotationDegrees, in: -180...180, step: 5)
             }
         }
@@ -562,10 +572,10 @@ public struct ElementInspectorView: View {
     @ViewBuilder
     private var textInspector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Custom Text Element")
+            Text(L10n.tr(lang, "Custom Text Element", "Freies Textelement"))
                 .font(.subheadline.bold())
             
-            TextField("Text", text: $element.textContent)
+            TextField(L10n.tr(lang, "Text", "Text"), text: $element.textContent)
                 .textFieldStyle(.roundedBorder)
             
             fontSelectionGroup
@@ -573,11 +583,11 @@ public struct ElementInspectorView: View {
             Divider()
             
             Group {
-                Text("Colors (macOS Color Picker)")
+                Text(L10n.tr(lang, "Colors (macOS Color Picker)", "Farben (macOS Farbwähler)"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                 
-                colorRow(title: "Text Color", selection: textColorBinding)
+                colorRow(title: L10n.tr(lang, "Text Color", "Textfarbe"), selection: textColorBinding)
             }
             
             Divider()

@@ -170,8 +170,8 @@ public struct DraggableElementWrapperView: View {
             return el
         }()
         
-        let boundingW = max(elWidth, 40)
-        let boundingH = max(elHeight, 24)
+        let boundingW = max(elWidth, 36)
+        let boundingH = max(elHeight, 20)
         
         ZStack {
             if isInlineEditing && isInteractive && !element.isLocked {
@@ -183,19 +183,19 @@ public struct DraggableElementWrapperView: View {
         .frame(width: elWidth > 0 ? elWidth : nil, height: elHeight > 0 ? elHeight : nil)
         .rotationEffect(.degrees(element.rotationDegrees))
         .contentShape(Rectangle())
-        .position(x: posX, y: posY)
         .overlay(
             Group {
                 if isSelected {
-                    selectionAndResizeHandles(posX: posX, posY: posY, w: boundingW, h: boundingH)
+                    localSelectionAndResizeHandles(w: boundingW, h: boundingH)
                 } else if isHovering && isInteractive && !element.isLocked {
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
-                        .frame(width: boundingW + 8, height: boundingH + 8)
-                        .position(x: posX, y: posY)
+                        .frame(width: boundingW + 10, height: boundingH + 10)
+                        .allowsHitTesting(false)
                 }
             }
         )
+        .position(x: posX, y: posY)
         .onHover { hovering in
             if isInteractive {
                 isHovering = hovering
@@ -204,6 +204,16 @@ public struct DraggableElementWrapperView: View {
         .onChange(of: isSelected) { _, selected in
             if !selected {
                 isInlineEditing = false
+            }
+        }
+        .onTapGesture(count: 2) {
+            if isInteractive && isDirectlyEditable(element.type) && !element.isLocked {
+                isInlineEditing = true
+            }
+        }
+        .onTapGesture(count: 1) {
+            if isInteractive {
+                onSelect()
             }
         }
         .gesture(
@@ -237,84 +247,90 @@ public struct DraggableElementWrapperView: View {
                 }
             : nil
         )
-        .simultaneousGesture(
-            TapGesture(count: 2).onEnded {
-                if isInteractive && isDirectlyEditable(element.type) && !element.isLocked {
-                    isInlineEditing = true
-                }
-            }
-        )
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                if isInteractive {
-                    onSelect()
-                }
-            }
-        )
     }
     
     @ViewBuilder
-    private func selectionAndResizeHandles(posX: CGFloat, posY: CGFloat, w: CGFloat, h: CGFloat) -> some View {
-        let halfW = (w + 12) / 2.0
-        let halfH = (h + 12) / 2.0
+    private func localSelectionAndResizeHandles(w: CGFloat, h: CGFloat) -> some View {
+        let boxW = w + 14
+        let boxH = h + 14
+        let halfW = boxW / 2.0
+        let halfH = boxH / 2.0
         
         ZStack {
-            // Bounding Box
+            // Bounding Box Stroke (does not intercept clicks)
             RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                .frame(width: w + 12, height: h + 12)
-                .position(x: posX, y: posY)
+                .stroke(element.isLocked ? Color.orange : Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                .frame(width: boxW, height: boxH)
+                .allowsHitTesting(false)
             
-            if !element.isLocked {
-                // 1. Bottom-Right (SE) Resize Handle
-                resizeHandleView()
-                    .position(x: posX + halfW, y: posY + halfH)
-                    .gesture(makeResizeGesture(axisX: 1, axisY: 1))
-                
-                // 2. Bottom-Left (SW) Resize Handle
-                resizeHandleView()
-                    .position(x: posX - halfW, y: posY + halfH)
-                    .gesture(makeResizeGesture(axisX: -1, axisY: 1))
-                
-                // 3. Top-Right (NE) Resize Handle
-                resizeHandleView()
-                    .position(x: posX + halfW, y: posY - halfH)
-                    .gesture(makeResizeGesture(axisX: 1, axisY: -1))
-                
-                // 4. Top-Left (NW) Resize Handle
-                resizeHandleView()
-                    .position(x: posX - halfW, y: posY - halfH)
+            if element.isLocked {
+                // Lock indicator badge in top-right
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(3)
+                    .background(Color.orange)
+                    .clipShape(Circle())
+                    .offset(x: halfW, y: -halfH)
+                    .shadow(radius: 2)
+                    .allowsHitTesting(false)
+            } else {
+                // 1. Top-Left (NW)
+                resizeHandleView(isCircle: true)
+                    .offset(x: -halfW, y: -halfH)
                     .gesture(makeResizeGesture(axisX: -1, axisY: -1))
                 
-                // 5. Middle-Right (E) Handle (horizontal resize)
-                resizeHandleView(isCircle: false)
-                    .position(x: posX + halfW, y: posY)
-                    .gesture(makeResizeGesture(axisX: 1, axisY: 0))
+                // 2. Top-Right (NE)
+                resizeHandleView(isCircle: true)
+                    .offset(x: halfW, y: -halfH)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: -1))
                 
-                // 6. Middle-Left (W) Handle (horizontal resize)
+                // 3. Bottom-Left (SW)
+                resizeHandleView(isCircle: true)
+                    .offset(x: -halfW, y: halfH)
+                    .gesture(makeResizeGesture(axisX: -1, axisY: 1))
+                
+                // 4. Bottom-Right (SE)
+                resizeHandleView(isCircle: true)
+                    .offset(x: halfW, y: halfH)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: 1))
+                
+                // 5. Middle-Left (W) Handle
                 resizeHandleView(isCircle: false)
-                    .position(x: posX - halfW, y: posY)
+                    .offset(x: -halfW, y: 0)
                     .gesture(makeResizeGesture(axisX: -1, axisY: 0))
+                
+                // 6. Middle-Right (E) Handle
+                resizeHandleView(isCircle: false)
+                    .offset(x: halfW, y: 0)
+                    .gesture(makeResizeGesture(axisX: 1, axisY: 0))
             }
         }
+        .frame(width: boxW, height: boxH)
+        .zIndex(999)
     }
     
     private func resizeHandleView(isCircle: Bool = true) -> some View {
-        Group {
+        ZStack {
+            Color.clear
+                .frame(width: 24, height: 24)
+            
             if isCircle {
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 8, height: 8)
-                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 1.5))
+                    .frame(width: 10, height: 10)
+                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 2))
+                    .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
             } else {
-                RoundedRectangle(cornerRadius: 1.5)
+                RoundedRectangle(cornerRadius: 2)
                     .fill(Color.white)
-                    .frame(width: 6, height: 10)
-                    .overlay(RoundedRectangle(cornerRadius: 1.5).stroke(Color.accentColor, lineWidth: 1.5))
+                    .frame(width: 8, height: 14)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.accentColor, lineWidth: 2))
+                    .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
             }
         }
-        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
-        .contentShape(Rectangle().size(width: 18, height: 18))
+        .frame(width: 24, height: 24)
+        .contentShape(Rectangle())
     }
     
     private func makeResizeGesture(axisX: CGFloat, axisY: CGFloat) -> some Gesture {
@@ -489,7 +505,12 @@ public struct DraggableElementWrapperView: View {
         case "Georgia": f = .custom("Georgia", size: size)
         case "Menlo": f = .custom("Menlo", size: size)
         case "Trebuchet MS": f = .custom("Trebuchet MS", size: size)
-        default: f = .system(size: size)
+        default:
+            if NSFont(name: element.fontName, size: size) != nil {
+                f = .custom(element.fontName, size: size)
+            } else {
+                f = .system(size: size)
+            }
         }
         if element.isBold { f = f.bold() }
         if element.isItalic { f = f.italic() }

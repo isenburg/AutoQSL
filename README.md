@@ -78,6 +78,7 @@ open -a Xcode .
 | `⌘A` | Select all QSOs in Queue | QSO Queue |
 | `⌘ + Click` / `⇧ + Click` | Multi-select / range-select QSOs | QSO Queue |
 | `Delete` / `⌫` | Delete selected QSO(s) | QSO Queue |
+| `←` `↑` `→` `↓` | Nudge selected element (1 pt / `⇧`: 10 pt / `⌥`: 5 pt) | Card Designer |
 | `Right-Click` | Context menu (Send, Callbook Lookup, Delete) | QSO Queue |
 | `Click Callbook Icon` | Open QRZ / HamQTH in web browser | QSO Detail View |
 | `⌘↩` (Cmd+Return) | Send QSL card in Confirmation Sheet | Confirmation Sheet |
@@ -153,6 +154,21 @@ open -a Xcode .
 - 💾 High-speed SQLite database engine (`autoqsl.sqlite`) and dual local / iCloud Drive synchronization.
 
 ---
+
+
+---
+
+## Third-Party Trademarks & Legal Disclaimer
+
+AutoQSL is an independent, non-commercial software project created by Georg Isenbürger (DJ6GI). All product names, trademarks, registered trademarks, and logos mentioned in this application or documentation remain the property of their respective owners:
+- **RUMlogNG**: Copyright © Thomas Lindner (DL2RUM).
+- **MacLoggerDX**: Copyright © Dog Park Software Ltd. / Don Agro (VE3VRW).
+- **WSJT-X / JTDX**: Copyright © Joe Taylor (K1JT), Steve Franke (K9AN), Bill Somerville (G4WJS) et al.
+- **QRZ.com**: Trademark of QRZ LLC (Fred Lloyd, AA7BQ).
+- **HamQTH.com**: Operated by Petr Hlozek (OK2CQR).
+- **Badges & Societies**: DARC e.V., ARRL Inc., POTA Inc., WWFF, IOTA (RSGB), SOTA.
+
+**Disclaimer:** AutoQSL is provided "AS IS", without warranty of any kind, express or implied. In no event shall the author be liable for any claim, damages, data loss, or email delivery issues arising from the use of this software.
 
 ## Author & Copyright
 

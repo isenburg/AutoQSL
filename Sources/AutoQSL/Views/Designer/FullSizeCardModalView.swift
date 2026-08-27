@@ -109,6 +109,14 @@ public struct FullSizeCardModalView: View {
                     .frame(height: 20)
                     .padding(.horizontal, 4)
                 
+                Button(action: {
+                    CardRenderer.shared.printCard(template: template, settings: settings, qso: qso)
+                }) {
+                    Label(L10n.tr(settings.appLanguage, "Print...", "Drucken..."), systemImage: "printer")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                
                 Button("Done") {
                     closeModal()
                 }

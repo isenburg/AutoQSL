@@ -91,7 +91,17 @@ struct AutoQSLCommands: Commands {
         // Remove File Menu items
         CommandGroup(replacing: .newItem) {}
         CommandGroup(replacing: .saveItem) {}
-        CommandGroup(replacing: .printItem) {}
+        CommandGroup(replacing: .printItem) {
+            Button("Print QSL Card…") {
+                if let selectedQSO = appState.selectedQSO {
+                    let tmpl = appState.template(for: selectedQSO)
+                    CardRenderer.shared.printCard(template: tmpl, settings: appState.settings, qso: selectedQSO)
+                } else {
+                    CardRenderer.shared.printCard(template: appState.activeTemplate, settings: appState.settings, qso: nil)
+                }
+            }
+            .keyboardShortcut("p", modifiers: .command)
+        }
         
         CommandGroup(after: .sidebar) {
             Divider()

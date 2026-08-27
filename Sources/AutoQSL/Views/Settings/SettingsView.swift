@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct SettingsView: View {
     @ObservedObject var appState: AppState
+    @Environment(\.openWindow) private var openWindow
     
     @State private var selectedTab: SettingsTab = .station
     @State private var qrzTestStatus: String? = nil
@@ -59,7 +60,7 @@ public struct SettingsView: View {
         HStack(spacing: 0) {
             // Settings Sidebar
             VStack(alignment: .leading, spacing: 0) {
-                Text("Settings")
+                Text(L10n.tr(appState.settings.appLanguage, "Settings", "Einstellungen"))
                     .font(.headline)
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -70,6 +71,21 @@ public struct SettingsView: View {
                         .tag(tab)
                 }
                 .listStyle(.sidebar)
+                
+                Divider()
+                
+                Button(action: {
+                    openWindow(id: "help")
+                }) {
+                    HStack {
+                        Label(L10n.Nav.helpDocs(appState.settings.appLanguage), systemImage: "questionmark.circle")
+                            .font(.caption)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
             }
             .frame(width: 210)
             .background(Color(NSColor.controlBackgroundColor))

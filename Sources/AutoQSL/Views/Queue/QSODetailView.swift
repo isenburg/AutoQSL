@@ -78,6 +78,14 @@ public struct QSODetailView: View {
                         }
                         .buttonStyle(.bordered)
                         
+                        Button(action: {
+                            CardRenderer.shared.printCard(template: cardTemplate, settings: appState.settings, qso: qso)
+                        }) {
+                            Label(L10n.tr(appState.settings.appLanguage, "Print...", "Drucken..."), systemImage: "printer")
+                        }
+                        .buttonStyle(.bordered)
+                        .help(L10n.tr(appState.settings.appLanguage, "Print QSL card on paper / postcard (⌘P)", "QSL-Karte auf Papier / Postkarte drucken (⌘P)"))
+                        
                         if qso.status == .awaitingConfirmation || qso.status == .readyToSend || qso.status == .failed || qso.status == .skipped {
                             Button(action: {
                                 appState.qsoAwaitingConfirmation = qso
