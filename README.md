@@ -20,12 +20,15 @@
 
 3. 🎨 **Interactive Visual QSL Card Designer**:
    - WYSIWYG card canvas with customizable aspect ratios (Standard QSL `3.5" x 5.5" / 140x90mm`, `4" x 6"`, and `16:9`).
+   - **Multi-Object Selection & Rubberband Marquee**: Multi-select elements via `Shift+Click` / `Cmd+Click` or drag a virtual rectangular selection box over empty canvas.
+   - **Synchronous Group Dragging**: Dragging any selected element moves all selected objects simultaneously with perfectly preserved relative offsets.
+   - **Multi-Element Inspector**: 1-click alignment tools (Left, Center, Right, Top, Middle, Bottom) and equal distribution (Horizontal / Vertical).
    - **Full Layer Management**: Callsign typography, custom text blocks, QSO data table grid, location footers, and badges/stickers.
    - **Opacity & Colors**: macOS native color picker with full alpha opacity channel support on all text, background tints, and element borders.
    - **Undo Support**: Full `⌘Z` keyboard shortcut and toolbar button for reversible design changes.
    - **Badges & Stickers**: DARC Logo, ARRL Diamond, POTA, WWFF (Flora & Fauna), IOTA (official RSGB), SOTA, plus custom PNG logo imports.
-    - **Template Duplication & Memory**: 1-click template cloning (`doc.on.doc`), immutable template snapshotting on sent cards, and complete dispatch history on resend.
-    - **Independent Table Typography**: Separate font family, size, weight, and color controls for table headers vs. data rows.
+   - **Template Duplication & Memory**: 1-click template cloning (`doc.on.doc`), immutable template snapshotting on sent cards, and complete dispatch history on resend.
+   - **Independent Table Typography**: Separate font family, size, weight, and color controls for table headers vs. data rows.
 
 4. ✉️ **Review & Automation Modes**:
    - **Preview & Confirm (Recommended)**: Presents a high-resolution preview dialog with recipient email and editable message before sending (`⌘+Return` to send, `Esc` to skip).
@@ -78,7 +81,9 @@ open -a Xcode .
 | `⌘A` | Select all QSOs in Queue | QSO Queue |
 | `⌘ + Click` / `⇧ + Click` | Multi-select / range-select QSOs | QSO Queue |
 | `Delete` / `⌫` | Delete selected QSO(s) | QSO Queue |
-| `←` `↑` `→` `↓` | Nudge selected element (1 pt / `⇧`: 10 pt / `⌥`: 5 pt) | Card Designer |
+| `⌘ + Click` / `⇧ + Click` | Multi-select elements on canvas/layers | Card Designer |
+| `Drag on Canvas` | Rubberband marquee selection box | Card Designer Canvas |
+| `←` `↑` `→` `↓` | Nudge selected element(s) (1 pt / `⇧`: 10 pt / `⌥`: 5 pt) | Card Designer |
 | `Right-Click` | Context menu (Send, Callbook Lookup, Delete) | QSO Queue |
 | `Click Callbook Icon` | Open QRZ / HamQTH in web browser | QSO Detail View |
 | `⌘↩` (Cmd+Return) | Send QSL card in Confirmation Sheet | Confirmation Sheet |

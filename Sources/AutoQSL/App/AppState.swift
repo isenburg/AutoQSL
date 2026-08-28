@@ -4,16 +4,20 @@ import Combine
 
 @MainActor
 public final class AppState: ObservableObject {
+    private var isSyncingComment = false
+    
     @Published public var settings: AppSettings {
         didSet {
             PersistenceService.shared.saveSettings(settings)
             startUDPListening()
+            syncDefaultCommentToTemplates()
         }
     }
     
     @Published public var templates: [QSLCardTemplate] {
         didSet {
             PersistenceService.shared.saveTemplates(templates)
+            syncTableCommentToSettings()
         }
     }
     
@@ -79,6 +83,12 @@ public final class AppState: ObservableObject {
         PrefixMatcher.shared.loadCtyDatabase()
         if settings.myCQZone.isEmpty || settings.myITUZone.isEmpty || settings.myCountry.isEmpty {
             settings.autofillStationZonesAndCountry(for: settings.myCallsign, overwriteNonEmpty: false)
+        }
+        
+        if !settings.defaultComment.isEmpty {
+            syncDefaultCommentToTemplates()
+        } else if let tblEl = templates.first?.elements.first(where: { $0.type == .table }), !tblEl.tableComment.isEmpty {
+            settings.defaultComment = tblEl.tableComment
         }
         
         setupUDPListener()
@@ -177,6 +187,41 @@ public final class AppState: ObservableObject {
         set {
             if let idx = templates.firstIndex(where: { $0.id == newValue.id }) {
                 templates[idx] = newValue
+            }
+        }
+    }
+    
+    public func syncDefaultCommentToTemplates() {
+        guard !isSyncingComment else { return }
+        isSyncingComment = true
+        defer { isSyncingComment = false }
+        
+        let comment = settings.defaultComment
+        var changed = false
+        for tIdx in templates.indices {
+            for eIdx in templates[tIdx].elements.indices {
+                if templates[tIdx].elements[eIdx].type == .table {
+                    if templates[tIdx].elements[eIdx].tableComment != comment {
+                        templates[tIdx].elements[eIdx].tableComment = comment
+                        changed = true
+                    }
+                }
+            }
+        }
+        if changed {
+            PersistenceService.shared.saveTemplates(templates)
+        }
+    }
+    
+    public func syncTableCommentToSettings() {
+        guard !isSyncingComment else { return }
+        isSyncingComment = true
+        defer { isSyncingComment = false }
+        
+        if let tblEl = activeTemplate.elements.first(where: { $0.type == .table }) {
+            if settings.defaultComment != tblEl.tableComment {
+                settings.defaultComment = tblEl.tableComment
+                PersistenceService.shared.saveSettings(settings)
             }
         }
     }

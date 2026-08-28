@@ -30,9 +30,15 @@ AutoQSL needs recipient email addresses to dispatch eQSL cards. You can use QRZ.
 
 ### Step 3: Choose Your Email Delivery Method
 In **Settings > Email Delivery & SMTP**, select one of three methods:
-- **Apple Mail Automation (Recommended for Mac users):** Dispatches directly through macOS Apple Mail in the background. Does not require SMTP server passwords or app passwords.
+- **Apple Mail Automation (Recommended for Mac users):** Dispatches directly through macOS Apple Mail in the background. Does not require SMTP server passwords or app passwords (uses your existing macOS Google/Mail login).
 - **Default Mail Client:** Opens your default mail client composer (Apple Mail, Thunderbird, Outlook, Spark) with the QSL card pre-attached.
-- **Direct SMTP Server:** Sends emails directly through an SMTP host (e.g. Gmail, Outlook, custom ISP) with TLS encryption.
+- **Direct SMTP Server:** Sends emails directly through an SMTP host with STARTTLS/SSL encryption.
+  - **Google Mail (Gmail) Setup:**
+    - **SMTP Host:** `smtp.gmail.com`
+    - **Port:** `587` with STARTTLS (or `465` with SSL)
+    - **Username:** Your full Gmail address (e.g. `yourcall@gmail.com`)
+    - **Password:** A 16-character **Google App Password** (click **"Google App-Passwort erstellen..."** right under the password field in Settings or open [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)). *(Google requires this instead of regular passwords when 2FA is active; error 534 occurs if regular passwords are used)*.
+    - *Tip:* Alternatively, simply switch to **Apple Mail Automation** to bypass passwords entirely.
 
 ### Step 4: Select Your Automation Mode
 Under **Settings > Automation & Modes**, choose how you want AutoQSL to react when a contact is logged:
@@ -182,15 +188,28 @@ Open the **Card Designer** tab to create, customize, and manage your QSL card te
 | **Stickers & Badges**| 🛡️ **Badge Picker & Mouse Resize** | Drag corner handles to scale badge dimensions freely; built-in ARRL, POTA, SOTA, IOTA, CQ, WAS badges + custom PNG/SVG logo imports, deletion, and 1-click placement |
 | **Background & Size**| ⚙️ **Right Sidebar Inspector** | Card aspect ratio (Standard QSL `3.5" x 5.5" / 140x90mm`, `4" x 6"`, `16:9`), background image upload, and tint/darken overlays |
 
+### Multi-Object Selection, Rubberband Drag & Group Alignment
+AutoQSL includes professional vector-grade multi-selection and layout alignment tools:
+- **Multi-Selection via Shift / Cmd + Click**: Hold `Shift` or `⌘` while clicking elements on the canvas or in the left *Layers* sidebar to select multiple items simultaneously.
+- **Rubberband / Marquee Drag Selection Box**: Click and drag across empty canvas space to draw a virtual dashed selection box. Any element intersecting or enclosed by the rectangle is selected in real-time.
+- **Synchronous Multi-Object Moving**: Grabbing and dragging any of the selected objects moves the entire group simultaneously, strictly preserving 100% of their relative positions and spacing.
+- **Arrow Keys Group Nudging**: Use `↑ ↓ ← →` to nudge the entire selected group by 1 pt (`Shift + Arrow Keys` for 10 pt, `Option + Arrow Keys` for 5 pt).
+- **Multi-Element Inspector & Alignment Tools**: When multiple elements are selected, the right sidebar displays the *Multi-Element Inspector*:
+  - **Alignment Tools**: Align Left, Align Horizontal Center, Align Right, Align Top, Align Vertical Center, Align Bottom.
+  - **Distribution Tools**: Distribute Horizontally, Distribute Vertically (equal spacing).
+  - **Batch Actions**: Duplicate Selected, Lock / Unlock Selected, Show / Hide Selected, Delete Selected (`⌫`).
+- **Undo / Redo (`⌘Z`)**: All multi-object moves, alignments, and deletions are fully registered in the undo stack.
+
 ### Step-by-Step Designer Workflow
 1. **Choose or Create a Template:** Select a template from the top dropdown or click `+` to start a new design.
 2. **Set Background:** Click "Background Picture" in the layer list and choose a photo from your Mac (landscape orientation recommended). Adjust the darken slider for text readability.
 3. **Edit Your Callsign:** Double-click your callsign on the canvas (or edit in the sidebar inspector) to type your call. Use the right sidebar to apply 3D gold extrusion or neon glow.
 4. **Position & Resize Elements:** Single-click and drag any element smoothly across the canvas to reposition it. Click on an element to reveal its **6 resize handles** (4 corners, 2 edges) and drag to resize stickers, adjust table widths, or scale font sizes directly with the mouse.
-5. **Add Badges & Stickers:** Click the **Badge** button in the toolbar to open the Badges Collection. Pick from built-in award badges or click **Add Sticker...** to import your club logo, then scale them with corner handles.
-6. **Format the QSO Table:** Click the table in the layer list. In the inspector, choose which columns to display and select your preferred date format (`DD.MM.YYYY` vs `YYYY.MM.DD`).
-7. **Undo Any Mistake:** Press `⌘Z` (or click the Undo arrow in the toolbar) to revert any design change.
-8. **Preview with Real Data:** Use the "Preview" dropdown in the toolbar to test how your card looks with real QSOs from your log.
+5. **Multi-Select & Align:** Select multiple elements using `Shift + Click` or drag a virtual selection box over them to align or distribute them with 1-click.
+6. **Add Badges & Stickers:** Click the **Badge** button in the toolbar to open the Badges Collection. Pick from built-in award badges or click **Add Sticker...** to import your club logo, then scale them with corner handles.
+7. **Format the QSO Table:** Click the table in the layer list. In the inspector, choose which columns to display and select your preferred date format (`DD.MM.YYYY` vs `YYYY.MM.DD`).
+8. **Undo Any Mistake:** Press `⌘Z` (or click the Undo arrow in the toolbar) to revert any design change.
+9. **Preview with Real Data:** Use the "Preview" dropdown in the toolbar to test how your card looks with real QSOs from your log.
 
 ### Custom Card Design for a Specific QSO
 You can customize the card design for an individual QSO without affecting your default template:
@@ -333,9 +352,15 @@ Grid: {MY_GRID} • CQ Zone: {MY_CQ}
 | `⌘Z` | Undo last design change | Card Designer |
 | `⇧ + ⌘Z` | Redo last undone design change | Card Designer |
 | `Click` | Select element and open inspector | Card Designer Canvas |
+| `⇧ + Click` / `⌘ + Click` | Multi-select elements on canvas or layers list | Card Designer Canvas |
+| `Drag on Canvas` | Virtual marquee rubberband selection box | Card Designer Canvas |
 | `Double-Click` | Direct inline text editing (Callsign, Address, Text) | Card Designer Canvas |
-| `Drag` | Move element position | Card Designer Canvas |
-| `Drag Handles` | Resize element | Card Designer Canvas |
+| `Drag Element` | Move selected element(s) synchronously in unison | Card Designer Canvas |
+| `Drag Handles` | Resize element with 6 corner/edge handles | Card Designer Canvas |
+| `↑ ↓ ← →` | Nudge selected element(s) by 1 pt | Card Designer Canvas |
+| `⇧ + ↑ ↓ ← →` | Nudge selected element(s) by 10 pt | Card Designer Canvas |
+| `⌥ + ↑ ↓ ← →` | Nudge selected element(s) by 5 pt | Card Designer Canvas |
+| `Delete` / `⌫` | Delete selected element(s) | Card Designer Canvas |
 
 ---
 
@@ -354,6 +379,17 @@ Released for the global amateur radio community.
 ---
 
 ## 10. Changelog & Version History
+
+### Version 2.0.0 (2026-08)
+- ✨ **Multi-Object Selection & Rubberband Marquee**: Select multiple objects with `Shift+Click` or `Cmd+Click` or by dragging a virtual selection box over empty canvas.
+- 📐 **Synchronous Group Dragging & Alignment**: Moving any selected object translates the entire group simultaneously without changing relative distances; dedicated *Multi-Element Inspector* with 1-click alignment (Left, Center, Right, Top, Middle, Bottom) and equal distribution (Horizontal / Vertical).
+- 💾 **High-Performance Native SQLite Engine (`autoqsl.sqlite`)**: High-speed, indexed SQLite database with WAL mode for instantaneous queries on 100,000+ QSOs.
+- ✉️ **Reliable Mass Send Attachment Dispatching**: Unique per-QSO card filenames and serialized AppleScript queue eliminate file lock collisions during large mass-send operations.
+- 🎨 **Dedicated Appearance Tab**: Easy selection between Light Mode, Dark Mode, and System Appearance in Settings.
+- 🖨️ **Direct QSL Card Printing (`⌘P`)**: Print finished cards in 300 DPI original print quality directly via any macOS-compatible printer on paper or postcards.
+- 🌐 **Full Multilingual Support**: Complete bilingual user interface (German 🇩🇪 & English 🇬🇧) with live switching without restart.
+- 🛡️ **New Official Badges**: DARC, WWFF (Flora & Fauna), updated official IOTA and ARRL graphics.
+- 📋 **Immutable Template Snapshots**: Every dispatched QSO preserves its template layout snapshot forever.
 
 ### Version 1.1.0 (2026-08)
 - 🔍 **HamQTH.com XML Callbook Integration**: Native support for free HamQTH callbook lookups with fallback and dual-lookup priority modes.

@@ -712,11 +712,25 @@ public struct SettingsView: View {
                         }
                         
                         FormRow(label: "Port:") {
-                            HStack(spacing: 16) {
+                            HStack(spacing: 12) {
                                 TextField("", value: $appState.settings.smtpPort, format: .number.grouping(.never))
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 80)
                                 Toggle("Use TLS / SSL", isOn: $appState.settings.smtpUseTLS)
+                                
+                                Button("587 (STARTTLS)") {
+                                    appState.settings.smtpPort = 587
+                                    appState.settings.smtpUseTLS = true
+                                }
+                                .buttonStyle(.link)
+                                .font(.caption2)
+                                
+                                Button("465 (SSL)") {
+                                    appState.settings.smtpPort = 465
+                                    appState.settings.smtpUseTLS = true
+                                }
+                                .buttonStyle(.link)
+                                .font(.caption2)
                             }
                         }
                     }
@@ -732,9 +746,16 @@ public struct SettingsView: View {
                         }
                         
                         FormRow(label: "Password:") {
-                            SecureField("Password / App Password", text: $appState.settings.smtpPassword)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 240)
+                            VStack(alignment: .leading, spacing: 4) {
+                                SecureField("Password / App Password", text: $appState.settings.smtpPassword)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 240)
+                                
+                                Link(destination: URL(string: "https://myaccount.google.com/apppasswords")!) {
+                                    Label(L10n.tr(lang, "Generate Google App Password...", "Google App-Passwort erstellen..."), systemImage: "key.fill")
+                                        .font(.caption2)
+                                }
+                            }
                         }
                     }
                     .padding(8)
@@ -777,7 +798,7 @@ public struct SettingsView: View {
                     }
                     
                     if let status = mailTestStatus {
-                        Text(status)
+                        Text(LocalizedStringKey(status))
                             .font(.caption)
                             .foregroundColor(status.contains("ready") || status.contains("Success") ? .green : .red)
                     }
@@ -793,7 +814,7 @@ public struct SettingsView: View {
                     }
                     
                     if let status = smtpTestStatus {
-                        Text(status)
+                        Text(LocalizedStringKey(status))
                             .font(.caption)
                             .foregroundColor(status.contains("Success") ? .green : .red)
                     }

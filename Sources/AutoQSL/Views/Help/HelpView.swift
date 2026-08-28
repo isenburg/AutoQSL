@@ -290,6 +290,12 @@ public struct HelpView: View {
                         .font(.subheadline.bold())
 
                     VStack(alignment: .leading, spacing: 6) {
+                        featureRow(icon: "square.grid.3x3.fill.square", text: isGerman ?
+                            "✨ Mehrfachauswahl & Synchrones Verschieben: Halte Shift oder Cmd beim Klick auf Elemente, um mehrere Objekte zu markieren, oder ziehe mit der Maus auf freier Leinwand einen virtuellen Auswahlrahmen (Gummiband). Das Verschieben eines beliebigen markierten Elements bewegt alle ausgewählten Objekte gemeinsam unter exakter Beibehaltung ihrer relativen Abstände." :
+                            "✨ Multi-Object Selection & Synchronous Group Dragging: Hold Shift or Cmd while clicking elements on the canvas or layer list to multi-select, or drag on the empty canvas to draw a virtual marquee selection box. Dragging any selected element moves the entire group in unison with perfectly preserved relative spacing.")
+                        featureRow(icon: "align.horizontal.left.fill", text: isGerman ?
+                            "📐 Multi-Inspektor & Ausrichtungs-Werkzeuge: Sobald mehrere Elemente markiert sind, bietet der rechte Inspektor Schaltflächen zum gemeinsamen Ausrichten (Links, Zentriert, Rechts, Oben, Mitte, Unten), gleichmäßigen Verteilen (Horizontal / Vertikal), Duplizieren und Löschen." :
+                            "📐 Multi-Element Alignment & Distribution Inspector: When multiple objects are selected, the right inspector displays 1-click batch tools to align edges/centers, distribute spacing evenly, clone, lock/unlock, or delete the entire selection.")
                         featureRow(icon: "checkmark.circle.fill", text: isGerman ?
                             "✅ Direkt auf der Karte editierbar: Rufzeichen (Callsign), Adressblock (Address), Standort-Zeile und freier Text (Custom Text). Mit einem Doppelklick auf das Element öffnet sich die direkte Texteingabe auf der Leinwand." :
                             "✅ Directly editable on canvas: Callsign Block, Address Block, Location Line, and Custom Text. Double-click any element on the canvas to edit its text inline with live preview.")
@@ -453,8 +459,8 @@ public struct HelpView: View {
                     featureRow(
                         icon: "antenna.radiowaves.left.and.right",
                         text: isGerman ?
-                            "HamQTH.com XML API (100% Kostenlos): Community-Callbook von Petr (OK2CQR). Erfordert lediglich eine kostenlose Registrierung auf hamqth.com – kein bezahltes Abo nötig!" :
-                            "HamQTH.com XML API (100% Free): Community-driven callbook by OK2CQR. Requires only a free registration at hamqth.com – no paid subscription required!"
+                            "HamQTH.com XML API (100% Kostenlos): Community-Callbook von Petr (OK2CQR). Erfordert lediglich eine kostenlose Registrierung auf [hamqth.com](https://www.hamqth.com) – kein bezahltes Abo nötig!" :
+                            "HamQTH.com XML API (100% Free): Community-driven callbook by OK2CQR. Requires only a free registration at [hamqth.com](https://www.hamqth.com) – no paid subscription required!"
                     )
                 }
                 .padding(4)
@@ -511,11 +517,46 @@ public struct HelpView: View {
                     .font(.caption)
             }
 
-            GroupBox(label: Label("3. Direkter SMTP-Server", systemImage: "server.rack")) {
-                Text(isGerman ?
-                    "Sendet E-Mails direkt über einen SMTP-Server (Gmail, Outlook 365, eigener Mailhost). Unterstützt TLS/SSL-Verschlüsselung und Authentifizierung." :
-                    "Sends directly via outbound SMTP server (Gmail, Outlook 365, custom host) with TLS/SSL encryption and authentication.")
-                    .font(.caption)
+            GroupBox(label: Label(isGerman ? "3. Direkter SMTP-Server" : "3. Direct SMTP Server", systemImage: "server.rack")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(isGerman ?
+                        "Sendet E-Mails direkt über einen SMTP-Server (Gmail, Outlook 365, eigener Mailhost). Unterstützt STARTTLS (Port 587) und SSL/TLS (Port 465) mit Authentifizierung." :
+                        "Sends directly via outbound SMTP server (Gmail, Outlook 365, custom host) supporting STARTTLS (Port 587) and SSL/TLS (Port 465) encryption with authentication.")
+                        .font(.caption)
+                    
+                    Divider()
+                    
+                    Text(isGerman ? "Google Mail (Gmail) Einrichtung & App-Passwort:" : "Google Mail (Gmail) Setup & App Password:")
+                        .font(.subheadline.bold())
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        bulletRow(
+                            title: isGerman ? "1. Host & Port:" : "1. Host & Port:",
+                            text: isGerman ?
+                                "SMTP-Server: smtp.gmail.com | Port: 587 mit STARTTLS (oder Port 465 mit SSL)." :
+                                "SMTP Host: smtp.gmail.com | Port: 587 with STARTTLS (or Port 465 with SSL)."
+                        )
+                        bulletRow(
+                            title: isGerman ? "2. Benutzername:" : "2. Username:",
+                            text: isGerman ?
+                                "Deine vollständige Gmail-Adresse (z. B. deincall@gmail.com)." :
+                                "Your full Gmail address (e.g. yourcall@gmail.com)."
+                        )
+                        bulletRow(
+                            title: isGerman ? "3. 16-stelliges App-Passwort:" : "3. 16-Character App Password:",
+                            text: isGerman ?
+                                "Google verlangt für SMTP bei aktiver 2-Faktor-Authentifizierung (2FA) ein App-Passwort anstelle des normalen Passworts (Fehler 534). Klicke in den Einstellungen direkt auf den Button 'Google App-Passwort erstellen...' oder öffne [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) (Name: 'AutoQSL') und trage den 16-stelligen Code ein." :
+                                "Google requires an App Password instead of your normal password when 2-Factor Authentication (2FA) is enabled (Error 534). In Settings, click the 'Generate Google App Password...' button or visit [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) (name: 'AutoQSL') and paste the 16-character code."
+                        )
+                        bulletRow(
+                            title: isGerman ? "💡 Empfohlene Alternative:" : "💡 Recommended Alternative:",
+                            text: isGerman ?
+                                "Wenn du dein Gmail-Konto in macOS Apple Mail eingerichtet hast, wähle oben einfach 'Apple Mail Automation'. AutoQSL sendet dann ohne SMTP-Passwörter direkt über deinen bestehenden Mac-Login." :
+                                "If your Gmail account is configured in macOS Apple Mail, simply select 'Apple Mail Automation'. AutoQSL dispatches directly using your existing Mac login with zero app passwords required."
+                        )
+                    }
+                }
+                .padding(4)
             }
         }
     }
@@ -690,9 +731,15 @@ public struct HelpView: View {
                     shortcutRow(key: "⌘Z", desc: isGerman ? "Letzte Änderung rückgängig machen (Undo)" : "Undo last design change")
                     shortcutRow(key: "⇧⌘Z", desc: isGerman ? "Wiederherstellen (Redo)" : "Redo last undone change")
                     shortcutRow(key: isGerman ? "Klick" : "Click", desc: isGerman ? "Element auswählen & Inspektor öffnen" : "Select element & open inspector")
+                    shortcutRow(key: "⇧+Klick / ⌘+Klick", desc: isGerman ? "Mehrere Elemente auswählen (Multi-Select)" : "Multi-select elements on canvas/layers")
+                    shortcutRow(key: isGerman ? "Fläche ziehen" : "Drag on Canvas", desc: isGerman ? "Gummiband-Auswahlrahmen aufziehen" : "Rubberband marquee selection box")
                     shortcutRow(key: isGerman ? "Doppelklick" : "Double-Click", desc: isGerman ? "Direkte Textbearbeitung auf der Karte" : "Direct inline text editing on canvas")
-                    shortcutRow(key: isGerman ? "Ziehen (Drag)" : "Drag", desc: isGerman ? "Element verschieben" : "Move element position on canvas")
+                    shortcutRow(key: isGerman ? "Element ziehen" : "Drag Element", desc: isGerman ? "Ausgewählte Elemente synchron verschieben" : "Move selected element(s) in unison")
                     shortcutRow(key: isGerman ? "Griffe ziehen" : "Drag Handles", desc: isGerman ? "Elementgröße verändern" : "Resize element on canvas")
+                    shortcutRow(key: "↑ ↓ ← →", desc: isGerman ? "Ausgewählte Elemente um 1 pt verschieben" : "Nudge selected element(s) by 1 pt")
+                    shortcutRow(key: "⇧ + ↑ ↓ ← →", desc: isGerman ? "Ausgewählte Elemente um 10 pt verschieben" : "Nudge selected element(s) by 10 pt")
+                    shortcutRow(key: "⌥ + ↑ ↓ ← →", desc: isGerman ? "Ausgewählte Elemente um 5 pt verschieben" : "Nudge selected element(s) by 5 pt")
+                    shortcutRow(key: "⌫ / Delete", desc: isGerman ? "Ausgewählte(s) Element(e) löschen" : "Delete selected element(s)")
                 }
                 .padding(6)
             }
@@ -893,9 +940,7 @@ public struct HelpView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(isGerman ? "Autor & Funkstation:" : "Author & Amateur Station:")
                     .font(.caption.bold())
-                Text("Georg Isenbürger (DJ6GI)")
-                    .font(.subheadline)
-                Text("E-Mail: gi@av8r.de  •  Web: https://github.com/isenburg/AutoQSL")
+                Text(parseMarkdownString(isGerman ? "E-Mail: [gi@av8r.de](mailto:gi@av8r.de)  •  Web: [https://github.com/isenburg/AutoQSL](https://github.com/isenburg/AutoQSL)" : "Email: [gi@av8r.de](mailto:gi@av8r.de)  •  Web: [https://github.com/isenburg/AutoQSL](https://github.com/isenburg/AutoQSL)"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -926,6 +971,36 @@ public struct HelpView: View {
 
             GroupBox(label: Text("Version 2.0.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "square.grid.3x3.fill.square",
+                        text: isGerman ?
+                            "Mehrfachauswahl & Synchrones Verschieben im Card Designer: Wähle mehrere Objekte mit Shift+Klick / Cmd+Klick aus oder ziehe einen virtuellen Auswahlrahmen (Gummiband) über die Leinwand. Das Bewegen eines Elements verschiebt alle selektierten Objekte synchron bei exakt erhaltenen relativen Abständen." :
+                            "Multi-Selection & Synchronous Group Dragging in Card Designer: Multi-select elements via Shift+Click / Cmd+Click or drag a virtual rubberband marquee box over the canvas. Dragging any element moves the entire selection in unison with perfectly preserved relative distances."
+                    )
+                    featureRow(
+                        icon: "align.horizontal.left.fill",
+                        text: isGerman ?
+                            "Multi-Inspektor mit Ausrichtungs- und Verteilungs-Werkzeugen: Kanten und Zentren mehrerer Objekte mit 1 Klick ausrichten (Links, Zentriert, Rechts, Oben, Mitte, Unten) sowie Abstände gleichmäßig horizontal und vertikal verteilen." :
+                            "Multi-Element Alignment & Distribution Inspector: Align edges/centers with 1-click (Left, Center, Right, Top, Middle, Bottom) and distribute horizontal/vertical spacing evenly across selected elements."
+                    )
+                    featureRow(
+                        icon: "cylinder.split.1x2.fill",
+                        text: isGerman ?
+                            "Hochleistungs-SQLite-Datenbank (autoqsl.sqlite): Blitzschneller nativer SQLite-Speicher mit WAL-Modus und Indizes auf Rufzeichen, Datum, Status und Band für 100.000+ QSOs bei minimaler Speichernutzung." :
+                            "High-Performance Native SQLite Engine (autoqsl.sqlite): Blazing-fast SQLite backend with WAL mode and indexes on callsign, date, status, and band for 100,000+ QSOs with instant lookups."
+                    )
+                    featureRow(
+                        icon: "paperclip.badge.ellipsis",
+                        text: isGerman ?
+                            "Zuverlässiger Massen-Mailversand: Eindeutige QSL-Karten-Dateinamen pro QSO und serielle AppleScript-Ausführungswarteschlange verhindern Dateikollisionen bei großen Massenversand-Aufträgen." :
+                            "Reliable Batch Email Dispatching: Unique per-QSO card filenames and serialized AppleScript queue eliminate file lock collisions during large mass-send operations."
+                    )
+                    featureRow(
+                        icon: "sun.max.fill",
+                        text: isGerman ?
+                            "Separater 'Erscheinungsbild'-Einstellungstab: Direkte Auswahl zwischen Hellmodus, Dunkelmodus und Systemeinstellung." :
+                            "Dedicated Appearance Settings Tab: Choose between Light Mode, Dark Mode, and System Appearance."
+                    )
                     featureRow(
                         icon: "printer.fill",
                         text: isGerman ?
@@ -1374,13 +1449,20 @@ AutoQSL Diagnostic Report / Systembericht
         }
     }
 
+    private func parseMarkdownString(_ str: String) -> AttributedString {
+        if let attr = try? AttributedString(markdown: str, options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            return attr
+        }
+        return AttributedString(str)
+    }
+
     private func featureRow(icon: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .font(.body)
                 .foregroundColor(.accentColor)
                 .frame(width: 20)
-            Text(text)
+            Text(parseMarkdownString(text))
                 .font(.callout)
         }
     }
@@ -1391,7 +1473,7 @@ AutoQSL Diagnostic Report / Systembericht
                 .font(.body.bold())
                 .foregroundColor(.secondary)
                 .frame(width: 12, alignment: .leading)
-            (Text(title).bold() + Text(" ") + Text(text))
+            (Text(parseMarkdownString(title)).bold() + Text(" ") + Text(parseMarkdownString(text)))
                 .font(.callout)
         }
     }
@@ -1402,7 +1484,7 @@ AutoQSL Diagnostic Report / Systembericht
                 .font(.caption.bold().monospaced())
                 .foregroundColor(.accentColor)
                 .frame(width: 20, alignment: .trailing)
-            Text(text)
+            Text(parseMarkdownString(text))
                 .font(.callout)
         }
     }

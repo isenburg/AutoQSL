@@ -4,7 +4,7 @@ import AppKit
 public struct CardDesignerRootView: View {
     @ObservedObject var appState: AppState
     
-    @State private var selectedElementId: UUID? = canvasBackgroundSelectionId
+    @State private var selectedElementIds: Set<UUID> = [canvasBackgroundSelectionId]
     @State private var zoomScale: CGFloat? = nil
     @State private var isAutoFit: Bool = true
     @GestureState private var pinchMagnification: CGFloat = 1.05
@@ -77,7 +77,7 @@ public struct CardDesignerRootView: View {
                 
                 Divider()
                 
-                List(selection: $selectedElementId) {
+                List(selection: $selectedElementIds) {
                     Section {
                         ForEach([canvasBackgroundSelectionId], id: \.self) { bgId in
                             HStack(spacing: 8) {
@@ -91,7 +91,7 @@ public struct CardDesignerRootView: View {
                                 Spacer()
                             }
                             .padding(.vertical, 2)
-                            .tag(bgId as UUID?)
+                            .tag(bgId)
                         }
                     } header: {
                         Text(L10n.tr(lang, "Canvas", "Leinwand"))
@@ -117,7 +117,7 @@ public struct CardDesignerRootView: View {
                                 .buttonStyle(.borderless)
                             }
                             .padding(.vertical, 2)
-                            .tag(element.id as UUID?)
+                            .tag(element.id)
                             .contextMenu {
                                 Button(lang == .german ? "Duplizieren" : "Duplicate") {
                                     duplicateElement(element.id)
@@ -133,26 +133,29 @@ public struct CardDesignerRootView: View {
                 }
                 .listStyle(.inset)
                 .onDeleteCommand {
-                    if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
-                        deleteElement(selId)
-                    }
+                    deleteSelectedElements()
                 }
                 
                 Divider()
                 
                 HStack(spacing: 8) {
                     Button(action: {
-                        if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
-                            deleteElement(selId)
-                        }
+                        deleteSelectedElements()
                     }) {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.borderless)
-                    .disabled(selectedElementId == nil || selectedElementId == canvasBackgroundSelectionId)
-                    .help(lang == .german ? "Ausgewähltes Element löschen (⌫)" : "Delete selected element (⌫)")
+                    .disabled(selectedElementIds.filter({ $0 != canvasBackgroundSelectionId }).isEmpty)
+                    .help(lang == .german ? "Ausgewählte Elemente löschen (⌫)" : "Delete selected elements (⌫)")
                     
                     Spacer()
+                    
+                    let nonBgCount = selectedElementIds.filter({ $0 != canvasBackgroundSelectionId }).count
+                    if nonBgCount > 1 {
+                        Text("\(nonBgCount) selected")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -160,9 +163,7 @@ public struct CardDesignerRootView: View {
             .frame(minWidth: 200, idealWidth: 240, maxWidth: 350)
             .background(SplitViewAutosaver(name: "AutoQSL_Designer_SplitView"))
             .onDeleteCommand {
-                if let selId = selectedElementId, selId != canvasBackgroundSelectionId {
-                    deleteElement(selId)
-                }
+                deleteSelectedElements()
             }
             
             // Center: Interactive Workspace Canvas
@@ -182,148 +183,129 @@ public struct CardDesignerRootView: View {
                                 }
                             }
                             .labelsHidden()
-                            .controlSize(.regular)
-                            .frame(minWidth: 150, idealWidth: 185, maxWidth: 220)
-                            
-                            Button(action: { appState.duplicateTemplate(id: appState.selectedTemplateId) }) {
-                                Image(systemName: "doc.on.doc")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .help(lang == .german ? "Aktive Vorlage duplizieren / kopieren" : "Duplicate active template")
+                            .frame(width: 145)
                             
                             Button(action: createNewTemplate) {
                                 Image(systemName: "plus")
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .help(L10n.tr(lang, "Create new template", "Neue Vorlage erstellen"))
+                            .help(lang == .german ? "Neue Vorlage erstellen" : "Create new template")
                             
-                            Button(action: { isDeleteTemplateConfirmationPresented = true }) {
+                            Button(role: .destructive, action: {
+                                isDeleteTemplateConfirmationPresented = true
+                            }) {
                                 Image(systemName: "trash")
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .help(L10n.tr(lang, "Delete active template", "Aktive Vorlage löschen"))
                             .disabled(appState.templates.count <= 1)
+                            .help(lang == .german ? "Aktuelle Vorlage löschen" : "Delete current template")
                         }
                     }
                     
-                    Divider().frame(height: 20).padding(.horizontal, 1)
+                    Divider().frame(height: 28)
                     
-                    // Preview QSO Selector
+                    // Undo & Redo Buttons
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.tr(lang, "History:", "Verlauf:"))
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 3) {
+                            Button(action: performUndo) {
+                                Image(systemName: "arrow.uturn.backward")
+                            }
+                            .disabled(undoStack.isEmpty)
+                            .help(lang == .german ? "Rückgängig (⌘Z)" : "Undo (⌘Z)")
+                            
+                            Button(action: performRedo) {
+                                Image(systemName: "arrow.uturn.forward")
+                            }
+                            .disabled(redoStack.isEmpty)
+                            .help(lang == .german ? "Wiederholen (⇧⌘Z)" : "Redo (⇧⌘Z)")
+                        }
+                    }
+                    
+                    Divider().frame(height: 28)
+                    
+                    // QSO Data Preview Source
                     VStack(alignment: .leading, spacing: 2) {
                         Text(L10n.tr(lang, "Preview QSO:", "Vorschau-QSO:"))
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.secondary)
                         
                         Picker("", selection: $selectedPreviewQSOId) {
-                            Text(L10n.tr(lang, "Sample (DJ6GI)", "Muster (DJ6GI)")).tag(nil as UUID?)
-                            ForEach(appState.qsoQueue) { q in
-                                Text("\(q.dxCall) (\(q.band) \(q.mode))").tag(q.id as UUID?)
+                            Text(lang == .german ? "Beispiel: DJ6GI (Standard)" : "Sample: DJ6GI (Default)").tag(nil as UUID?)
+                            
+                            if !appState.qsoQueue.isEmpty {
+                                Divider()
+                                ForEach(appState.qsoQueue) { qso in
+                                    Text("\(qso.dxCall) - \(qso.band) \(qso.mode) (\(qso.formattedUTCTime))").tag(qso.id as UUID?)
+                                }
                             }
                         }
                         .labelsHidden()
-                        .controlSize(.regular)
-                        .frame(minWidth: 130, idealWidth: 165, maxWidth: 195)
+                        .frame(width: 175)
                     }
                     
-                    Divider().frame(height: 20).padding(.horizontal, 1)
+                    Spacer()
                     
-                    // Undo / Redo
-                    HStack(spacing: 3) {
-                        Button(action: performUndo) {
-                            Image(systemName: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .help("Undo last change (⌘Z)")
-                        .disabled(undoStack.isEmpty)
-                        .keyboardShortcut("z", modifiers: .command)
+                    // Zoom Controls
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(L10n.tr(lang, "View Zoom:", "Zoom:"))
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary)
                         
-                        Button(action: performRedo) {
-                            Image(systemName: "arrow.uturn.forward")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .help("Redo last change (⇧⌘Z)")
-                        .disabled(redoStack.isEmpty)
-                        .keyboardShortcut("z", modifiers: [.command, .shift])
-                    }
-                    
-                    Divider().frame(height: 20).padding(.horizontal, 1)
-                    
-                    // Dynamic Auto-Fit Zoom Controls
-                    HStack(spacing: 3) {
-                        Button(action: {
-                            isAutoFit = false
-                            let cur = zoomScale ?? 0.8
-                            zoomScale = max(cur - 0.1, 0.3)
-                        }) {
-                            Image(systemName: "minus.magnifyingglass")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        
-                        Text("\(Int((isAutoFit ? (zoomScale ?? 1.0) : (zoomScale ?? 1.0)) * pinchMagnification * 100))%")
-                            .font(.caption.monospaced())
-                            .frame(width: 40)
-                        
-                        Button(action: {
-                            isAutoFit = false
-                            let cur = zoomScale ?? 0.8
-                            zoomScale = min(cur + 0.1, 2.5)
-                        }) {
-                            Image(systemName: "plus.magnifyingglass")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                        HStack(spacing: 4) {
+                            Button(action: {
                                 isAutoFit = true
                                 zoomScale = nil
-                            }
-                        }) {
-                            HStack(spacing: 3) {
-                                if isAutoFit {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 8, weight: .bold))
-                                }
-                                Text(lang == .german ? "Anpassen" : "Fit")
+                            }) {
+                                Text(L10n.tr(lang, "Fit", "Einpassen"))
                                     .font(.caption2.bold())
+                                    .foregroundColor(isAutoFit ? .accentColor : .primary)
+                            }
+                            .buttonStyle(.bordered)
+                            
+                            Button(action: {
+                                isAutoFit = false
+                                let cur = zoomScale ?? 1.0
+                                zoomScale = max(cur - 0.15, 0.3)
+                            }) {
+                                Image(systemName: "minus.magnifyingglass")
+                            }
+                            
+                            Button(action: {
+                                isAutoFit = false
+                                zoomScale = 1.0
+                            }) {
+                                Text("100%")
+                                    .font(.caption2)
+                            }
+                            
+                            Button(action: {
+                                isAutoFit = false
+                                let cur = zoomScale ?? 1.0
+                                zoomScale = min(cur + 0.15, 2.5)
+                            }) {
+                                Image(systemName: "plus.magnifyingglass")
                             }
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .help(lang == .german ? "Karte immer vollflächig an den verfügbaren Platz anpassen" : "Fit card to available workspace")
                     }
                     
-                    Spacer(minLength: 4)
+                    Divider().frame(height: 28)
                     
-                    Divider().frame(height: 20).padding(.horizontal, 1)
-                    
-                    // Output & Actions
-                    HStack(spacing: 3) {
-                        Button(action: exportCardImage) {
-                            Label(L10n.tr(lang, "Export Image", "Bild exportieren"), systemImage: "square.and.arrow.up")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
+                    // Export Card Image
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(L10n.tr(lang, "Export:", "Export:"))
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary)
                         
-                        Button(action: {
-                            CardRenderer.shared.printCard(template: appState.activeTemplate, settings: appState.settings, qso: activePreviewQSO)
-                        }) {
-                            Label(L10n.tr(lang, "Print...", "Drucken..."), systemImage: "printer")
+                        Button(action: exportCardImage) {
+                            Label(L10n.tr(lang, "Export JPEG...", "JPEG Export..."), systemImage: "square.and.arrow.up")
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .help(L10n.tr(lang, "Print QSL card (⌘P)", "QSL-Karte drucken (⌘P)"))
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color(NSColor.windowBackgroundColor))
+                .background(Color(NSColor.controlBackgroundColor))
                 
                 Divider()
                 
@@ -332,7 +314,6 @@ public struct CardDesignerRootView: View {
                     let baseW = appState.activeTemplate.aspectRatio.widthPoints
                     let baseH = appState.activeTemplate.aspectRatio.heightPoints
                     
-                    // Compute optimal scale to always fill the available area (with comfortable 48pt margin)
                     let availW = max(geo.size.width - 48, 200)
                     let availH = max(geo.size.height - 48, 200)
                     let autoFitScale = min(availW / baseW, availH / baseH)
@@ -351,12 +332,15 @@ public struct CardDesignerRootView: View {
                                 settings: appState.settings,
                                 qso: activePreviewQSO,
                                 isInteractive: true,
-                                selectedElementId: $selectedElementId,
+                                selectedElementIds: $selectedElementIds,
                                 onElementMoved: { id, newNormX, newNormY in
                                     if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
                                         appState.activeTemplate.elements[idx].normalizedX = newNormX
                                         appState.activeTemplate.elements[idx].normalizedY = newNormY
                                     }
+                                },
+                                onMultiElementsMoved: { ids, deltaX, deltaY in
+                                    moveSelectedElements(ids: ids, deltaX: deltaX, deltaY: deltaY)
                                 },
                                 onElementResized: { id, newNormW, newNormH, newFontSize in
                                     if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
@@ -398,17 +382,30 @@ public struct CardDesignerRootView: View {
             }
             .frame(minWidth: 500)
             
-            // Right: Inspector Panel
+            // Right: Inspector Panel (Single, Multi, or Canvas Background)
             VStack(spacing: 0) {
-                if let selectedId = selectedElementId,
-                   let index = appState.activeTemplate.elements.firstIndex(where: { $0.id == selectedId }) {
+                let nonBgSelected = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+                
+                if nonBgSelected.count > 1 {
+                    MultiElementInspectorView(
+                        count: nonBgSelected.count,
+                        lang: appState.settings.appLanguage,
+                        onAlign: { alignSelectedElements(to: $0) },
+                        onDistribute: { distributeSelectedElements(axis: $0) },
+                        onDuplicate: { duplicateSelectedElements() },
+                        onToggleLock: { toggleLockSelectedElements() },
+                        onToggleVisibility: { toggleVisibilitySelectedElements() },
+                        onDelete: { deleteSelectedElements() }
+                    )
+                } else if let singleId = nonBgSelected.first,
+                          let index = appState.activeTemplate.elements.firstIndex(where: { $0.id == singleId }) {
                     ElementInspectorView(element: $appState.activeTemplate.elements[index], lang: appState.settings.appLanguage)
                     
                     Divider()
                     
                     VStack {
                         Button(role: .destructive, action: {
-                            deleteElement(selectedId)
+                            deleteElement(singleId)
                         }) {
                             Label(lang == .german ? "Element löschen" : "Delete Element", systemImage: "trash")
                                 .frame(maxWidth: .infinity)
@@ -456,17 +453,18 @@ public struct CardDesignerRootView: View {
                         return event
                     }
                     
-                    guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else {
+                    let nonBgSelected = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+                    guard !nonBgSelected.isEmpty else {
                         return event
                     }
                     
                     // 1. Delete element with Backspace / Forward Delete
                     if event.keyCode == 51 || event.keyCode == 117 {
-                        deleteElement(selId)
+                        deleteSelectedElements()
                         return nil
                     }
                     
-                    // 2. Move element with Arrow Keys (123: Left, 124: Right, 125: Down, 126: Up)
+                    // 2. Move elements with Arrow Keys (123: Left, 124: Right, 125: Down, 126: Up)
                     if event.keyCode >= 123 && event.keyCode <= 126 {
                         let isShift = event.modifierFlags.contains(.shift)
                         let isOption = event.modifierFlags.contains(.option)
@@ -479,13 +477,13 @@ public struct CardDesignerRootView: View {
                         
                         switch event.keyCode {
                         case 123: // Left
-                            nudgeSelectedElement(dx: -stepX, dy: 0)
+                            nudgeSelectedElements(dx: -stepX, dy: 0)
                         case 124: // Right
-                            nudgeSelectedElement(dx: stepX, dy: 0)
+                            nudgeSelectedElements(dx: stepX, dy: 0)
                         case 125: // Down
-                            nudgeSelectedElement(dx: 0, dy: stepY)
+                            nudgeSelectedElements(dx: 0, dy: stepY)
                         case 126: // Up
-                            nudgeSelectedElement(dx: 0, dy: -stepY)
+                            nudgeSelectedElements(dx: 0, dy: -stepY)
                         default:
                             break
                         }
@@ -508,6 +506,7 @@ public struct CardDesignerRootView: View {
             previousTemplateSnapshot = appState.activeTemplate
         }
         .onChange(of: appState.activeTemplate) { _, newTemplate in
+            appState.syncTableCommentToSettings()
             if isUndoRedoAction {
                 isUndoRedoAction = false
                 previousTemplateSnapshot = newTemplate
@@ -580,7 +579,7 @@ public struct CardDesignerRootView: View {
         }
         
         appState.activeTemplate.elements.append(newElement)
-        selectedElementId = newElement.id
+        selectedElementIds = [newElement.id]
     }
     
     private func addStickerElement(item: StickerItem) {
@@ -595,7 +594,7 @@ public struct CardDesignerRootView: View {
             customImagePath: item.customImagePath
         )
         appState.activeTemplate.elements.append(newElement)
-        selectedElementId = newElement.id
+        selectedElementIds = [newElement.id]
     }
     
     private func toggleVisibility(_ id: UUID) {
@@ -612,25 +611,162 @@ public struct CardDesignerRootView: View {
             clone.normalizedX = min(clone.normalizedX + 0.05, 0.9)
             clone.normalizedY = min(clone.normalizedY + 0.05, 0.9)
             appState.activeTemplate.elements.append(clone)
-            selectedElementId = clone.id
+            selectedElementIds = [clone.id]
         }
     }
     
-    private func nudgeSelectedElement(dx: Double, dy: Double) {
-        guard let selId = selectedElementId, selId != canvasBackgroundSelectionId else { return }
-        guard let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == selId }) else { return }
-        guard !appState.activeTemplate.elements[idx].isLocked else { return }
-        
-        var el = appState.activeTemplate.elements[idx]
-        el.normalizedX = min(max(el.normalizedX + dx, 0.01), 0.99)
-        el.normalizedY = min(max(el.normalizedY + dy, 0.01), 0.99)
-        appState.activeTemplate.elements[idx] = el
+    private func moveSelectedElements(ids: Set<UUID>, deltaX: Double, deltaY: Double) {
+        for id in ids {
+            if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                appState.activeTemplate.elements[idx].normalizedX = min(max(appState.activeTemplate.elements[idx].normalizedX + deltaX, 0.01), 0.99)
+                appState.activeTemplate.elements[idx].normalizedY = min(max(appState.activeTemplate.elements[idx].normalizedY + deltaY, 0.01), 0.99)
+            }
+        }
+    }
+    
+    private func nudgeSelectedElements(dx: Double, dy: Double) {
+        let validIds = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        guard !validIds.isEmpty else { return }
+        moveSelectedElements(ids: validIds, deltaX: dx, deltaY: dy)
     }
 
     private func deleteElement(_ id: UUID) {
         appState.activeTemplate.elements.removeAll(where: { $0.id == id })
-        if selectedElementId == id {
-            selectedElementId = nil
+        selectedElementIds.remove(id)
+        if selectedElementIds.isEmpty {
+            selectedElementIds = [canvasBackgroundSelectionId]
+        }
+    }
+    
+    private func deleteSelectedElements() {
+        let toDelete = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        guard !toDelete.isEmpty else { return }
+        appState.activeTemplate.elements.removeAll(where: { toDelete.contains($0.id) })
+        selectedElementIds = [canvasBackgroundSelectionId]
+    }
+    
+    private func duplicateSelectedElements() {
+        let toDup = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        guard !toDup.isEmpty else { return }
+        var newIds: Set<UUID> = []
+        for id in toDup {
+            if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                var clone = appState.activeTemplate.elements[idx]
+                clone.id = UUID()
+                clone.name += " Copy"
+                clone.normalizedX = min(clone.normalizedX + 0.04, 0.94)
+                clone.normalizedY = min(clone.normalizedY + 0.04, 0.94)
+                appState.activeTemplate.elements.append(clone)
+                newIds.insert(clone.id)
+            }
+        }
+        if !newIds.isEmpty {
+            selectedElementIds = newIds
+        }
+    }
+    
+    private func alignSelectedElements(to alignment: MultiAlignment) {
+        let targetIds = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        guard targetIds.count > 1 else { return }
+        
+        let elements = appState.activeTemplate.elements.filter { targetIds.contains($0.id) && !$0.isLocked }
+        guard elements.count > 1 else { return }
+        
+        switch alignment {
+        case .left:
+            let minLeft = elements.map { $0.normalizedX - ($0.normalizedWidth / 2.0) }.min() ?? 0.1
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    let w = appState.activeTemplate.elements[idx].normalizedWidth
+                    appState.activeTemplate.elements[idx].normalizedX = min(max(minLeft + (w / 2.0), 0.01), 0.99)
+                }
+            }
+        case .centerH:
+            let avgX = elements.map { $0.normalizedX }.reduce(0, +) / Double(elements.count)
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    appState.activeTemplate.elements[idx].normalizedX = min(max(avgX, 0.01), 0.99)
+                }
+            }
+        case .right:
+            let maxRight = elements.map { $0.normalizedX + ($0.normalizedWidth / 2.0) }.max() ?? 0.9
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    let w = appState.activeTemplate.elements[idx].normalizedWidth
+                    appState.activeTemplate.elements[idx].normalizedX = min(max(maxRight - (w / 2.0), 0.01), 0.99)
+                }
+            }
+        case .top:
+            let minTop = elements.map { $0.normalizedY - ($0.normalizedHeight / 2.0) }.min() ?? 0.1
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    let h = appState.activeTemplate.elements[idx].normalizedHeight
+                    appState.activeTemplate.elements[idx].normalizedY = min(max(minTop + (h / 2.0), 0.01), 0.99)
+                }
+            }
+        case .centerV:
+            let avgY = elements.map { $0.normalizedY }.reduce(0, +) / Double(elements.count)
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    appState.activeTemplate.elements[idx].normalizedY = min(max(avgY, 0.01), 0.99)
+                }
+            }
+        case .bottom:
+            let maxBottom = elements.map { $0.normalizedY + ($0.normalizedHeight / 2.0) }.max() ?? 0.9
+            for id in targetIds {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id && !$0.isLocked }) {
+                    let h = appState.activeTemplate.elements[idx].normalizedHeight
+                    appState.activeTemplate.elements[idx].normalizedY = min(max(maxBottom - (h / 2.0), 0.01), 0.99)
+                }
+            }
+        }
+    }
+    
+    private func distributeSelectedElements(axis: Axis) {
+        let targetIds = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        guard targetIds.count >= 3 else { return }
+        
+        var elements = appState.activeTemplate.elements.filter { targetIds.contains($0.id) && !$0.isLocked }
+        guard elements.count >= 3 else { return }
+        
+        if axis == .horizontal {
+            elements.sort { $0.normalizedX < $1.normalizedX }
+            guard let firstX = elements.first?.normalizedX, let lastX = elements.last?.normalizedX else { return }
+            let step = (lastX - firstX) / Double(elements.count - 1)
+            for (i, el) in elements.enumerated() {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == el.id }) {
+                    appState.activeTemplate.elements[idx].normalizedX = min(max(firstX + (Double(i) * step), 0.01), 0.99)
+                }
+            }
+        } else {
+            elements.sort { $0.normalizedY < $1.normalizedY }
+            guard let firstY = elements.first?.normalizedY, let lastY = elements.last?.normalizedY else { return }
+            let step = (lastY - firstY) / Double(elements.count - 1)
+            for (i, el) in elements.enumerated() {
+                if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == el.id }) {
+                    appState.activeTemplate.elements[idx].normalizedY = min(max(firstY + (Double(i) * step), 0.01), 0.99)
+                }
+            }
+        }
+    }
+    
+    private func toggleLockSelectedElements() {
+        let targetIds = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        let shouldLock = appState.activeTemplate.elements.filter({ targetIds.contains($0.id) }).contains(where: { !$0.isLocked })
+        for id in targetIds {
+            if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                appState.activeTemplate.elements[idx].isLocked = shouldLock
+            }
+        }
+    }
+    
+    private func toggleVisibilitySelectedElements() {
+        let targetIds = selectedElementIds.filter { $0 != canvasBackgroundSelectionId }
+        let shouldShow = appState.activeTemplate.elements.filter({ targetIds.contains($0.id) }).contains(where: { !$0.isVisible })
+        for id in targetIds {
+            if let idx = appState.activeTemplate.elements.firstIndex(where: { $0.id == id }) {
+                appState.activeTemplate.elements[idx].isVisible = shouldShow
+            }
         }
     }
     
