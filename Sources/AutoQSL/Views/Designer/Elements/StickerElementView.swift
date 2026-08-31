@@ -3,11 +3,13 @@ import SwiftUI
 public struct StickerElementView: View {
     public let stickerType: StickerType
     public let customImagePath: String?
+    public let customImageData: Data?
     public let tintColor: Color?
     
-    public init(stickerType: StickerType, customImagePath: String? = nil, tintColor: Color? = nil) {
+    public init(stickerType: StickerType, customImagePath: String? = nil, customImageData: Data? = nil, tintColor: Color? = nil) {
         self.stickerType = stickerType
         self.customImagePath = customImagePath
+        self.customImageData = customImageData
         self.tintColor = tintColor
     }
     
@@ -31,7 +33,11 @@ public struct StickerElementView: View {
             case .was:
                 WASBadgeView()
             case .custom:
-                if let path = customImagePath, let nsImage = NSImage(contentsOfFile: path) {
+                if let data = customImageData, let nsImage = NSImage(data: data) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else if let path = customImagePath, let nsImage = NSImage(contentsOfFile: path) {
                     Image(nsImage: nsImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)

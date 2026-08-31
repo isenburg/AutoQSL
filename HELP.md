@@ -380,6 +380,13 @@ Released for the global amateur radio community.
 
 ## 10. Changelog & Version History
 
+### Version 2.1.0 (2026-08)
+- ↕️ **Freely Reorderable QSO Confirmation Table**: Table columns (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST/Report`, `Mode`) can now be reordered via mouse Drag & Drop or arrow buttons (`▲` / `▼`). The custom column order is rendered accurately on the card and saved per template.
+- ➕ **1-Click Template Duplication (`+`)**: Clicking the `+` icon in the template selector toolbar instantly creates a duplicate of the currently selected template with all its elements and configurations.
+- 🖼️ **Embedded Background Images & Database Snapshots**: Custom background images and custom logos are embedded directly as binary data inside the template definitions and SQLite database, ensuring cards look identical across multi-Mac iCloud synchronization.
+- 🗑️ **Flexible Template Management**: Built-in sample templates can be permanently deleted without being automatically recreated on restart (at least one default template remains).
+- 📖 **RUMlogNG Visual Setup Guide**: Embedded UDP configuration screenshots in the in-app help system for easy dual-broadcast setup.
+
 ### Version 2.0.0 (2026-08)
 - ✨ **Multi-Object Selection & Rubberband Marquee**: Select multiple objects with `Shift+Click` or `Cmd+Click` or by dragging a virtual selection box over empty canvas.
 - 📐 **Synchronous Group Dragging & Alignment**: Moving any selected object translates the entire group simultaneously without changing relative distances; dedicated *Multi-Element Inspector* with 1-click alignment (Left, Center, Right, Top, Middle, Bottom) and equal distribution (Horizontal / Vertical).

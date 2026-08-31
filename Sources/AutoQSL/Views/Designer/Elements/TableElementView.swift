@@ -80,72 +80,77 @@ public struct TableElementView: View {
         let isSplit = (dateHeaderStyle == .splitSubheaders)
         let divW = CGFloat(max(element.tableBorderWidth, 1.0))
         
-        // Build list of active columns based on user settings
+        // Build list of active columns based on user settings and configured column order
         var cols: [(id: String, header: String, weight: Double, isDate: Bool, render: (CGFloat) -> AnyView)] = []
         
-        if element.tableShowCallsign {
-            let hdr = element.tableCallsignHeader.isEmpty ? "Confirming QSO With" : element.tableCallsignHeader
-            cols.append(("call", hdr, 0.25, false, { w in
-                AnyView(dataCell(activeQSO.dxCall.isEmpty ? "DJ6GI" : activeQSO.dxCall, width: w, isBold: true))
-            }))
-        }
-        
-        if element.tableShowDate {
-            let hdr = element.tableDateHeader.isEmpty ? "Date" : element.tableDateHeader
-            cols.append(("date", hdr, isSplit ? 0.26 : 0.23, true, { w in
-                if isSplit {
-                    let wSub = w / 3.0
-                    return AnyView(
-                        Group {
-                            if dateOrder == .ddMMyyyy {
-                                HStack(spacing: 0) {
-                                    subDataCell(activeQSO.formattedDateDay, width: wSub)
-                                    subDataCell(activeQSO.formattedDateMonth, width: wSub)
-                                    subDataCell(activeQSO.formattedDateYear, width: wSub)
-                                }
-                                .frame(width: w)
-                            } else {
-                                HStack(spacing: 0) {
-                                    subDataCell(activeQSO.formattedDateYear, width: wSub)
-                                    subDataCell(activeQSO.formattedDateMonth, width: wSub)
-                                    subDataCell(activeQSO.formattedDateDay, width: wSub)
-                                }
-                                .frame(width: w)
-                            }
-                        }
-                    )
-                } else {
-                    return AnyView(dataCell(formattedDateString, width: w))
+        for colType in element.effectiveTableColumnOrder {
+            switch colType {
+            case .call:
+                if element.tableShowCallsign {
+                    let hdr = element.tableCallsignHeader.isEmpty ? "Confirming QSO With" : element.tableCallsignHeader
+                    cols.append(("call", hdr, 0.25, false, { w in
+                        AnyView(dataCell(activeQSO.dxCall.isEmpty ? "DJ6GI" : activeQSO.dxCall, width: w, isBold: true))
+                    }))
                 }
-            }))
-        }
-        
-        if element.tableShowTime {
-            let hdr = element.tableTimeHeader.isEmpty ? "UTC Time" : element.tableTimeHeader
-            cols.append(("time", hdr, 0.13, false, { w in
-                AnyView(dataCell(activeQSO.formattedUTCTime.isEmpty ? "11:15" : activeQSO.formattedUTCTime, width: w))
-            }))
-        }
-        
-        if element.tableShowFreq {
-            let hdr = element.tableFreqHeader.isEmpty ? "Frequency" : element.tableFreqHeader
-            cols.append(("freq", hdr, 0.15, false, { w in
-                AnyView(dataCell(freqString, width: w))
-            }))
-        }
-        
-        if element.tableShowRST {
-            let hdr = element.tableRSTHeader.isEmpty ? "Report" : element.tableRSTHeader
-            cols.append(("rst", hdr, 0.12, false, { w in
-                AnyView(dataCell(activeQSO.rstSent.isEmpty ? "-12" : activeQSO.rstSent, width: w))
-            }))
-        }
-        
-        if element.tableShowMode {
-            let hdr = element.tableModeHeader.isEmpty ? "Mode" : element.tableModeHeader
-            cols.append(("mode", hdr, 0.12, false, { w in
-                AnyView(dataCell(activeQSO.mode.isEmpty ? "FT8" : activeQSO.mode, width: w))
-            }))
+            case .date:
+                if element.tableShowDate {
+                    let hdr = element.tableDateHeader.isEmpty ? "Date" : element.tableDateHeader
+                    cols.append(("date", hdr, isSplit ? 0.26 : 0.23, true, { w in
+                        if isSplit {
+                            let wSub = w / 3.0
+                            return AnyView(
+                                Group {
+                                    if dateOrder == .ddMMyyyy {
+                                        HStack(spacing: 0) {
+                                            subDataCell(activeQSO.formattedDateDay, width: wSub)
+                                            subDataCell(activeQSO.formattedDateMonth, width: wSub)
+                                            subDataCell(activeQSO.formattedDateYear, width: wSub)
+                                        }
+                                        .frame(width: w)
+                                    } else {
+                                        HStack(spacing: 0) {
+                                            subDataCell(activeQSO.formattedDateYear, width: wSub)
+                                            subDataCell(activeQSO.formattedDateMonth, width: wSub)
+                                            subDataCell(activeQSO.formattedDateDay, width: wSub)
+                                        }
+                                        .frame(width: w)
+                                    }
+                                }
+                            )
+                        } else {
+                            return AnyView(dataCell(formattedDateString, width: w))
+                        }
+                    }))
+                }
+            case .time:
+                if element.tableShowTime {
+                    let hdr = element.tableTimeHeader.isEmpty ? "UTC Time" : element.tableTimeHeader
+                    cols.append(("time", hdr, 0.13, false, { w in
+                        AnyView(dataCell(activeQSO.formattedUTCTime.isEmpty ? "11:15" : activeQSO.formattedUTCTime, width: w))
+                    }))
+                }
+            case .freq:
+                if element.tableShowFreq {
+                    let hdr = element.tableFreqHeader.isEmpty ? "Frequency" : element.tableFreqHeader
+                    cols.append(("freq", hdr, 0.15, false, { w in
+                        AnyView(dataCell(freqString, width: w))
+                    }))
+                }
+            case .rst:
+                if element.tableShowRST {
+                    let hdr = element.tableRSTHeader.isEmpty ? "Report" : element.tableRSTHeader
+                    cols.append(("rst", hdr, 0.12, false, { w in
+                        AnyView(dataCell(activeQSO.rstSent.isEmpty ? "-12" : activeQSO.rstSent, width: w))
+                    }))
+                }
+            case .mode:
+                if element.tableShowMode {
+                    let hdr = element.tableModeHeader.isEmpty ? "Mode" : element.tableModeHeader
+                    cols.append(("mode", hdr, 0.12, false, { w in
+                        AnyView(dataCell(activeQSO.mode.isEmpty ? "FT8" : activeQSO.mode, width: w))
+                    }))
+                }
+            }
         }
         
         let numDividers = CGFloat(max(cols.count - 1, 0))

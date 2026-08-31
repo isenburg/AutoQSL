@@ -1,8 +1,18 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 public struct ElementInspectorView: View {
     @Binding var element: CardElement
     public var lang: AppLanguage = .english
+    
+    @State private var draggingColumn: TableColumnType? = nil
+    
+    private var tableColumnOrderBinding: Binding<[TableColumnType]> {
+        Binding(
+            get: { element.effectiveTableColumnOrder },
+            set: { element.tableColumnOrder = $0 }
+        )
+    }
     
     private var textColorBinding: Binding<Color> {
         Binding(
@@ -391,70 +401,29 @@ public struct ElementInspectorView: View {
                 .font(.subheadline.bold())
             
             Group {
-                Text(L10n.tr(lang, "Table Columns & Headers", "Tabellenspalten & Überschriften"))
-                    .font(.caption.bold())
-                    .foregroundColor(.secondary)
-                
-                // 1. QSO With
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "QSO With Column", "Spalte: QSO With"), isOn: $element.tableShowCallsign)
-                    if element.tableShowCallsign {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableCallsignHeader)
-                            .textFieldStyle(.roundedBorder)
-                    }
+                HStack {
+                    Text(L10n.tr(lang, "Table Columns & Order", "Tabellenspalten & Reihenfolge"))
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(L10n.tr(lang, "Reorder: ▲ / ▼", "Reihenfolge: ▲ / ▼"))
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
                 }
                 
-                // 2. Date
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "Date Column", "Spalte: Date"), isOn: $element.tableShowDate)
-                    if element.tableShowDate {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableDateHeader)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                
-                // 3. UTC Time
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "UTC Time Column", "Spalte: UTC Time"), isOn: $element.tableShowTime)
-                    if element.tableShowTime {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableTimeHeader)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                
-                // 4. Frequency / Band
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "Frequency / Band Column", "Spalte: Frequency / Band"), isOn: $element.tableShowFreq)
-                    if element.tableShowFreq {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableFreqHeader)
-                            .textFieldStyle(.roundedBorder)
-                        Picker(L10n.tr(lang, "Data Format", "Datenformat"), selection: $element.tableFreqDisplayMode) {
-                            ForEach(TableFreqDisplayMode.allCases) { mode in
-                                Text(mode.rawValue).tag(mode)
-                            }
+                let order = element.effectiveTableColumnOrder
+                ForEach(0..<order.count, id: \.self) { idx in
+                    let colType = order[idx]
+                    columnRow(for: colType, index: idx, total: order.count)
+                        .opacity(draggingColumn == colType ? 0.35 : 1.0)
+                        .onDrag {
+                            self.draggingColumn = colType
+                            return NSItemProvider(object: colType.rawValue as NSString)
                         }
-                    }
+                        .onDrop(of: [.plainText, .text], delegate: TableColumnDropDelegate(targetColumn: colType, currentOrder: tableColumnOrderBinding, draggingColumn: $draggingColumn))
                 }
                 
-                // 5. RST / Report
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "RST / Report Column", "Spalte: RST / Report"), isOn: $element.tableShowRST)
-                    if element.tableShowRST {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableRSTHeader)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                
-                // 6. Mode
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr(lang, "Mode Column", "Spalte: Mode"), isOn: $element.tableShowMode)
-                    if element.tableShowMode {
-                        TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableModeHeader)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                
-                // 7. Remarks / Greeting Row
+                // Remarks / Greeting Row
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle(L10n.tr(lang, "Remarks / Greeting Row", "Gruß- / Bemerkungszeile"), isOn: $element.tableShowCommentRow)
                     if element.tableShowCommentRow {
@@ -462,6 +431,9 @@ public struct ElementInspectorView: View {
                             .textFieldStyle(.roundedBorder)
                     }
                 }
+                .padding(8)
+                .background(Color.secondary.opacity(0.06))
+                .cornerRadius(8)
             }
             
             Divider()
@@ -514,6 +486,115 @@ Text(L10n.tr(lang, "Border Width: \(widthStr) pt", "Rahmenbreite: \(widthStr) pt
             
             shadowControlSection
         }
+    }
+    
+    @ViewBuilder
+    private func columnRow(for colType: TableColumnType, index: Int, total: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                switch colType {
+                case .call:
+                    Toggle(L10n.tr(lang, "QSO With Column", "Spalte: QSO With"), isOn: $element.tableShowCallsign)
+                case .date:
+                    Toggle(L10n.tr(lang, "Date Column", "Spalte: Date"), isOn: $element.tableShowDate)
+                case .time:
+                    Toggle(L10n.tr(lang, "UTC Time Column", "Spalte: UTC Time"), isOn: $element.tableShowTime)
+                case .freq:
+                    Toggle(L10n.tr(lang, "Frequency / Band Column", "Spalte: Frequency / Band"), isOn: $element.tableShowFreq)
+                case .rst:
+                    Toggle(L10n.tr(lang, "RST / Report Column", "Spalte: RST / Report"), isOn: $element.tableShowRST)
+                case .mode:
+                    Toggle(L10n.tr(lang, "Mode Column", "Spalte: Mode"), isOn: $element.tableShowMode)
+                }
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .help(L10n.tr(lang, "Drag to reorder", "Mit der Maus ziehen zum Sortieren"))
+                        .padding(.trailing, 2)
+                    
+                    Button(action: {
+                        var order = element.effectiveTableColumnOrder
+                        if index > 0 {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                order.swapAt(index, index - 1)
+                                element.tableColumnOrder = order
+                            }
+                        }
+                    }) {
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 10, weight: .bold))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(index == 0)
+                    .foregroundColor(index == 0 ? .secondary.opacity(0.3) : .primary)
+                    .help(L10n.tr(lang, "Move Column Left / Up", "Spalte nach links / oben verschieben"))
+                    
+                    Button(action: {
+                        var order = element.effectiveTableColumnOrder
+                        if index < total - 1 {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                order.swapAt(index, index + 1)
+                                element.tableColumnOrder = order
+                            }
+                        }
+                    }) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(index == total - 1)
+                    .foregroundColor(index == total - 1 ? .secondary.opacity(0.3) : .primary)
+                    .help(L10n.tr(lang, "Move Column Right / Down", "Spalte nach rechts / unten verschieben"))
+                }
+            }
+            
+            switch colType {
+            case .call:
+                if element.tableShowCallsign {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableCallsignHeader)
+                        .textFieldStyle(.roundedBorder)
+                }
+            case .date:
+                if element.tableShowDate {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableDateHeader)
+                        .textFieldStyle(.roundedBorder)
+                }
+            case .time:
+                if element.tableShowTime {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableTimeHeader)
+                        .textFieldStyle(.roundedBorder)
+                }
+            case .freq:
+                if element.tableShowFreq {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableFreqHeader)
+                        .textFieldStyle(.roundedBorder)
+                    Picker(L10n.tr(lang, "Data Format", "Datenformat"), selection: $element.tableFreqDisplayMode) {
+                        ForEach(TableFreqDisplayMode.allCases) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
+                    }
+                }
+            case .rst:
+                if element.tableShowRST {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableRSTHeader)
+                        .textFieldStyle(.roundedBorder)
+                }
+            case .mode:
+                if element.tableShowMode {
+                    TextField(L10n.tr(lang, "Header Label", "Spaltentitel"), text: $element.tableModeHeader)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+        }
+        .padding(8)
+        .background(Color.secondary.opacity(0.06))
+        .cornerRadius(8)
     }
     
     // MARK: - Location Footer Inspector
@@ -594,5 +675,35 @@ Text(L10n.tr(lang, "Border Width: \(widthStr) pt", "Rahmenbreite: \(widthStr) pt
             
             shadowControlSection
         }
+    }
+}
+
+// MARK: - Table Column Drag & Drop Reordering Delegate
+struct TableColumnDropDelegate: DropDelegate {
+    let targetColumn: TableColumnType
+    let currentOrder: Binding<[TableColumnType]>
+    @Binding var draggingColumn: TableColumnType?
+    
+    func dropEntered(info: DropInfo) {
+        guard let dragging = draggingColumn, dragging != targetColumn,
+              let fromIndex = currentOrder.wrappedValue.firstIndex(of: dragging),
+              let toIndex = currentOrder.wrappedValue.firstIndex(of: targetColumn) else { return }
+        
+        if currentOrder.wrappedValue[toIndex] != dragging {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                var order = currentOrder.wrappedValue
+                order.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
+                currentOrder.wrappedValue = order
+            }
+        }
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+    
+    func performDrop(info: DropInfo) -> Bool {
+        draggingColumn = nil
+        return true
     }
 }

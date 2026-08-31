@@ -134,13 +134,8 @@ public final class PersistenceService {
            let templates = try? decoder.decode([QSLCardTemplate].self, from: data),
            !templates.isEmpty {
             var result = templates
-            // Ensure built-in templates (Sonnenuntergang, Bonanza, Standard) are never lost
-            for b in builtins {
-                if !result.contains(where: { $0.name == b.name }) {
-                    result.append(b)
-                }
-            }
-            if result.count > templates.count {
+            let migrated = migrateEmbeddedImageData(in: &result)
+            if migrated {
                 saveTemplates(result, to: loc)
             }
             return result
@@ -153,18 +148,40 @@ public final class PersistenceService {
                let templates = try? decoder.decode([QSLCardTemplate].self, from: data),
                !templates.isEmpty {
                 var result = templates
-                for b in builtins {
-                    if !result.contains(where: { $0.name == b.name }) {
-                        result.append(b)
-                    }
-                }
+                _ = migrateEmbeddedImageData(in: &result)
                 saveTemplates(result, to: .iCloud)
                 return result
             }
         }
         
-        saveTemplates(builtins, to: loc)
-        return builtins
+        var defaultBuiltins = builtins
+        _ = migrateEmbeddedImageData(in: &defaultBuiltins)
+        saveTemplates(defaultBuiltins, to: loc)
+        return defaultBuiltins
+    }
+    
+    private func migrateEmbeddedImageData(in templates: inout [QSLCardTemplate]) -> Bool {
+        var didModify = false
+        for i in 0..<templates.count {
+            // Background image
+            if templates[i].backgroundImageData == nil, let path = templates[i].backgroundImagePath, !path.isEmpty {
+                if let fileData = try? Data(contentsOf: URL(fileURLWithPath: path)) {
+                    templates[i].backgroundImageData = fileData
+                    didModify = true
+                }
+            }
+            // Sticker / custom elements
+            for eIdx in 0..<templates[i].elements.count {
+                if templates[i].elements[eIdx].customImageData == nil,
+                   let cPath = templates[i].elements[eIdx].customImagePath, !cPath.isEmpty {
+                    if let fileData = try? Data(contentsOf: URL(fileURLWithPath: cPath)) {
+                        templates[i].elements[eIdx].customImageData = fileData
+                        didModify = true
+                    }
+                }
+            }
+        }
+        return didModify
     }
     
     public func saveTemplates(_ templates: [QSLCardTemplate], to location: StorageLocation? = nil) {

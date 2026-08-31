@@ -771,12 +771,28 @@ public struct CardDesignerRootView: View {
     }
     
     private func createNewTemplate() {
-        var newT = QSLCardTemplate.createDefaultTemplate(myCall: appState.settings.myCallsign, myAddress: appState.settings.fullMyAddress)
-        newT.name = "Card Template \(appState.templates.count + 1)"
-        newT.backgroundColorHex = "#E8E8E8"
-        newT.backgroundImagePath = nil
-        appState.templates.append(newT)
-        appState.selectedTemplateId = newT.id
+        let current = appState.activeTemplate
+        var clone = current
+        clone.id = UUID()
+        clone.isDefault = false
+        // Assign new UUIDs to elements in the clone to avoid any ID collision
+        clone.elements = current.elements.map { el in
+            var e = el
+            e.id = UUID()
+            return e
+        }
+        
+        let baseName = current.name.replacingOccurrences(of: " (Copy)", with: "")
+        let existingCopiesCount = appState.templates.filter { $0.name.starts(with: "\(baseName) (Copy") }.count
+        if existingCopiesCount > 0 {
+            clone.name = "\(baseName) (Copy \(existingCopiesCount + 1))"
+        } else {
+            clone.name = "\(baseName) (Copy)"
+        }
+        
+        appState.templates.append(clone)
+        appState.selectedTemplateId = clone.id
+        appState.lastLogMessage = "Created copy of template '\(current.name)'."
     }
     
     private func exportCardImage() {

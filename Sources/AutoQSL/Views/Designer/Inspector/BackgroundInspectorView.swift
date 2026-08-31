@@ -46,14 +46,23 @@ public struct BackgroundInspectorView: View {
                 Text(L10n.tr(lang, "Background Picture (Optional)", "Hintergrundbild (optional)"))
                     .font(.subheadline.bold())
                 
-                if let path = template.backgroundImagePath, !path.isEmpty {
+                let hasImage = (template.backgroundImageData != nil) || (template.backgroundImagePath != nil && !template.backgroundImagePath!.isEmpty)
+                
+                if hasImage {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(URL(fileURLWithPath: path).lastPathComponent)
-                            .font(.caption)
-                            .lineLimit(1)
+                        if let path = template.backgroundImagePath, !path.isEmpty {
+                            Text(URL(fileURLWithPath: path).lastPathComponent)
+                                .font(.caption)
+                                .lineLimit(1)
+                        } else {
+                            Text(L10n.tr(lang, "Custom Image Loaded", "Eigenes Bild geladen"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                         
                         Button(L10n.tr(lang, "Remove Picture", "Bild entfernen"), role: .destructive) {
                             template.backgroundImagePath = nil
+                            template.backgroundImageData = nil
                         }
                         .buttonStyle(.bordered)
                     }
@@ -69,7 +78,7 @@ public struct BackgroundInspectorView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 
-                if let path = template.backgroundImagePath, !path.isEmpty {
+                if hasImage {
                     // Image Fit
                     Picker(L10n.tr(lang, "Image Scaling", "Bild-Skalierung"), selection: $template.backgroundFit) {
                         ForEach(BackgroundFit.allCases, id: \.self) { fit in
@@ -100,7 +109,10 @@ public struct BackgroundInspectorView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         if panel.runModal() == .OK, let url = panel.url {
-            template.backgroundImagePath = url.path
+            template.backgroundImagePath = url.lastPathComponent
+            if let data = try? Data(contentsOf: url) {
+                template.backgroundImageData = data
+            }
         }
     }
 }

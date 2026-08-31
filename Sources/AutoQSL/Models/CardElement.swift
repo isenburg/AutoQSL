@@ -59,6 +59,17 @@ public enum TableFreqDisplayMode: String, Codable, CaseIterable, Identifiable {
     public var id: String { rawValue }
 }
 
+public enum TableColumnType: String, Codable, CaseIterable, Identifiable {
+    case call = "call"
+    case date = "date"
+    case time = "time"
+    case freq = "freq"
+    case rst = "rst"
+    case mode = "mode"
+    
+    public var id: String { rawValue }
+}
+
 public struct CardElement: Identifiable, Codable, Hashable {
     public var id: UUID
     public var type: ElementType
@@ -124,10 +135,27 @@ public struct CardElement: Identifiable, Codable, Hashable {
     public var tableShowMode: Bool
     public var tableModeHeader: String
     public var tableShowCommentRow: Bool
+    public var tableColumnOrder: [TableColumnType]?
+    
+    public var effectiveTableColumnOrder: [TableColumnType] {
+        get {
+            var result = tableColumnOrder ?? []
+            for col in TableColumnType.allCases {
+                if !result.contains(col) {
+                    result.append(col)
+                }
+            }
+            return result
+        }
+        set {
+            tableColumnOrder = newValue
+        }
+    }
     
     // Sticker Specific Settings
     public var stickerType: StickerType
     public var customImagePath: String?
+    public var customImageData: Data?
     public var stickerTintHex: String?
     
     public var effectiveHeaderFontName: String {
@@ -208,8 +236,10 @@ public struct CardElement: Identifiable, Codable, Hashable {
         tableShowMode: Bool = true,
         tableModeHeader: String = "Mode",
         tableShowCommentRow: Bool = true,
+        tableColumnOrder: [TableColumnType]? = nil,
         stickerType: StickerType = .arrl,
         customImagePath: String? = nil,
+        customImageData: Data? = nil,
         stickerTintHex: String? = nil
     ) {
         self.id = id
@@ -264,8 +294,10 @@ public struct CardElement: Identifiable, Codable, Hashable {
         self.tableShowMode = tableShowMode
         self.tableModeHeader = tableModeHeader
         self.tableShowCommentRow = tableShowCommentRow
+        self.tableColumnOrder = tableColumnOrder
         self.stickerType = stickerType
         self.customImagePath = customImagePath
+        self.customImageData = customImageData
         self.stickerTintHex = stickerTintHex
     }
     
@@ -278,8 +310,8 @@ public struct CardElement: Identifiable, Codable, Hashable {
         case tableHeaderBackgroundHex, tableHeaderBackgroundOpacity, tableComment, tableHeaderFontName, tableHeaderFontSize, tableHeaderIsBold, tableHeaderIsItalic, tableHeaderTextColorHex
         case tableShowCallsign, tableCallsignHeader, tableShowDate, tableDateHeader
         case tableShowTime, tableTimeHeader, tableShowFreq, tableFreqHeader, tableFreqDisplayMode
-        case tableShowRST, tableRSTHeader, tableShowMode, tableModeHeader, tableShowCommentRow
-        case stickerType, customImagePath, stickerTintHex
+        case tableShowRST, tableRSTHeader, tableShowMode, tableModeHeader, tableShowCommentRow, tableColumnOrder
+        case stickerType, customImagePath, customImageData, stickerTintHex
     }
     
     public init(from decoder: Decoder) throws {
@@ -336,8 +368,10 @@ public struct CardElement: Identifiable, Codable, Hashable {
         self.tableShowMode = try c.decodeIfPresent(Bool.self, forKey: .tableShowMode) ?? true
         self.tableModeHeader = try c.decodeIfPresent(String.self, forKey: .tableModeHeader) ?? "Mode"
         self.tableShowCommentRow = try c.decodeIfPresent(Bool.self, forKey: .tableShowCommentRow) ?? true
+        self.tableColumnOrder = try c.decodeIfPresent([TableColumnType].self, forKey: .tableColumnOrder)
         self.stickerType = try c.decodeIfPresent(StickerType.self, forKey: .stickerType) ?? .arrl
         self.customImagePath = try c.decodeIfPresent(String.self, forKey: .customImagePath)
+        self.customImageData = try c.decodeIfPresent(Data.self, forKey: .customImageData)
         self.stickerTintHex = try c.decodeIfPresent(String.self, forKey: .stickerTintHex)
     }
 }

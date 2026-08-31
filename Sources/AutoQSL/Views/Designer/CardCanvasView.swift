@@ -174,8 +174,8 @@ public struct CardCanvasView: View {
             Color(hex: template.backgroundColorHex)
             
             // Custom Background Image if present
-            if let bgPath = template.backgroundImagePath, !bgPath.isEmpty, let nsImage = NSImage(contentsOfFile: bgPath) {
-                Image(nsImage: nsImage)
+            if let bgImage = backgroundImage(for: template) {
+                Image(nsImage: bgImage)
                     .resizable()
                     .aspectRatio(contentMode: template.backgroundFit == .fill ? .fill : (template.backgroundFit == .fit ? .fit : .fill))
                     .frame(width: width, height: height)
@@ -229,6 +229,16 @@ public struct CardCanvasView: View {
                 }
             : nil
         )
+    }
+    
+    private func backgroundImage(for template: QSLCardTemplate) -> NSImage? {
+        if let data = template.backgroundImageData, let img = NSImage(data: data) {
+            return img
+        }
+        if let path = template.backgroundImagePath, !path.isEmpty, let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        return nil
     }
     
     // MARK: - Selection Handling
@@ -642,7 +652,7 @@ public struct DraggableElementWrapperView: View {
         case .locationFooter:
             LocationFooterView(element: element, settings: settings, qso: qso)
         case .sticker:
-            StickerElementView(stickerType: element.stickerType, customImagePath: element.customImagePath)
+            StickerElementView(stickerType: element.stickerType, customImagePath: element.customImagePath, customImageData: element.customImageData)
         case .text:
             renderCustomText(element: element)
         }

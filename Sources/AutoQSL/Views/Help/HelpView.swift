@@ -385,14 +385,18 @@ public struct HelpView: View {
                             stepRow(number: "4.", text: isGerman ? "Zweiten 'Contact info N1MM' Broadcast auf Port 12064 (oder 2333) setzen (für AutoQSL)" : "Set second 'Contact info N1MM' broadcast to Port 12064 or 2333 (for AutoQSL)")
                         }
                             
-                        if let path = Bundle.main.path(forResource: "rumlog_settings", ofType: "png"),
-                           let nsImage = NSImage(contentsOfFile: path) {
+                        if let nsImage = rumlogSettingsImage {
                             Image(nsImage: nsImage)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(maxWidth: 600)
+                                .frame(maxWidth: 680)
                                 .cornerRadius(8)
-                                .shadow(radius: 3)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
+                                .padding(.vertical, 4)
                         }
                     }
                 }
@@ -969,6 +973,35 @@ public struct HelpView: View {
 
             Divider()
 
+            GroupBox(label: Text("Version 2.1.0").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    featureRow(
+                        icon: "arrow.up.arrow.down.square.fill",
+                        text: isGerman ?
+                            "Frei sortierbare QSO-Bestätigungstabelle: Spalten (QSO With, Date, UTC Time, Frequency/Band, Report, Mode) können per Drag & Drop mit der Maus oder über Pfeiltasten beliebig umsortiert werden. Die Reihenfolge wird auf der Karte exakt übernommen und individuell pro Vorlage gespeichert." :
+                            "Freely Reorderable QSO Confirmation Table: Columns (QSO With, Date, UTC Time, Frequency/Band, Report, Mode) can be reordered via mouse Drag & Drop or arrow buttons. The custom sequence is rendered on the card and saved per template."
+                    )
+                    featureRow(
+                        icon: "plus.square.on.square",
+                        text: isGerman ?
+                            "1-Klick Template-Klonen (+): Ein Klick auf das '+' in der Vorlagenleiste erstellt sofort eine 1:1-Kopie des aktuell ausgewählten Templates mit allen Elementen und Einstellungen." :
+                            "1-Click Template Duplication (+): Clicking the '+' button in the template bar instantly duplicates the currently selected template with all elements and configurations."
+                    )
+                    featureRow(
+                        icon: "photo.on.rectangle.angled",
+                        text: isGerman ?
+                            "Eingebettete Hintergrundbilder in Vorlagen & SQLite-DB: Benutzerdefinierte Hintergrundbilder werden direkt als Binärdaten in der Vorlage und Datenbank abgelegt und bleiben auch bei iCloud-Sync auf anderen Macs zuverlässig erhalten." :
+                            "Embedded Background Images in Templates & SQLite DB: Custom background images are stored directly as binary data in templates and database snapshots, ensuring seamless multi-Mac iCloud synchronization."
+                    )
+                    featureRow(
+                        icon: "trash.circle",
+                        text: isGerman ?
+                            "Flexible Vorlagenverwaltung: Vorlagen können dauerhaft gelöscht werden, ohne beim nächsten Programmstart ungewollt neu angelegt zu werden (mindestens ein Standard-Template bleibt erhalten)." :
+                            "Flexible Template Management: Templates can be permanently deleted without being automatically re-added on next startup (at least one default template is preserved)."
+                    )
+                }
+            }
+
             GroupBox(label: Text("Version 2.0.0").font(.headline)) {
                 VStack(alignment: .leading, spacing: 8) {
                     featureRow(
@@ -1499,6 +1532,24 @@ AutoQSL Diagnostic Report / Systembericht
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+    }
+    
+    private var rumlogSettingsImage: NSImage? {
+        if let url = Bundle.module.url(forResource: "rumlog_settings", withExtension: "png"),
+           let img = NSImage(contentsOf: url) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "rumlog_settings", ofType: "png"),
+           let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        if let bundleUrl = Bundle.main.url(forResource: "AutoQSL_AutoQSL", withExtension: "bundle"),
+           let resBundle = Bundle(url: bundleUrl),
+           let url = resBundle.url(forResource: "rumlog_settings", withExtension: "png"),
+           let img = NSImage(contentsOf: url) {
+            return img
+        }
+        return nil
     }
 }
 

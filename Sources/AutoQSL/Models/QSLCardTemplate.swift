@@ -40,6 +40,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
     
     // Background
     public var backgroundImagePath: String?
+    public var backgroundImageData: Data?
     public var backgroundFit: BackgroundFit
     public var backgroundColorHex: String
     public var backgroundDarkenOpacity: Double
@@ -53,6 +54,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
         isDefault: Bool = true,
         aspectRatio: CardAspectRatio = .standardQSL,
         backgroundImagePath: String? = nil,
+        backgroundImageData: Data? = nil,
         backgroundFit: BackgroundFit = .fill,
         backgroundColorHex: String = "#E8E8E8",
         backgroundDarkenOpacity: Double = 0.0,
@@ -63,15 +65,16 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
         self.isDefault = isDefault
         self.aspectRatio = aspectRatio
         self.backgroundImagePath = backgroundImagePath
+        self.backgroundImageData = backgroundImageData
         self.backgroundFit = backgroundFit
         self.backgroundColorHex = backgroundColorHex
         self.backgroundDarkenOpacity = backgroundDarkenOpacity
         self.elements = elements
     }
     
-    // 1. Standard Landscape QSL
+    // 1. Sample Landscape QSL
     public static func createDefaultTemplate(myCall: String = "DJ6GI", myAddress: String? = nil) -> QSLCardTemplate {
-        var template = QSLCardTemplate(name: "Standard Landscape QSL", isDefault: true)
+        var template = QSLCardTemplate(name: "Sample Landscape QSL", isDefault: true)
         template.backgroundColorHex = "#EDEDED"
         template.backgroundImagePath = nil
         
@@ -456,9 +459,7 @@ public struct QSLCardTemplate: Identifiable, Codable, Hashable {
     
     public static func defaultBuiltinTemplates(myCall: String = "DJ6GI", myAddress: String? = nil) -> [QSLCardTemplate] {
         return [
-            createDefaultTemplate(myCall: myCall, myAddress: myAddress),
-            createSonnenuntergangTemplate(myCall: myCall, myAddress: myAddress),
-            createBonanzaTemplate(myCall: myCall, myAddress: myAddress)
+            createDefaultTemplate(myCall: myCall, myAddress: myAddress)
         ]
     }
 }

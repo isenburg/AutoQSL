@@ -26,8 +26,9 @@
    - **Full Layer Management**: Callsign typography, custom text blocks, QSO data table grid, location footers, and badges/stickers.
    - **Opacity & Colors**: macOS native color picker with full alpha opacity channel support on all text, background tints, and element borders.
    - **Undo Support**: Full `⌘Z` keyboard shortcut and toolbar button for reversible design changes.
+   - **Sortable Confirmation Table**: Reorder columns (`QSO With`, `Date`, `UTC Time`, `Frequency/Band`, `RST`, `Mode`) via intuitive mouse Drag & Drop or `▲`/`▼` arrow buttons; sequence is stored per template.
    - **Badges & Stickers**: DARC Logo, ARRL Diamond, POTA, WWFF (Flora & Fauna), IOTA (official RSGB), SOTA, plus custom PNG logo imports.
-   - **Template Duplication & Memory**: 1-click template cloning (`doc.on.doc`), immutable template snapshotting on sent cards, and complete dispatch history on resend.
+   - **Template Duplication & Embedded Assets**: 1-click template cloning via `+` button in toolbar, embedded binary background/sticker storage in SQLite and templates for flawless iCloud multi-Mac sync, immutable snapshots on sent cards, and resend dispatch history.
    - **Independent Table Typography**: Separate font family, size, weight, and color controls for table headers vs. data rows.
 
 4. ✉️ **Review & Automation Modes**:

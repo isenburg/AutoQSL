@@ -71,6 +71,15 @@ struct AutoQSLCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About AutoQSL") {
+                NSApp.orderFrontStandardAboutPanel(options: [
+                    NSApplication.AboutPanelOptionKey.applicationVersion: "\(APP_VERSION)",
+                    NSApplication.AboutPanelOptionKey.version: "Build \(APP_BUILD_NUMBER)"
+                ])
+            }
+        }
+        
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") {
                 appState.navigationSection = .settings
